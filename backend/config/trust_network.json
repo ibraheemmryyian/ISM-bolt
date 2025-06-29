@@ -1,0 +1,4 @@
+{
+  "seller1": {"success_rate": 0.95, "disputes": 1, "verification": 3, "blockchain_verified": true, "smart_contract_score": 0.92},
+  "buyer1": {"success_rate": 0.85, "disputes": 0, "verification": 2, "blockchain_verified": true, "smart_contract_score": 0.88}
+} 

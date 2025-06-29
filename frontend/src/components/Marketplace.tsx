@@ -14,13 +14,15 @@ import {
   Users,
   Calendar,
   TrendingUp,
-  Eye
+  Eye,
+  Check
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { messagingService } from '../lib/messagingService';
 import { MaterialForm } from './MaterialForm';
+import { useNavigate } from 'react-router-dom';
 
 interface MarketplaceProps {
-  onNavigate: (view: 'home' | 'dashboard' | 'marketplace' | 'admin') => void;
   onSignOut: () => void;
 }
 
@@ -51,7 +53,7 @@ interface Company {
   sustainability_score?: number;
 }
 
-export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
+export function Marketplace({ onSignOut }: MarketplaceProps) {
   const [activeTab, setActiveTab] = useState<'materials' | 'companies'>('materials');
   const [materials, setMaterials] = useState<Material[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -61,18 +63,69 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
   const [filterType, setFilterType] = useState<'all' | 'waste' | 'requirement'>('all');
   const [showMaterialForm, setShowMaterialForm] = useState<'waste' | 'requirement' | null>(null);
   const [loading, setLoading] = useState(true);
+  const [matchResults, setMatchResults] = useState<{ [materialId: string]: any }>({});
+  const [loadingMatch, setLoadingMatch] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [connections, setConnections] = useState<Set<string>>(new Set());
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [loadingActions, setLoadingActions] = useState<{ [key: string]: boolean }>({});
+  const [showFilters, setShowFilters] = useState(false);
+  const [locationFilter, setLocationFilter] = useState('');
+  const [quantityFilter, setQuantityFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
-    loadMarketplaceData();
+    loadUserAndData();
   }, []);
 
   useEffect(() => {
     filterMaterials();
-  }, [materials, searchQuery, filterType]);
+  }, [materials, searchQuery, filterType, locationFilter, quantityFilter, dateFilter]);
 
   useEffect(() => {
     filterCompanies();
   }, [companies, searchQuery]);
+
+  async function loadUserAndData() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        await Promise.all([
+          loadMarketplaceData(),
+          loadUserConnections(user.id),
+          loadUserFavorites(user.id)
+        ]);
+      } else {
+        await loadMarketplaceData();
+      }
+    } catch (error) {
+      console.error('Error loading user and data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadUserConnections(userId: string) {
+    try {
+      const following = await messagingService.getFollowing(userId);
+      const connectionSet = new Set(following.map(conn => conn.following_id));
+      setConnections(connectionSet);
+    } catch (error) {
+      console.error('Error loading connections:', error);
+    }
+  }
+
+  async function loadUserFavorites(userId: string) {
+    try {
+      const userFavorites = await messagingService.getFavorites(userId);
+      const favoriteSet = new Set(userFavorites.map(fav => fav.material_id));
+      setFavorites(favoriteSet);
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+    }
+  }
 
   async function loadMarketplaceData() {
     try {
@@ -81,7 +134,7 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
         .from('materials')
         .select(`
           *,
-          companies!inner(name)
+          companies(name)
         `)
         .order('created_at', { ascending: false });
 
@@ -90,7 +143,10 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
       // Add mock data for demonstration
       const enhancedMaterials = materialsData?.map(material => ({
         ...material,
-        company: { name: material.companies.name, location: 'San Francisco, CA' },
+        company: { 
+          name: material.companies?.name || 'Unknown Company', 
+          location: 'San Francisco, CA' 
+        },
         distance: `${Math.floor(Math.random() * 50) + 1}km`,
         match_score: Math.floor(Math.random() * 30) + 70
       })) || [];
@@ -122,8 +178,6 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
 
     } catch (error) {
       console.error('Error loading marketplace data:', error);
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -142,6 +196,26 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
       filtered = filtered.filter(material => material.type === filterType);
     }
 
+    if (locationFilter) {
+      filtered = filtered.filter(material =>
+        material.company?.location?.toLowerCase().includes(locationFilter.toLowerCase())
+      );
+    }
+
+    if (quantityFilter) {
+      const quantity = parseFloat(quantityFilter);
+      if (!isNaN(quantity)) {
+        filtered = filtered.filter(material => material.quantity >= quantity);
+      }
+    }
+
+    if (dateFilter) {
+      const filterDate = new Date(dateFilter);
+      filtered = filtered.filter(material => 
+        new Date(material.created_at) >= filterDate
+      );
+    }
+
     setFilteredMaterials(filtered);
   }
 
@@ -151,12 +225,230 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
     if (searchQuery) {
       filtered = filtered.filter(company =>
         company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        company.organization_type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        company.materials_of_interest?.toLowerCase().includes(searchQuery.toLowerCase())
+        company.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        company.organization_type?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     setFilteredCompanies(filtered);
+  }
+
+  async function handleConnect(companyId: string) {
+    if (!currentUserId) {
+      alert('Please log in to connect with companies');
+      return;
+    }
+
+    // Prevent connecting to yourself
+    if (companyId === currentUserId) {
+      alert('You cannot connect to yourself');
+      return;
+    }
+
+    // Check if already connected
+      if (connections.has(companyId)) {
+      alert('You are already connected to this company');
+      return;
+    }
+
+    setLoadingActions(prev => ({ ...prev, [`connect-${companyId}`]: true }));
+
+    try {
+      // Create connection request
+      const { error } = await supabase
+        .from('connections')
+        .insert({
+          requester_id: currentUserId,
+          recipient_id: companyId,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      // Update local state
+        setConnections(prev => new Set([...prev, companyId]));
+      
+      // Show success message in UI instead of alert
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      successMessage.textContent = 'Connection request sent successfully!';
+      document.body.appendChild(successMessage);
+      setTimeout(() => document.body.removeChild(successMessage), 3000);
+      
+    } catch (error) {
+      console.error('Error connecting:', error);
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMessage.textContent = 'Failed to send connection request';
+      document.body.appendChild(errorMessage);
+      setTimeout(() => document.body.removeChild(errorMessage), 3000);
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [`connect-${companyId}`]: false }));
+    }
+  }
+
+  async function handleChat(companyId: string) {
+    if (!currentUserId) {
+      alert('Please log in to start chatting');
+      return;
+    }
+
+    // Prevent chatting with yourself
+    if (companyId === currentUserId) {
+      alert('You cannot chat with yourself');
+      return;
+    }
+
+    setLoadingActions(prev => ({ ...prev, [`chat-${companyId}`]: true }));
+
+    try {
+      // Create or get existing chat conversation
+      const { data: existingChat, error: chatError } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(`participant1.eq.${currentUserId},participant2.eq.${currentUserId}`)
+        .or(`participant1.eq.${companyId},participant2.eq.${companyId}`)
+        .single();
+
+      let conversationId;
+      
+      if (existingChat) {
+        conversationId = existingChat.id;
+      } else {
+        // Create new conversation
+        const { data: newChat, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            participant1: currentUserId,
+            participant2: companyId,
+            created_at: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+        
+        if (createError) throw createError;
+        conversationId = newChat.id;
+      }
+
+      // Navigate to chat with conversation ID
+      navigate(`/chats?conversation=${conversationId}`);
+      
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMessage.textContent = 'Failed to start chat';
+      document.body.appendChild(errorMessage);
+      setTimeout(() => document.body.removeChild(errorMessage), 3000);
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [`chat-${companyId}`]: false }));
+    }
+  }
+
+  async function handleFavorite(materialId: string) {
+    if (!currentUserId) {
+      alert('Please log in to favorite materials');
+      return;
+    }
+
+    setLoadingActions(prev => ({ ...prev, [`favorite-${materialId}`]: true }));
+
+    try {
+      const isFavorited = favorites.has(materialId);
+      
+      if (isFavorited) {
+        // Remove from favorites
+        await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', currentUserId)
+          .eq('material_id', materialId);
+        
+        setFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(materialId);
+          return newSet;
+        });
+      } else {
+        // Add to favorites
+        await supabase
+          .from('favorites')
+          .insert({
+            user_id: currentUserId,
+            material_id: materialId
+          });
+        
+        setFavorites(prev => new Set([...prev, materialId]));
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      alert('Failed to update favorite');
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [`favorite-${materialId}`]: false }));
+    }
+  }
+
+  async function handleFindMatches(material: Material) {
+    if (!currentUserId) {
+      alert('Please log in to find matches');
+      return;
+    }
+
+    setLoadingMatch(material.id);
+
+    try {
+      // Call AI matching endpoint with specific material
+      const response = await fetch('/api/generate-matches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          materialId: material.id,
+          companyId: currentUserId 
+        })
+      });
+      
+      if (response.ok) {
+      const result = await response.json();
+        setMatchResults(prev => ({ 
+          ...prev, 
+          [material.id]: result
+        }));
+        
+        const successMessage = document.createElement('div');
+        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        successMessage.textContent = `Found ${result.total || 0} new matches!`;
+        document.body.appendChild(successMessage);
+        setTimeout(() => document.body.removeChild(successMessage), 3000);
+      } else {
+        throw new Error('Failed to find matches');
+      }
+    } catch (error) {
+      console.error('Error finding matches:', error);
+      const errorMessage = document.createElement('div');
+      errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      errorMessage.textContent = 'Failed to find matches. Please try again.';
+      document.body.appendChild(errorMessage);
+      setTimeout(() => document.body.removeChild(errorMessage), 3000);
+    } finally {
+      setLoadingMatch(null);
+    }
+  }
+
+  // Calculate rating based on material quality and company reputation
+  function calculateRating(material: Material): number {
+    let rating = 70; // Base rating
+    
+    // Material quality factors
+    if (material.quantity > 100) rating += 10;
+    if (material.description.length > 50) rating += 5;
+    if (material.match_score && material.match_score > 80) rating += 10;
+    
+    // Company reputation (mock)
+    const companyAge = new Date().getTime() - new Date(material.created_at).getTime();
+    const daysSinceCreation = companyAge / (1000 * 60 * 60 * 24);
+    if (daysSinceCreation > 30) rating += 5;
+    
+    return Math.min(100, rating);
   }
 
   if (loading) {
@@ -176,23 +468,23 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
             <div className="flex items-center">
               <div className="flex items-center space-x-2">
                 <Workflow className="h-8 w-8 text-emerald-500" />
-                <span className="text-2xl font-bold text-gray-900">SymbioFlow</span>
+                <span className="text-2xl font-bold text-gray-900">SymbioFlows</span>
               </div>
               <div className="hidden md:ml-10 md:flex md:space-x-8">
                 <button
-                  onClick={() => onNavigate('dashboard')}
+                  onClick={() => navigate('/dashboard')}
                   className="text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"
                 >
                   Dashboard
                 </button>
                 <button
-                  onClick={() => onNavigate('marketplace')}
+                  onClick={() => navigate('/marketplace')}
                   className="text-emerald-600 border-b-2 border-emerald-600 px-1 pt-1 pb-4 text-sm font-medium"
                 >
                   Marketplace
                 </button>
                 <button
-                  onClick={() => onNavigate('home')}
+                  onClick={() => navigate('/home')}
                   className="text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"
                 >
                   Home
@@ -200,10 +492,16 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="text-gray-400 hover:text-gray-500">
+              <button 
+                onClick={() => navigate('/notifications')}
+                className="text-gray-400 hover:text-gray-500"
+              >
                 <Bell className="h-6 w-6" />
               </button>
-              <button className="text-gray-400 hover:text-gray-500">
+              <button 
+                onClick={() => navigate('/chats')}
+                className="text-gray-400 hover:text-gray-500"
+              >
                 <MessageSquare className="h-6 w-6" />
               </button>
               <button
@@ -235,35 +533,86 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
           </button>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+        {/* Filters */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search materials, companies, or keywords..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  placeholder="Search materials..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               />
             </div>
-            <div className="flex space-x-4">
               <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as 'all' | 'waste' | 'requirement')}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="all">All Types</option>
-                <option value="waste">Available Materials</option>
-                <option value="requirement">Material Needs</option>
+                <option value="waste">Waste</option>
+                <option value="requirement">Requirement</option>
               </select>
-              <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                <Filter className="h-5 w-5" />
-                <span>More Filters</span>
-              </button>
             </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              <Filter className="h-4 w-4" />
+              <span>More Filters</span>
+            </button>
           </div>
+
+          {showFilters && (
+            <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <input
+                    type="text"
+                    placeholder="Filter by location..."
+                    value={locationFilter}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Quantity</label>
+                  <input
+                    type="number"
+                    placeholder="Minimum quantity..."
+                    value={quantityFilter}
+                    onChange={(e) => setQuantityFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                  <input
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => {
+                    setLocationFilter('');
+                    setQuantityFilter('');
+                    setDateFilter('');
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Clear Filters
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -310,8 +659,16 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
                       {material.type === 'waste' ? 'Available' : 'Needed'}
                     </span>
                   </div>
-                  <button className="text-gray-400 hover:text-red-500">
-                    <Heart className="h-5 w-5" />
+                  <button 
+                    onClick={() => handleFavorite(material.id)}
+                    disabled={loadingActions[`favorite-${material.id}`]}
+                    className={`transition-colors ${
+                      favorites.has(material.id) 
+                        ? 'text-red-500 hover:text-red-600' 
+                        : 'text-gray-400 hover:text-red-500'
+                    }`}
+                  >
+                    <Heart className={`h-5 w-5 ${favorites.has(material.id) ? 'fill-current' : ''}`} />
                   </button>
                 </div>
 
@@ -349,13 +706,66 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
                 </div>
 
                 <div className="flex space-x-2 mt-4">
-                  <button className="flex-1 bg-emerald-500 text-white py-2 px-4 rounded-lg hover:bg-emerald-600 transition text-sm font-medium">
-                    Connect
+                  <button 
+                    onClick={() => handleConnect(material.company_id)}
+                    disabled={loadingActions[`connect-${material.company_id}`]}
+                    className={`flex-1 py-2 px-4 rounded-lg transition text-sm font-medium ${
+                      connections.has(material.company_id)
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                    }`}
+                  >
+                    {loadingActions[`connect-${material.company_id}`] ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mx-auto"></div>
+                    ) : connections.has(material.company_id) ? (
+                      <div className="flex items-center justify-center space-x-1">
+                        <Check className="h-4 w-4" />
+                        <span>Connected</span>
+                      </div>
+                    ) : (
+                      'Connect'
+                    )}
                   </button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                    <Eye className="h-4 w-4" />
+                  <button 
+                    onClick={() => handleChat(material.company_id)}
+                    disabled={loadingActions[`chat-${material.company_id}`]}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    {loadingActions[`chat-${material.company_id}`] ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500"></div>
+                    ) : (
+                      <MessageSquare className="h-4 w-4" />
+                    )}
+                  </button>
+                  <button
+                    className="px-4 py-2 border border-emerald-500 text-emerald-600 rounded-lg hover:bg-emerald-50 transition text-sm font-medium"
+                    onClick={() => handleFindMatches(material)}
+                    disabled={loadingMatch === material.id}
+                  >
+                    {loadingMatch === material.id ? 'Matching...' : 'Find Matches'}
                   </button>
                 </div>
+
+                {Array.isArray(matchResults[material.id]) ? (
+                  <div className="mt-2 p-2 bg-emerald-50 rounded text-sm">
+                    <div className="font-semibold mb-1">Top Matches:</div>
+                    {matchResults[material.id].length === 0 ? (
+                      <div>No matches found.</div>
+                    ) : (
+                      matchResults[material.id].slice(0, 3).map((match: any, idx: number) => (
+                        <div key={match.counterpart.id} className="mb-2">
+                          <div>Counterpart: <b>{match.counterpart.company_id}</b></div>
+                          <div>Score: <b>{match.result.revolutionary_score}</b></div>
+                          <div>Quality: <b>{match.result.match_quality}</b></div>
+                          <div>Sustainability: <b>{match.result.sustainability_score}</b></div>
+                          <div>Trust: <b>{match.result.trust_status}</b></div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : matchResults[material.id]?.error ? (
+                  <div className="mt-2 p-2 bg-red-50 rounded text-sm text-red-500">{matchResults[material.id].error}</div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -375,9 +785,6 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
                       <p className="text-sm text-gray-600 capitalize">{company.organization_type}</p>
                     </div>
                   </div>
-                  <button className="text-gray-400 hover:text-red-500">
-                    <Heart className="h-5 w-5" />
-                  </button>
                 </div>
 
                 <div className="space-y-2 mb-4">
@@ -407,11 +814,36 @@ export function Marketplace({ onNavigate, onSignOut }: MarketplaceProps) {
                 </div>
 
                 <div className="flex space-x-2">
-                  <button className="flex-1 bg-emerald-500 text-white py-2 px-4 rounded-lg hover:bg-emerald-600 transition text-sm font-medium">
-                    Connect
+                  <button 
+                    onClick={() => handleConnect(company.id)}
+                    disabled={loadingActions[`connect-${company.id}`]}
+                    className={`flex-1 py-2 px-4 rounded-lg transition text-sm font-medium ${
+                      connections.has(company.id)
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                    }`}
+                  >
+                    {loadingActions[`connect-${company.id}`] ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mx-auto"></div>
+                    ) : connections.has(company.id) ? (
+                      <div className="flex items-center justify-center space-x-1">
+                        <Check className="h-4 w-4" />
+                        <span>Connected</span>
+                      </div>
+                    ) : (
+                      'Connect'
+                    )}
                   </button>
-                  <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                  <button 
+                    onClick={() => handleChat(company.id)}
+                    disabled={loadingActions[`chat-${company.id}`]}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    {loadingActions[`chat-${company.id}`] ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500"></div>
+                    ) : (
                     <MessageSquare className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>

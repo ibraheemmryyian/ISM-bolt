@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Matching Demo</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .demo-container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .demo-card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 2rem; margin-bottom: 2rem; }
+        .input-group { margin-bottom: 1rem; }
+        button { background: #6e8efb; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-card">
+            <h1>Live AI Matching Demo</h1>
+            <p>Experience our GNN-powered matching algorithm in action</p>
+            <div style="margin: 2rem 0; text-align: center;">
+                <h3>Real-World Example</h3>
+                <video width="800" controls style="max-width: 100%; border-radius: 8px;">
+                    <source src="file:///C:/Users/amrey/Videos/Captures/Vite%20+%20React%20+%20TS%20-%20Google%20Chrome%202025-06-26%2003-56-30.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            
+            <div class="input-group">
+                <label>Enter your scenario:</label>
+                <textarea rows="4" style="width: 100%"></textarea>
+            </div>
+            
+            <button id="match-button">Generate Optimal Matches</button>
+            
+            <div id="results" style="margin-top: 2rem; display: none;">
+                <h3>Optimized Matching Results</h3>
+                <div id="visualization" style="height: 400px; background: #f5f5f5; border-radius: 4px;">
+                    <!-- Graph visualization will appear here -->
+                </div>
+                <div id="metrics" style="margin-top: 1rem;">
+                    <h4>Performance Metrics</h4>
+                    <p>Match Quality: <span id="quality-score">92%</span></p>
+                    <p>Processing Time: <span id="time">0.8s</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-card">
+            <h2>How It Works</h2>
+            <ol>
+                <li>Input your matching scenario</li>
+                <li>Our GNN analyzes relationships</li>
+                <li>Real-time optimization occurs</li>
+                <li>Get explainable results</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('match-button').addEventListener('click', function() {
+            document.getElementById('results').style.display = 'block';
+            // In production, this would call your actual matching API
+        });
+    </script>
+</body>
+</html>

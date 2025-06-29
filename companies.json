@@ -1,0 +1,1004 @@
+{
+    "companies": [
+      {
+        "id": "Company 11",
+        "name": "EcoSystems",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Vilnius, Lithuania",
+        "volume": "88999 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 12",
+        "name": "EcoWorks",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Sofia, Bulgaria",
+        "volume": "68588 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 13",
+        "name": "PrimeCenter",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Oslo, Norway",
+        "volume": "31252 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 14",
+        "name": "SmartCare",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Brno, Czech Republic",
+        "volume": "56434 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 15",
+        "name": "NovaMart",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "30736 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 16",
+        "name": "PureIndustries",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Dublin, Ireland",
+        "volume": "91463 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 17",
+        "name": "NextGenCorp",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "37192 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 18",
+        "name": "MediMart",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Warsaw, Poland",
+        "volume": "38030 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 19",
+        "name": "NextGenCare",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Oslo, Norway",
+        "volume": "82082 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 20",
+        "name": "GlobalIndustries",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Brno, Czech Republic",
+        "volume": "5691 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 21",
+        "name": "EcoIndustries",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Vilnius, Lithuania",
+        "volume": "96247 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 22",
+        "name": "UrbanCenter",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Luxembourg City, Luxembourg",
+        "volume": "72861 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 23",
+        "name": "NextGenDynamics",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Brno, Czech Republic",
+        "volume": "75715 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 24",
+        "name": "UrbanIndustries",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Warsaw, Poland",
+        "volume": "29232 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 25",
+        "name": "NeoMart",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Zagreb, Croatia",
+        "volume": "37132 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 26",
+        "name": "NeoGroup",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Brno, Czech Republic",
+        "volume": "46969 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 27",
+        "name": "NextGenSolutions",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "57315 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 28",
+        "name": "EcoIndustries",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Brno, Czech Republic",
+        "volume": "37964 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 29",
+        "name": "UrbanCenter",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Zagreb, Croatia",
+        "volume": "77175 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 30",
+        "name": "SmartSolutions",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Vilnius, Lithuania",
+        "volume": "99904 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 31",
+        "name": "UrbanCorp",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Dublin, Ireland",
+        "volume": "38197 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 32",
+        "name": "NovaCare",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Warsaw, Poland",
+        "volume": "16929 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 33",
+        "name": "MediCenter",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Vienna, Austria",
+        "volume": "62183 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 34",
+        "name": "PureGroup",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Oslo, Norway",
+        "volume": "32222 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 35",
+        "name": "MediMart",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Tallinn, Estonia",
+        "volume": "60969 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 36",
+        "name": "GreenCorp",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "48671 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 37",
+        "name": "BlueGroup",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Athens, Greece",
+        "volume": "38928 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 38",
+        "name": "PrimeGroup",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Brno, Czech Republic",
+        "volume": "93249 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 39",
+        "name": "UrbanCenter",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Zagreb, Croatia",
+        "volume": "42436 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 40",
+        "name": "TransCenter",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Luxembourg City, Luxembourg",
+        "volume": "61477 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 41",
+        "name": "NextGenCorp",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "24029 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 42",
+        "name": "BlueMart",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Tallinn, Estonia",
+        "volume": "36262 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 43",
+        "name": "NovaIndustries",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Zagreb, Croatia",
+        "volume": "7975 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 44",
+        "name": "GlobalSystems",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Vienna, Austria",
+        "volume": "75947 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 45",
+        "name": "SmartGroup",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Brussels, Belgium",
+        "volume": "74633 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 46",
+        "name": "SmartSolutions",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Oslo, Norway",
+        "volume": "5216 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 47",
+        "name": "SmartCare",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Athens, Greece",
+        "volume": "26827 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 48",
+        "name": "EcoSystems",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "61738 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 49",
+        "name": "NeoCorp",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Brussels, Belgium",
+        "volume": "88578 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 50",
+        "name": "PrimeDynamics",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Lisbon, Portugal",
+        "volume": "89252 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 51",
+        "name": "TransCare",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Warsaw, Poland",
+        "volume": "18291 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 52",
+        "name": "GreenGroup",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Zagreb, Croatia",
+        "volume": "83866 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 53",
+        "name": "BlueGroup",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Ljubljana, Slovenia",
+        "volume": "55150 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 54",
+        "name": "EcoIndustries",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Bucharest, Romania",
+        "volume": "15513 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 55",
+        "name": "BlueGroup",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "14742 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 56",
+        "name": "EcoSystems",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Zagreb, Croatia",
+        "volume": "60890 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 57",
+        "name": "MediIndustries",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Helsinki, Finland",
+        "volume": "62567 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 58",
+        "name": "PrimeSolutions",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Warsaw, Poland",
+        "volume": "21896 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 59",
+        "name": "BlueCare",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Oslo, Norway",
+        "volume": "76361 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 60",
+        "name": "PureSolutions",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Warsaw, Poland",
+        "volume": "50049 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 61",
+        "name": "BlueIndustries",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Ljubljana, Slovenia",
+        "volume": "25225 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 62",
+        "name": "GreenGroup",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Helsinki, Finland",
+        "volume": "18996 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 63",
+        "name": "PrimeSolutions",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Athens, Greece",
+        "volume": "43659 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 64",
+        "name": "NeoNetworks",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Oslo, Norway",
+        "volume": "46402 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 65",
+        "name": "TransDynamics",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Ljubljana, Slovenia",
+        "volume": "96077 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 66",
+        "name": "NextGenMart",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Brno, Czech Republic",
+        "volume": "22207 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 67",
+        "name": "BlueGroup",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Zagreb, Croatia",
+        "volume": "9015 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 68",
+        "name": "EcoGroup",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Ljubljana, Slovenia",
+        "volume": "57556 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 69",
+        "name": "NextGenDynamics",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "16711 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 70",
+        "name": "GreenNetworks",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Helsinki, Finland",
+        "volume": "67175 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 71",
+        "name": "BlueIndustries",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Brussels, Belgium",
+        "volume": "51141 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 72",
+        "name": "PrimeCenter",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Amsterdam, Netherlands",
+        "volume": "54498 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 73",
+        "name": "MediIndustries",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Vienna, Austria",
+        "volume": "17162 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 74",
+        "name": "SmartGroup",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Vienna, Austria",
+        "volume": "36494 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 75",
+        "name": "MediCenter",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Warsaw, Poland",
+        "volume": "93041 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 76",
+        "name": "MediCare",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Warsaw, Poland",
+        "volume": "27489 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 77",
+        "name": "MediWorks",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Bucharest, Romania",
+        "volume": "16988 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 78",
+        "name": "EcoMart",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Ljubljana, Slovenia",
+        "volume": "37424 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 79",
+        "name": "NextGenCare",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Bucharest, Romania",
+        "volume": "29336 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 80",
+        "name": "UrbanIndustries",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Dublin, Ireland",
+        "volume": "82209 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 81",
+        "name": "NextGenSolutions",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Vilnius, Lithuania",
+        "volume": "28008 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 82",
+        "name": "NextGenWorks",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Dublin, Ireland",
+        "volume": "12776 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 83",
+        "name": "MediMart",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Bucharest, Romania",
+        "volume": "95576 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 84",
+        "name": "PrimeCare",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Bucharest, Romania",
+        "volume": "36058 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 85",
+        "name": "BlueDynamics",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Warsaw, Poland",
+        "volume": "54357 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 86",
+        "name": "EcoGroup",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Oslo, Norway",
+        "volume": "98202 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 87",
+        "name": "GlobalCenter",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Lisbon, Portugal",
+        "volume": "85657 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 88",
+        "name": "BlueNetworks",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Oslo, Norway",
+        "volume": "26195 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 89",
+        "name": "UrbanIndustries",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Brno, Czech Republic",
+        "volume": "88448 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 90",
+        "name": "PureWorks",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Oslo, Norway",
+        "volume": "48539 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 91",
+        "name": "MediGroup",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Vienna, Austria",
+        "volume": "72403 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 92",
+        "name": "BlueSolutions",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Ljubljana, Slovenia",
+        "volume": "17967 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      },
+      {
+        "id": "Company 93",
+        "name": "NextGenMart",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Bucharest, Romania",
+        "volume": "28613 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 94",
+        "name": "EcoGroup",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Sofia, Bulgaria",
+        "volume": "8974 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 95",
+        "name": "PrimeIndustries",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Brussels, Belgium",
+        "volume": "30298 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 96",
+        "name": "NextGenWorks",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Helsinki, Finland",
+        "volume": "99794 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 97",
+        "name": "NextGenWorks",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Dublin, Ireland",
+        "volume": "77153 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 98",
+        "name": "SmartSystems",
+        "industry": "Plastic Recycling",
+        "products": ["Plastic pellets", "Recycled containers"],
+        "location": "Vienna, Austria",
+        "volume": "57088 metric tons of plastic pellets",
+        "materials": ["Post-consumer plastics", "HDPE", "LDPE"],
+        "processes": "Sorting → Shredding → Washing → Pelletizing"
+      },
+      {
+        "id": "Company 99",
+        "name": "GlobalDynamics",
+        "industry": "Hospital",
+        "products": ["Medical imaging services", "Emergency care", "Surgical procedures"],
+        "location": "Lisbon, Portugal",
+        "volume": "52322 metric tons of medical waste",
+        "materials": ["Medical supplies", "Electricity", "Sterile water"],
+        "processes": "Patient intake → Diagnosis → Treatment → Discharge"
+      },
+      {
+        "id": "Company 100",
+        "name": "SmartSystems",
+        "industry": "Furniture Production",
+        "products": ["Office chairs", "Wooden tables", "Bookshelves"],
+        "location": "Brussels, Belgium",
+        "volume": "76941 metric tons of wood waste",
+        "materials": ["Plywood", "Steel frames", "Foam padding"],
+        "processes": "Cutting → Assembling → Upholstering → Polishing"
+      },
+      {
+        "id": "Company 101",
+        "name": "BlueCorp",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Vilnius, Lithuania",
+        "volume": "22604 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 102",
+        "name": "SmartDynamics",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Helsinki, Finland",
+        "volume": "72179 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 103",
+        "name": "PrimeCorp",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Sofia, Bulgaria",
+        "volume": "70773 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 104",
+        "name": "NeoCorp",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Zagreb, Croatia",
+        "volume": "90384 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 105",
+        "name": "SmartSolutions",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Athens, Greece",
+        "volume": "84306 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 106",
+        "name": "NeoSystems",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Luxembourg City, Luxembourg",
+        "volume": "12641 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 107",
+        "name": "UrbanNetworks",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Helsinki, Finland",
+        "volume": "90530 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 108",
+        "name": "BlueCare",
+        "industry": "Supermarket",
+        "products": ["Fresh produce", "Packaged goods", "Household items"],
+        "location": "Brussels, Belgium",
+        "volume": "92789 metric tons of organic waste",
+        "materials": ["Fruits and vegetables", "Plastic packaging", "Cardboard"],
+        "processes": "Procurement → Shelving → Checkout → Inventory management"
+      },
+      {
+        "id": "Company 109",
+        "name": "GlobalNetworks",
+        "industry": "Water Treatment",
+        "products": ["Purified water", "Treated sludge"],
+        "location": "Vienna, Austria",
+        "volume": "16201 cubic meters of treated water",
+        "materials": ["Raw water", "Coagulants", "Energy"],
+        "processes": "Coagulation → Sedimentation → Filtration → Disinfection"
+      },
+      {
+        "id": "Company 110",
+        "name": "UrbanSystems",
+        "industry": "Electronics Manufacturing",
+        "products": ["Smartphones", "Tablets", "Wearable devices"],
+        "location": "Brussels, Belgium",
+        "volume": "81858 metric tons of e-waste",
+        "materials": ["Silicon wafers", "Lithium-ion batteries", "Copper wiring"],
+        "processes": "PCB printing → Component assembly → Firmware installation → Quality control"
+      }
+    ]
+  }

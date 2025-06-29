@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revolutionary AI Matching Platform</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; margin: 0; }
+        .hero { 
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            padding: 6rem 2rem;
+            text-align: center;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+        .feature-card { background: white; border-radius: 8px; padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .cta { 
+            background: #4CAF50;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+    </style>
+    <script>
+      // Check if user has seen the landing page
+      if (!localStorage.getItem('symbioflows-landing-seen')) {
+        window.location.href = '/investor.html';
+      }
+    </script>
+</head>
+<body>
+    <section class="hero">
+        <h1>AI-Powered Matching That Outperforms GPT-4</h1>
+        <p>Specialized graph neural networks for complex matching scenarios</p>
+        <a href="/demo.html" class="cta">Try Live Demo</a>
+        <a href="/investor.html" class="cta" style="background: #6e8efb;">Investor Information</a>
+    </section>
+
+    <div class="container">
+        <div class="features">
+            <div class="feature-card">
+                <h3>Healthcare Optimization</h3>
+                <p>3x better patient-staff matching than traditional systems</p>
+            </div>
+            <div class="feature-card">
+                <h3>Real-Time Adaptation</h3>
+                <p>Continuously improves based on new data</p>
+            </div>
+            <div class="feature-card">
+                <h3>Explainable AI</h3>
+                <p>Clear reasoning behind every match</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 4rem 0;">
+            <h2>See It In Action</h2>
+            <video width="800" controls style="max-width: 100%; border-radius: 8px; margin: 2rem 0;">
+                <source src="file:///C:/Users/amrey/Videos/Captures/Vite%20+%20React%20+%20TS%20-%20Google%20Chrome%202025-06-26%2003-56-30.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <h2>Ready to Transform Your Matching Process?</h2>
+            <a href="mailto:contact@aimatching.com" class="cta">Contact Our Team</a>
+        </div>
+    </div>
+</body>
+</html>

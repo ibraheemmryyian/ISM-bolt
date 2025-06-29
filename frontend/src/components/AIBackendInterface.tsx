@@ -55,7 +55,7 @@ export class AIService implements AIBackendInterface {
         action: 'View Match',
         metadata: {
           ...matchResult,
-          blockchainStatus: matchResult.blockchainStatus
+          trust_status: matchResult.trust_status
         }
       };
 
@@ -122,7 +122,7 @@ export class AIService implements AIBackendInterface {
         ...material,
         match_score: matchResult.revolutionary_score,
         sustainability_score: matchResult.sustainability_score,
-        blockchainStatus: matchResult.blockchainStatus
+        trust_status: matchResult.trust_status
       }];
     } catch (error) {
       console.error('Error finding material matches:', error);

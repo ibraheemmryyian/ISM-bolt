@@ -16,6 +16,7 @@ export function MaterialForm({ onClose, type }: MaterialFormProps) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [listingType, setListingType] = useState<'sell' | 'buy'>('sell');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,16 +27,47 @@ export function MaterialForm({ onClose, type }: MaterialFormProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Ensure company exists for this user
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      if (!company) {
+        // Try to create company record with minimal info
+        await supabase.from('companies').insert([
+          {
+            id: user.id,
+            name: user.user_metadata?.company_name || user.email,
+            email: user.email,
+            role: 'user'
+          },
+        ]);
+      }
+
       const { error: err } = await supabase.from('materials').insert([
         {
           ...formData,
-          type,
+          type: listingType === 'sell' ? 'waste' : 'requirement',
           quantity: parseFloat(formData.quantity),
           company_id: user.id
         },
       ]);
 
       if (err) throw err;
+      
+      // Generate new matches for this company
+      try {
+        await fetch('/api/auto-generate-matches', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyId: user.id })
+        });
+      } catch (matchError) {
+        console.error('Error generating matches:', matchError);
+        // Don't fail the form submission if match generation fails
+      }
+      
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to submit material. Please try again.');
@@ -58,6 +90,23 @@ export function MaterialForm({ onClose, type }: MaterialFormProps) {
         <h2 className="text-2xl font-bold mb-6">
           {type === 'waste' ? 'List Waste Material' : 'List Required Material'}
         </h2>
+
+        <div className="mb-4 flex space-x-2">
+          <button
+            type="button"
+            className={`px-4 py-2 rounded-lg ${listingType === 'sell' ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+            onClick={() => setListingType('sell')}
+          >
+            Sell (Waste)
+          </button>
+          <button
+            type="button"
+            className={`px-4 py-2 rounded-lg ${listingType === 'buy' ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+            onClick={() => setListingType('buy')}
+          >
+            Buy (Requirement)
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">

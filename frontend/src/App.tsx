@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Factory, Recycle, Search, TrendingUp, Users, Workflow } from 'lucide-react';
+import { Factory, Recycle, Users, Workflow, Home } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { AuthModal } from './components/AuthModal';
 import { MaterialForm } from './components/MaterialForm';
@@ -7,129 +7,29 @@ import { AdminHub } from './components/AdminHub';
 import { OnboardingForm } from './components/OnboardingForm';
 import { GlobalMap } from './components/GlobalMap';
 import { RoleInfo } from './components/RoleInfo';
-import { Dashboard } from './components/Dashboard';
+import Dashboard from './components/Dashboard';
 import { Marketplace } from './components/Marketplace';
 import { isUserAdmin } from './lib/supabase';
+import { TransactionPage } from './components/TransactionPage';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import AIOnboardingWizard from './components/AIOnboardingWizard';
+import GreenInitiatives from './components/GreenInitiatives';
+import PersonalPortfolio from './components/PersonalPortfolio';
+import { NotificationsPanel } from './components/NotificationsPanel';
+import { ChatsPanel } from './components/ChatsPanel';
+import { AdminAccessPage } from './components/AdminAccessPage';
+import { ReviewAIListings } from './components/ReviewAIListings';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
-type CurrentView = 'home' | 'dashboard' | 'marketplace' | 'admin';
+// Import new comprehensive analysis components
+import EnhancedMatchingInterface from './components/EnhancedMatchingInterface';
+import ComprehensiveMatchAnalysis from './components/ComprehensiveMatchAnalysis';
+import DetailedCostBreakdown from './components/DetailedCostBreakdown';
 
-function App() {
-  const [session, setSession] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showMaterialForm, setShowMaterialForm] = useState<'waste' | 'requirement' | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [currentView, setCurrentView] = useState<CurrentView>('home');
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      } else {
-        setIsAdmin(false);
-        setCurrentView('home');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkAdminStatus = async (userId: string) => {
-    const adminStatus = await isUserAdmin(userId);
-    setIsAdmin(adminStatus);
-  };
-
-  const handleAction = () => {
-    if (!session) {
-      setShowAuthModal(true);
-    } else if (isAdmin) {
-      setCurrentView('admin');
-    } else {
-      setCurrentView('dashboard');
-    }
-  };
-
-  const handleListMaterials = () => {
-    if (session) {
-      setShowMaterialForm('waste');
-    } else {
-      setShowAuthModal(true);
-    }
-  };
-
-  const handleFindResources = () => {
-    if (session) {
-      setShowMaterialForm('requirement');
-    } else {
-      setShowAuthModal(true);
-    }
-  };
-
-  const handleNavigation = (view: CurrentView) => {
-    if (view === 'dashboard' || view === 'marketplace') {
-      if (!session) {
-        setShowAuthModal(true);
-        return;
-      }
-    }
-    setCurrentView(view);
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setCurrentView('home');
-  };
-
-  // Render different views based on current state
-  if (currentView === 'admin' && isAdmin) {
-    return (
-      <div>
-        <nav className="bg-slate-900 p-4">
-          <div className="container mx-auto flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <Workflow className="h-8 w-8 text-emerald-400" />
-              <span className="text-2xl font-bold text-white">SymbioFlow</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setCurrentView('home')}
-                className="text-white hover:text-emerald-400 transition"
-              >
-                Back to Main Site
-              </button>
-              <button
-                onClick={handleSignOut}
-                className="text-white hover:text-emerald-400 transition"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </nav>
-        <AdminHub />
-      </div>
-    );
-  }
-
-  if (currentView === 'dashboard' && session) {
-    return <Dashboard onNavigate={handleNavigation} onSignOut={handleSignOut} />;
-  }
-
-  if (currentView === 'marketplace' && session) {
-    return <Marketplace onNavigate={handleNavigation} onSignOut={handleSignOut} />;
-  }
-
-  // Home page
+function LandingPage({ onGetStarted, onMarketplace, session, isAdmin, handleSignOut }: any) {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
       {/* Hero Section */}
@@ -141,12 +41,11 @@ function App() {
             className="w-full h-[600px] object-cover opacity-20"
           />
         </div>
-        
         <nav className="relative z-10 container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Workflow className="h-8 w-8 text-emerald-400" />
-              <span className="text-2xl font-bold text-white">SymbioFlow</span>
+              <span className="text-2xl font-bold text-white">SymbioFlows</span>
             </div>
             <div className="hidden md:flex space-x-8">
               <a href="#how-it-works" className="text-gray-300 hover:text-white transition">How It Works</a>
@@ -155,13 +54,13 @@ function App() {
               {session && (
                 <>
                   <button
-                    onClick={() => handleNavigation('dashboard')}
+                    onClick={() => navigate('/dashboard')}
                     className="text-gray-300 hover:text-white transition"
                   >
                     Dashboard
                   </button>
                   <button
-                    onClick={() => handleNavigation('marketplace')}
+                    onClick={() => navigate('/marketplace')}
                     className="text-gray-300 hover:text-white transition"
                   >
                     Marketplace
@@ -173,10 +72,13 @@ function App() {
               {session ? (
                 <>
                   <button 
-                    onClick={() => handleNavigation('dashboard')}
+                    onClick={() => navigate('/dashboard')}
                     className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition"
                   >
-                    {isAdmin ? 'Admin Dashboard' : 'My Dashboard'}
+                    {(() => {
+                      console.log('isAdmin state:', isAdmin);
+                      return isAdmin ? 'Admin Dashboard' : 'My Dashboard';
+                    })()}
                   </button>
                   <button
                     onClick={handleSignOut}
@@ -187,7 +89,7 @@ function App() {
                 </>
               ) : (
                 <button 
-                  onClick={handleAction}
+                  onClick={onGetStarted}
                   className="bg-emerald-500 text-white px-6 py-2 rounded-lg hover:bg-emerald-600 transition"
                 >
                   Get Started
@@ -196,7 +98,6 @@ function App() {
             </div>
           </div>
         </nav>
-
         <div className="relative z-10 container mx-auto px-6 py-24 text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
             Connecting the Circular Economy
@@ -205,15 +106,25 @@ function App() {
             Join our global network of researchers, industries, and innovators building a sustainable future through resource optimization and waste reduction.
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center">
+            {session ? (
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="bg-emerald-500 text-white px-8 py-4 rounded-lg hover:bg-emerald-600 transition flex items-center justify-center space-x-2"
+              >
+                <Users className="h-5 w-5" />
+                <span>Go to Dashboard</span>
+              </button>
+            ) : (
             <button 
-              onClick={handleAction}
+                onClick={onGetStarted}
               className="bg-emerald-500 text-white px-8 py-4 rounded-lg hover:bg-emerald-600 transition flex items-center justify-center space-x-2"
             >
               <Users className="h-5 w-5" />
               <span>Get Started</span>
             </button>
+            )}
             <button 
-              onClick={() => handleNavigation('marketplace')}
+              onClick={onMarketplace}
               className="bg-slate-700 text-white px-8 py-4 rounded-lg hover:bg-slate-600 transition flex items-center justify-center space-x-2"
             >
               <Factory className="h-5 w-5" />
@@ -223,122 +134,266 @@ function App() {
         </div>
       </header>
 
-      {/* Features Section */}
-      <section id="how-it-works" className="py-24 bg-slate-800">
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20 bg-slate-800">
         <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-white text-center mb-16">How It Works</h2>
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="bg-slate-700 p-8 rounded-xl">
-              <div className="bg-emerald-500/10 p-3 rounded-lg w-fit mb-6">
-                <Factory className="h-6 w-6 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-4">List Resources</h3>
-              <p className="text-gray-300">
-                Register your organization and share your resource needs or available materials.
-              </p>
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">How It Works</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-slate-700 rounded-xl p-6 shadow-sm flex flex-col items-center">
+              <Users className="h-10 w-10 text-emerald-400 mb-4" />
+              <h3 className="font-semibold text-lg text-white mb-2">AI-Powered Onboarding</h3>
+              <p className="text-slate-200 text-center">Our AI assistant guides you through a simple conversation to understand your company's needs and opportunities.</p>
             </div>
-            <div className="bg-slate-700 p-8 rounded-xl">
-              <div className="bg-emerald-500/10 p-3 rounded-lg w-fit mb-6">
-                <Recycle className="h-6 w-6 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-4">AI Matching</h3>
-              <p className="text-gray-300">
-                Our AI system connects you with compatible partners based on your needs and capabilities.
-              </p>
+            <div className="bg-slate-700 rounded-xl p-6 shadow-sm flex flex-col items-center">
+              <Factory className="h-10 w-10 text-emerald-400 mb-4" />
+              <h3 className="font-semibold text-lg text-white mb-2">Smart Matching</h3>
+              <p className="text-slate-200 text-center">Our AI continuously finds the best matches for your waste streams and resource needs with other companies.</p>
             </div>
-            <div className="bg-slate-700 p-8 rounded-xl">
-              <div className="bg-emerald-500/10 p-3 rounded-lg w-fit mb-6">
-                <TrendingUp className="h-6 w-6 text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-4">Create Value</h3>
-              <p className="text-gray-300">
-                Transform waste into resources and build sustainable partnerships.
-              </p>
+            <div className="bg-slate-700 rounded-xl p-6 shadow-sm flex flex-col items-center">
+              <Recycle className="h-10 w-10 text-emerald-400 mb-4" />
+              <h3 className="font-semibold text-lg text-white mb-2">Grow & Save</h3>
+              <p className="text-slate-200 text-center">Connect with partners, reduce costs, improve sustainability, and track your progress with personalized insights.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Global Map Section */}
-      <section id="map">
-        <GlobalMap />
-      </section>
-
-      {/* Role Information Section */}
-      <section id="roles">
-        <RoleInfo />
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-24 bg-slate-900">
+      {/* Global Impact Section */}
+      <section id="map" className="py-20 bg-slate-900">
         <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-12 text-center">
-            <div>
-              <div className="text-4xl font-bold text-emerald-400 mb-2">500+</div>
-              <div className="text-gray-300">Active Organizations</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-emerald-400 mb-2">1,200+</div>
-              <div className="text-gray-300">Successful Matches</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-emerald-400 mb-2">50,000t</div>
-              <div className="text-gray-300">Waste Reduced</div>
-            </div>
-          </div>
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">Global Impact</h2>
+          <GlobalMap />
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-slate-800">
-        <div className="container mx-auto px-6 text-center">
-          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-12">
-            <h2 className="text-3xl font-bold text-white mb-6">
-              Ready to Join the Circular Economy?
-            </h2>
-            <p className="text-white/90 mb-8 max-w-2xl mx-auto">
-              Start your journey towards sustainable business practices and resource efficiency today.
-            </p>
-            <button 
-              onClick={handleAction}
-              className="bg-white text-emerald-600 px-8 py-4 rounded-lg hover:bg-gray-100 transition flex items-center space-x-2 mx-auto"
-            >
-              <Users className="h-5 w-5" />
-              <span>Join the Network</span>
-            </button>
-          </div>
+      {/* How to Help Section */}
+      <section id="roles" className="py-20 bg-slate-800">
+        <div className="container mx-auto px-6">
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">How to Help</h2>
+          <RoleInfo />
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 py-12">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Workflow className="h-6 w-6 text-emerald-400" />
-              <span className="text-xl font-bold text-white">SymbioFlow</span>
-            </div>
-            <div className="text-gray-400 text-sm">
-              © 2025 SymbioFlow. All rights reserved.
-            </div>
-          </div>
-        </div>
+      <footer className="py-8 bg-slate-900 text-center text-gray-400 text-sm">
+        &copy; {new Date().getFullYear()} SymbioFlows. All rights reserved.
       </footer>
-
-      {/* Modals */}
-      {showAuthModal && (
-        <AuthModal onClose={() => setShowAuthModal(false)} />
-      )}
-      {showMaterialForm && (
-        <MaterialForm 
-          type={showMaterialForm} 
-          onClose={() => setShowMaterialForm(null)} 
-        />
-      )}
-      {showOnboarding && (
-        <OnboardingForm onClose={() => setShowOnboarding(false)} />
-      )}
     </div>
+  );
+}
+
+function App() {
+  const [session, setSession] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showMaterialForm, setShowMaterialForm] = useState<'waste' | 'requirement' | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    // Check if user has seen the landing page
+    const hasSeenLanding = localStorage.getItem('symbioflows-landing-seen');
+    
+    if (!hasSeenLanding) {
+      // Redirect to investor landing page for first-time visitors
+      window.location.href = '/investor.html';
+      return;
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user) {
+        checkAdminStatus(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkAdminStatus = async (userId: string) => {
+    try {
+      const adminStatus = await isUserAdmin(userId);
+      setIsAdmin(adminStatus);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      setIsAdmin(false);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  return (
+    <ErrorBoundary>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={
+              <LandingPage 
+                onGetStarted={() => setShowAuthModal(true)}
+                onMarketplace={() => window.location.href = '/marketplace'}
+                session={session}
+                isAdmin={isAdmin}
+                handleSignOut={handleSignOut}
+              />
+            } />
+            <Route path="/dashboard" element={
+              session ? (
+                <Dashboard onSignOut={handleSignOut} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/marketplace" element={
+              session ? (
+                <Marketplace onSignOut={handleSignOut} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/admin" element={
+              isAdmin ? (
+                <AdminHub />
+              ) : (
+                <AdminAccessPage />
+              )
+            } />
+            <Route path="/onboarding" element={
+              session ? (
+                <AIOnboardingWizard />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/green-initiatives" element={
+              session ? (
+                <GreenInitiatives />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/portfolio" element={
+              session ? (
+                <PersonalPortfolio />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/notifications" element={
+              session ? (
+                <NotificationsPanel />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/chats" element={
+              session ? (
+                <ChatsPanel />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/transaction/:transactionId" element={
+              session ? (
+                <TransactionPage />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/review-ai-listings" element={
+              session ? (
+                <ReviewAIListings onConfirm={() => {
+                  // Handle confirmation - navigate to dashboard
+                  window.location.href = '/dashboard';
+                }} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            
+            {/* New Comprehensive Analysis Routes */}
+            <Route path="/enhanced-matching" element={
+              session ? (
+                <EnhancedMatchingInterface userId={session.user.id} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            
+            <Route path="/comprehensive-analysis" element={
+              session ? (
+                <ComprehensiveMatchAnalysis 
+                  buyerData={{ id: session.user.id }}
+                  sellerData={{ id: 'demo-seller' }}
+                  matchData={{ id: 'demo-match' }}
+                />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            
+            <Route path="/cost-breakdown" element={
+              session ? (
+                <DetailedCostBreakdown 
+                  buyerData={{ id: session.user.id }}
+                  sellerData={{ id: 'demo-seller' }}
+                  matchData={{ id: 'demo-match' }}
+                />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+          </Routes>
+
+          {/* Auth Modal */}
+          {showAuthModal && (
+            <AuthModal 
+              onClose={() => setShowAuthModal(false)}
+            />
+          )}
+
+          {/* Material Form Modal */}
+          {showMaterialForm && (
+            <MaterialForm 
+              type={showMaterialForm}
+              onClose={() => setShowMaterialForm(null)}
+            />
+          )}
+
+          {/* Onboarding Modal */}
+          {showOnboarding && (
+            <OnboardingForm 
+              onClose={() => setShowOnboarding(false)}
+            />
+          )}
+
+          {/* Global Toast Container */}
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
