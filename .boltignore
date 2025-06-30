@@ -1,0 +1,55 @@
+# Large files that exceed Bolt's token limit
+ai_test_report.json
+advanced_onboarding_ai.py
+enterprise_infrastructure.py
+plugin_ecosystem.py
+advanced_ai_features.py
+core_matching_engine.py
+
+# All test files
+test_*.py
+test_*.js
+*test*.py
+*test*.js
+comprehensive_ai_test_suite.py
+ai_test_suite.py
+
+# Large documentation files
+COMPREHENSIVE_FEATURE_CHECKLIST.md
+TECH_STACK_DOCUMENTATION.md
+PROJECT_DOCUMENTATION.md
+INVESTOR_DOCUMENTATION.md
+INVESTOR_PRESENTATION.md
+MARKET_RESEARCH.md
+DEMO_GUIDE.md
+PRO_EDITION_GUIDE.md
+PRODUCTION_READINESS.md
+LAUNCH_READINESS_CHECKLIST.md
+TESTING_CHECKLIST.md
+TROUBLESHOOTING.md
+
+# Cache and build files
+__pycache__/
+.pytest_cache/
+node_modules/
+*.log
+*.pyc
+*.bak
+*.backup
+
+# Large JSON files
+recon_test.json
+ai_improvement_insights.json
+
+# Non-essential files
+checklist revo symai
+launch.bat
+create-env-files.bat
+app.py
+package.json
+CLEANUP_PLAN.md
+
+# Directories to exclude
+ai_service/
+ai-service/
+ai_service_flask/ 
