@@ -1,0 +1,306 @@
+# Pod Security Standards
+apiVersion: v1
+kind: PodSecurityPolicy
+metadata:
+  name: ism-restricted-psp
+  namespace: ism-platform
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1
+        max: 65535
+  readOnlyRootFilesystem: true
+---
+# Network Policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ism-frontend-network-policy
+  namespace: ism-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: ism-frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 3000
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ism-backend
+      ports:
+        - protocol: TCP
+          port: 3000
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ism-backend
+      ports:
+        - protocol: TCP
+          port: 3001
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ism-backend-network-policy
+  namespace: ism-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: ism-backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ism-frontend
+      ports:
+        - protocol: TCP
+          port: 3001
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ism-ai-services
+      ports:
+        - protocol: TCP
+          port: 3001
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ism-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ism-ai-services
+      ports:
+        - protocol: TCP
+          port: 5000
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ism-ai-services-network-policy
+  namespace: ism-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: ism-ai-services
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ism-backend
+      ports:
+        - protocol: TCP
+          port: 5000
+        - protocol: TCP
+          port: 5001
+        - protocol: TCP
+          port: 5002
+        - protocol: TCP
+          port: 5003
+        - protocol: TCP
+          port: 5004
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: ism-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ism-redis-network-policy
+  namespace: ism-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: ism-redis
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ism-backend
+      ports:
+        - protocol: TCP
+          port: 6379
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ism-ai-services
+      ports:
+        - protocol: TCP
+          port: 6379
+  egress:
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+---
+# RBAC Configuration
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ism-frontend-sa
+  namespace: ism-platform
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ism-backend-sa
+  namespace: ism-platform
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ism-ai-services-sa
+  namespace: ism-platform
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ism-frontend-role
+  namespace: ism-platform
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get"]
+    resourceNames: ["ism-config", "ism-secrets"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ism-backend-role
+  namespace: ism-platform
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get"]
+    resourceNames: ["ism-config", "ism-secrets"]
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ism-ai-services-role
+  namespace: ism-platform
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get"]
+    resourceNames: ["ism-config", "ism-secrets"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ism-frontend-rolebinding
+  namespace: ism-platform
+subjects:
+  - kind: ServiceAccount
+    name: ism-frontend-sa
+    namespace: ism-platform
+roleRef:
+  kind: Role
+  name: ism-frontend-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ism-backend-rolebinding
+  namespace: ism-platform
+subjects:
+  - kind: ServiceAccount
+    name: ism-backend-sa
+    namespace: ism-platform
+roleRef:
+  kind: Role
+  name: ism-backend-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ism-ai-services-rolebinding
+  namespace: ism-platform
+subjects:
+  - kind: ServiceAccount
+    name: ism-ai-services-sa
+    namespace: ism-platform
+roleRef:
+  kind: Role
+  name: ism-ai-services-role
+  apiGroup: rbac.authorization.k8s.io 

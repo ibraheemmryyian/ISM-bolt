@@ -1,0 +1,899 @@
+Company 11
+Name: EcoSystems
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Vilnius, Lithuania
+Volume: 88999 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 12
+Name: EcoWorks
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Sofia, Bulgaria
+Volume: 68588 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 13
+Name: PrimeCenter
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Oslo, Norway
+Volume: 31252 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 14
+Name: SmartCare
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Brno, Czech Republic
+Volume: 56434 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 15
+Name: NovaMart
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Amsterdam, Netherlands
+Volume: 30736 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 16
+Name: PureIndustries
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Dublin, Ireland
+Volume: 91463 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 17
+Name: NextGenCorp
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Amsterdam, Netherlands
+Volume: 37192 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 18
+Name: MediMart
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Warsaw, Poland
+Volume: 38030 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 19
+Name: NextGenCare
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Oslo, Norway
+Volume: 82082 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 20
+Name: GlobalIndustries
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Brno, Czech Republic
+Volume: 5691 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 21
+Name: EcoIndustries
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Vilnius, Lithuania
+Volume: 96247 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 22
+Name: UrbanCenter
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Luxembourg City, Luxembourg
+Volume: 72861 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 23
+Name: NextGenDynamics
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Brno, Czech Republic
+Volume: 75715 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 24
+Name: UrbanIndustries
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Warsaw, Poland
+Volume: 29232 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 25
+Name: NeoMart
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Zagreb, Croatia
+Volume: 37132 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 26
+Name: NeoGroup
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Brno, Czech Republic
+Volume: 46969 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 27
+Name: NextGenSolutions
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Amsterdam, Netherlands
+Volume: 57315 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 28
+Name: EcoIndustries
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Brno, Czech Republic
+Volume: 37964 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 29
+Name: UrbanCenter
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Zagreb, Croatia
+Volume: 77175 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 30
+Name: SmartSolutions
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Vilnius, Lithuania
+Volume: 99904 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 31
+Name: UrbanCorp
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Dublin, Ireland
+Volume: 38197 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 32
+Name: NovaCare
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Warsaw, Poland
+Volume: 16929 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 33
+Name: MediCenter
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Vienna, Austria
+Volume: 62183 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 34
+Name: PureGroup
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Oslo, Norway
+Volume: 32222 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 35
+Name: MediMart
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Tallinn, Estonia
+Volume: 60969 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 36
+Name: GreenCorp
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Amsterdam, Netherlands
+Volume: 48671 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 37
+Name: BlueGroup
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Athens, Greece
+Volume: 38928 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 38
+Name: PrimeGroup
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Brno, Czech Republic
+Volume: 93249 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 39
+Name: UrbanCenter
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Zagreb, Croatia
+Volume: 42436 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 40
+Name: TransCenter
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Luxembourg City, Luxembourg
+Volume: 61477 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 41
+Name: NextGenCorp
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Amsterdam, Netherlands
+Volume: 24029 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 42
+Name: BlueMart
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Tallinn, Estonia
+Volume: 36262 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 43
+Name: NovaIndustries
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Zagreb, Croatia
+Volume: 7975 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 44
+Name: GlobalSystems
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Vienna, Austria
+Volume: 75947 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 45
+Name: SmartGroup
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Brussels, Belgium
+Volume: 74633 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 46
+Name: SmartSolutions
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Oslo, Norway
+Volume: 5216 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 47
+Name: SmartCare
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Athens, Greece
+Volume: 26827 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 48
+Name: EcoSystems
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Amsterdam, Netherlands
+Volume: 61738 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 49
+Name: NeoCorp
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Brussels, Belgium
+Volume: 88578 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 50
+Name: PrimeDynamics
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Lisbon, Portugal
+Volume: 89252 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 51
+Name: TransCare
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Warsaw, Poland
+Volume: 18291 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 52
+Name: GreenGroup
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Zagreb, Croatia
+Volume: 83866 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 53
+Name: BlueGroup
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Ljubljana, Slovenia
+Volume: 55150 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 54
+Name: EcoIndustries
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Bucharest, Romania
+Volume: 15513 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 55
+Name: BlueGroup
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Amsterdam, Netherlands
+Volume: 14742 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 56
+Name: EcoSystems
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Zagreb, Croatia
+Volume: 60890 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 57
+Name: MediIndustries
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Helsinki, Finland
+Volume: 62567 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 58
+Name: PrimeSolutions
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Warsaw, Poland
+Volume: 21896 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 59
+Name: BlueCare
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Oslo, Norway
+Volume: 76361 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 60
+Name: PureSolutions
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Warsaw, Poland
+Volume: 50049 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 61
+Name: BlueIndustries
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Ljubljana, Slovenia
+Volume: 25225 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 62
+Name: GreenGroup
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Helsinki, Finland
+Volume: 18996 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 63
+Name: PrimeSolutions
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Athens, Greece
+Volume: 43659 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 64
+Name: NeoNetworks
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Oslo, Norway
+Volume: 46402 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 65
+Name: TransDynamics
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Ljubljana, Slovenia
+Volume: 96077 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 66
+Name: NextGenMart
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Brno, Czech Republic
+Volume: 22207 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 67
+Name: BlueGroup
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Zagreb, Croatia
+Volume: 9015 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 68
+Name: EcoGroup
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Ljubljana, Slovenia
+Volume: 57556 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 69
+Name: NextGenDynamics
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Amsterdam, Netherlands
+Volume: 16711 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 70
+Name: GreenNetworks
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Helsinki, Finland
+Volume: 67175 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 71
+Name: BlueIndustries
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Brussels, Belgium
+Volume: 51141 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 72
+Name: PrimeCenter
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Amsterdam, Netherlands
+Volume: 54498 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 73
+Name: MediIndustries
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Vienna, Austria
+Volume: 17162 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 74
+Name: SmartGroup
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Vienna, Austria
+Volume: 36494 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 75
+Name: MediCenter
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Warsaw, Poland
+Volume: 93041 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 76
+Name: MediCare
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Warsaw, Poland
+Volume: 27489 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 77
+Name: MediWorks
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Bucharest, Romania
+Volume: 16988 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 78
+Name: EcoMart
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Ljubljana, Slovenia
+Volume: 37424 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 79
+Name: NextGenCare
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Bucharest, Romania
+Volume: 29336 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 80
+Name: UrbanIndustries
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Dublin, Ireland
+Volume: 82209 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 81
+Name: NextGenSolutions
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Vilnius, Lithuania
+Volume: 28008 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 82
+Name: NextGenWorks
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Dublin, Ireland
+Volume: 12776 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 83
+Name: MediMart
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Bucharest, Romania
+Volume: 95576 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 84
+Name: PrimeCare
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Bucharest, Romania
+Volume: 36058 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 85
+Name: BlueDynamics
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Warsaw, Poland
+Volume: 54357 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 86
+Name: EcoGroup
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Oslo, Norway
+Volume: 98202 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 87
+Name: GlobalCenter
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Lisbon, Portugal
+Volume: 85657 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 88
+Name: BlueNetworks
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Oslo, Norway
+Volume: 26195 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 89
+Name: UrbanIndustries
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Brno, Czech Republic
+Volume: 88448 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 90
+Name: PureWorks
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Oslo, Norway
+Volume: 48539 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 91
+Name: MediGroup
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Vienna, Austria
+Volume: 72403 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 92
+Name: BlueSolutions
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Ljubljana, Slovenia
+Volume: 17967 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control
+
+Company 93
+Name: NextGenMart
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Bucharest, Romania
+Volume: 28613 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 94
+Name: EcoGroup
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Sofia, Bulgaria
+Volume: 8974 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 95
+Name: PrimeIndustries
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Brussels, Belgium
+Volume: 30298 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 96
+Name: NextGenWorks
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Helsinki, Finland
+Volume: 99794 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 97
+Name: NextGenWorks
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Dublin, Ireland
+Volume: 77153 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 98
+Name: SmartSystems
+Industry: Plastic Recycling
+Products: Plastic pellets, Recycled containers
+Location: Vienna, Austria
+Volume: 57088 metric tons of plastic pellets
+Materials: Post-consumer plastics, HDPE, LDPE
+Processes: Sorting → Shredding → Washing → Pelletizing
+
+Company 99
+Name: GlobalDynamics
+Industry: Hospital
+Products: Medical imaging services, Emergency care, Surgical procedures
+Location: Lisbon, Portugal
+Volume: 52322 metric tons of medical waste
+Materials: Medical supplies, Electricity, Sterile water
+Processes: Patient intake → Diagnosis → Treatment → Discharge
+
+Company 100
+Name: SmartSystems
+Industry: Furniture Production
+Products: Office chairs, Wooden tables, Bookshelves
+Location: Brussels, Belgium
+Volume: 76941 metric tons of wood waste
+Materials: Plywood, Steel frames, Foam padding
+Processes: Cutting → Assembling → Upholstering → Polishing
+
+Company 101
+Name: BlueCorp
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Vilnius, Lithuania
+Volume: 22604 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 102
+Name: SmartDynamics
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Helsinki, Finland
+Volume: 72179 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 103
+Name: PrimeCorp
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Sofia, Bulgaria
+Volume: 70773 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 104
+Name: NeoCorp
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Zagreb, Croatia
+Volume: 90384 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 105
+Name: SmartSolutions
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Athens, Greece
+Volume: 84306 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 106
+Name: NeoSystems
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Luxembourg City, Luxembourg
+Volume: 12641 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 107
+Name: UrbanNetworks
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Helsinki, Finland
+Volume: 90530 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 108
+Name: BlueCare
+Industry: Supermarket
+Products: Fresh produce, Packaged goods, Household items
+Location: Brussels, Belgium
+Volume: 92789 metric tons of organic waste
+Materials: Fruits and vegetables, Plastic packaging, Cardboard
+Processes: Procurement → Shelving → Checkout → Inventory management
+
+Company 109
+Name: GlobalNetworks
+Industry: Water Treatment
+Products: Purified water, Treated sludge
+Location: Vienna, Austria
+Volume: 16201 cubic meters of treated water
+Materials: Raw water, Coagulants, Energy
+Processes: Coagulation → Sedimentation → Filtration → Disinfection
+
+Company 110
+Name: UrbanSystems
+Industry: Electronics Manufacturing
+Products: Smartphones, Tablets, Wearable devices
+Location: Brussels, Belgium
+Volume: 81858 metric tons of e-waste
+Materials: Silicon wafers, Lithium-ion batteries, Copper wiring
+Processes: PCB printing → Component assembly → Firmware installation → Quality control

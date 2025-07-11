@@ -1,0 +1,192 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: ism-platform
+    environment: production
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Kubernetes API server
+  - job_name: 'kubernetes-apiservers'
+    kubernetes_sd_configs:
+      - role: endpoints
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+        action: keep
+        regex: default;kubernetes;https
+
+  # Kubernetes nodes
+  - job_name: 'kubernetes-nodes'
+    kubernetes_sd_configs:
+      - role: node
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+
+  # Kubernetes pods
+  - job_name: 'kubernetes-pods'
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        action: replace
+        target_label: kubernetes_pod_name
+
+  # ISM Frontend
+  - job_name: 'ism-frontend'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - ism-platform
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: ism-frontend
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        regex: "3000"
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_ip]
+        action: replace
+        target_label: __address__
+        regex: (.+)
+        replacement: $1:3000
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+    metrics_path: /health
+    scrape_interval: 30s
+
+  # ISM Backend
+  - job_name: 'ism-backend'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - ism-platform
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: ism-backend
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        regex: "3001"
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_ip]
+        action: replace
+        target_label: __address__
+        regex: (.+)
+        replacement: $1:3001
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+    metrics_path: /api/health
+    scrape_interval: 30s
+
+  # ISM AI Services
+  - job_name: 'ism-ai-services'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - ism-platform
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: ism-ai-services
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        regex: "5000"
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_ip]
+        action: replace
+        target_label: __address__
+        regex: (.+)
+        replacement: $1:5000
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+    metrics_path: /health
+    scrape_interval: 30s
+
+  # Redis
+  - job_name: 'ism-redis'
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - ism-platform
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        regex: ism-redis
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        regex: "6379"
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_ip]
+        action: replace
+        target_label: __address__
+        regex: (.+)
+        replacement: $1:6379
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+    scrape_interval: 30s
+
+  # Node Exporter
+  - job_name: 'node-exporter'
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+    scrape_interval: 30s
+
+  # cAdvisor
+  - job_name: 'cadvisor'
+    kubernetes_sd_configs:
+      - role: node
+    scheme: https
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      insecure_skip_verify: true
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+    scrape_interval: 30s 

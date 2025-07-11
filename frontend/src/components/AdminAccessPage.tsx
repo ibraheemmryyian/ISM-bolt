@@ -9,27 +9,23 @@ export function AdminAccessPage() {
 
   useEffect(() => {
     const tempAdmin = localStorage.getItem('temp-admin-access');
-    setIsAdmin(tempAdmin === 'true');
-  }, []);
+    if (tempAdmin === 'true') {
+      setIsAdmin(true);
+      // Redirect immediately to admin hub
+      navigate('/admin-hub');
+    }
+  }, [navigate]);
 
   const handleAccess = () => {
-    if (secretKey === 'secret123') {
+    if (secretKey === 'NA10EN') {
       localStorage.setItem('temp-admin-access', 'true');
       setIsAdmin(true);
-      setTimeout(() => {
-        navigate('/admin');
-      }, 1000);
+      // Redirect directly to admin hub
+      navigate('/admin-hub');
     } else {
-      alert('Invalid secret key!');
+      alert('Wrong password! Access denied.');
+      setSecretKey('');
     }
-  };
-
-  const handleDirectAccess = () => {
-    localStorage.setItem('temp-admin-access', 'true');
-    setIsAdmin(true);
-    setTimeout(() => {
-      navigate('/admin');
-    }, 1000);
   };
 
   return (
@@ -38,7 +34,7 @@ export function AdminAccessPage() {
         <div className="text-center mb-8">
           <Shield className="h-16 w-16 text-purple-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Admin Access</h1>
-          <p className="text-gray-600">Access the admin panel to manage users and subscriptions</p>
+          <p className="text-gray-600">Enter admin password to access the admin panel</p>
         </div>
 
         {isAdmin ? (
@@ -51,26 +47,22 @@ export function AdminAccessPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">Quick Access Methods:</h3>
-              <div className="space-y-2 text-sm text-blue-800">
-                <p>1. <strong>Dashboard Button:</strong> Go to dashboard and click "Admin Access"</p>
-                <p>2. <strong>Direct URL:</strong> Add ?admin=secret123 to any page</p>
-                <p>3. <strong>Secret Key:</strong> Enter the key below</p>
-              </div>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Enter Secret Key
+                Admin Password
               </label>
               <div className="flex space-x-2">
                 <input
                   type="password"
                   value={secretKey}
                   onChange={(e) => setSecretKey(e.target.value)}
-                  placeholder="Enter secret key"
+                  placeholder="Enter admin password"
                   className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAccess();
+                    }
+                  }}
                 />
                 <button
                   onClick={handleAccess}
@@ -79,17 +71,6 @@ export function AdminAccessPage() {
                   <Key className="h-4 w-4" />
                 </button>
               </div>
-            </div>
-
-            <div className="border-t pt-6">
-              <button
-                onClick={handleDirectAccess}
-                className="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg hover:bg-emerald-600 transition flex items-center justify-center space-x-2"
-              >
-                <Settings className="h-5 w-5" />
-                <span>Grant Admin Access</span>
-                <ArrowRight className="h-5 w-5" />
-              </button>
             </div>
 
             <div className="text-center">

@@ -264,12 +264,10 @@ export function ReviewAIListings({ onConfirm }: ReviewAIListingsProps) {
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <p className="text-red-800">{error}</p>
-            </div>
-          </div>
+          <div className="bg-red-100 text-red-700 p-2 rounded mb-4 text-center">{error}</div>
+        )}
+        {loading && (
+          <Loader2 className="h-6 w-6 animate-spin mx-auto my-4" />
         )}
         
         {/* Listings */}

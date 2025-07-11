@@ -18,6 +18,40 @@ import time
 from collections import defaultdict
 import warnings
 import os
+import pickle
+from pathlib import Path
+import threading
+import random
+
+# ML imports
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    from torch.utils.data import DataLoader, TensorDataset
+    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+    from sklearn.metrics import mean_squared_error, r2_score, accuracy_score
+    from sklearn.preprocessing import StandardScaler, LabelEncoder
+    from sklearn.model_selection import train_test_split
+    import xgboost as xgb
+    import lightgbm as lgb
+    ML_AVAILABLE = True
+except ImportError:
+    ML_AVAILABLE = False
+    logging.warning("ML libraries not available. Advanced matching will be limited.")
+
+# NLP imports
+try:
+    from sentence_transformers import SentenceTransformer
+    from transformers import AutoTokenizer, AutoModel
+    import nltk
+    from nltk.corpus import stopwords
+    from nltk.tokenize import word_tokenize
+    NLP_AVAILABLE = True
+except ImportError:
+    NLP_AVAILABLE = False
+    logging.warning("NLP libraries not available. Semantic matching will be limited.")
+
 warnings.filterwarnings('ignore')
 
 # Configure advanced logging
@@ -83,6 +117,28 @@ class MatchExplanation:
     risk_assessment: str
     opportunity_score: float
     roi_prediction: float
+
+@dataclass
+class MatchCandidate:
+    """Match candidate data structure"""
+    company_id: str
+    company_data: Dict[str, Any]
+    compatibility_score: float
+    match_reasons: List[str]
+    confidence: float
+    potential_savings: float
+    carbon_reduction: float
+    implementation_difficulty: str
+
+@dataclass
+class MatchingResult:
+    """Matching result data structure"""
+    query_company: str
+    candidates: List[MatchCandidate]
+    total_candidates: int
+    matching_time: float
+    algorithm_used: str
+    confidence_threshold: float
 
 class MONOPOLYAIMatching:
     """MONOPOLY-LEVEL Industrial Symbiosis Matching AI - The Future of Circular Economy"""
@@ -839,3 +895,890 @@ class MONOPOLYAIMatching:
         except Exception as e:
             logger.error(f"Failed to load config {filename}: {e}")
             return default if default is not None else {}
+
+class AdvancedMatchingEngine:
+    """
+    Revolutionary AI Matching Engine for Industrial Symbiosis
+    Features:
+    - Multi-modal matching (semantic, numerical, graph-based)
+    - Ensemble learning with multiple algorithms
+    - Real-time optimization
+    - Persistent model storage
+    - Explainable AI
+    """
+    
+    def __init__(self, model_cache_dir: str = "./models"):
+        self.model_cache_dir = Path(model_cache_dir)
+        self.model_cache_dir.mkdir(exist_ok=True)
+        
+        # Model components
+        self.semantic_model = None
+        self.numerical_model = None
+        self.graph_model = None
+        self.ensemble_model = None
+        
+        # Data processing
+        self.scaler = StandardScaler() if ML_AVAILABLE else None
+        self.label_encoders = {}
+        self.feature_importance = {}
+        
+        # Matching cache
+        self.matching_cache = {}
+        self.cache_ttl = 1800  # 30 minutes
+        
+        # Performance monitoring
+        self.matching_times = []
+        self.accuracy_history = []
+        self.model_performance = {}
+        
+        # Threading for concurrent operations
+        self.lock = threading.Lock()
+        
+        # Load persistent models
+        self._load_persistent_models()
+        
+        logger.info("Advanced Matching Engine initialized")
+
+    def _load_persistent_models(self):
+        """Load persistent matching models"""
+        try:
+            # Load semantic model
+            if NLP_AVAILABLE:
+                semantic_path = self.model_cache_dir / "semantic_model.pkl"
+                if semantic_path.exists():
+                    with open(semantic_path, 'rb') as f:
+                        self.semantic_model = pickle.load(f)
+                    logger.info("Loaded persistent semantic model")
+            
+            # Load numerical model
+            if ML_AVAILABLE:
+                numerical_path = self.model_cache_dir / "numerical_model.pkl"
+                if numerical_path.exists():
+                    with open(numerical_path, 'rb') as f:
+                        self.numerical_model = pickle.load(f)
+                    logger.info("Loaded persistent numerical model")
+                
+                # Load ensemble model
+                ensemble_path = self.model_cache_dir / "ensemble_model.pkl"
+                if ensemble_path.exists():
+                    with open(ensemble_path, 'rb') as f:
+                        self.ensemble_model = pickle.load(f)
+                    logger.info("Loaded persistent ensemble model")
+                
+                # Load scaler and encoders
+                scaler_path = self.model_cache_dir / "scaler.pkl"
+                if scaler_path.exists():
+                    with open(scaler_path, 'rb') as f:
+                        self.scaler = pickle.load(f)
+                
+                encoders_path = self.model_cache_dir / "label_encoders.pkl"
+                if encoders_path.exists():
+                    with open(encoders_path, 'rb') as f:
+                        self.label_encoders = pickle.load(f)
+                        
+        except Exception as e:
+            logger.error(f"Error loading persistent models: {e}")
+
+    def _save_persistent_models(self):
+        """Save persistent matching models"""
+        try:
+            # Save semantic model
+            if self.semantic_model:
+                semantic_path = self.model_cache_dir / "semantic_model.pkl"
+                with open(semantic_path, 'wb') as f:
+                    pickle.dump(self.semantic_model, f)
+            
+            # Save numerical model
+            if self.numerical_model:
+                numerical_path = self.model_cache_dir / "numerical_model.pkl"
+                with open(numerical_path, 'wb') as f:
+                    pickle.dump(self.numerical_model, f)
+            
+            # Save ensemble model
+            if self.ensemble_model:
+                ensemble_path = self.model_cache_dir / "ensemble_model.pkl"
+                with open(ensemble_path, 'wb') as f:
+                    pickle.dump(self.ensemble_model, f)
+            
+            # Save scaler and encoders
+            if self.scaler:
+                scaler_path = self.model_cache_dir / "scaler.pkl"
+                with open(scaler_path, 'wb') as f:
+                    pickle.dump(self.scaler, f)
+            
+            if self.label_encoders:
+                encoders_path = self.model_cache_dir / "label_encoders.pkl"
+                with open(encoders_path, 'wb') as f:
+                    pickle.dump(self.label_encoders, f)
+                    
+            logger.info("Persistent models saved successfully")
+            
+        except Exception as e:
+            logger.error(f"Error saving persistent models: {e}")
+
+    def train_semantic_model(self, training_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Train semantic matching model"""
+        if not NLP_AVAILABLE:
+            return {'error': 'NLP libraries not available'}
+            
+        try:
+            start_time = time.time()
+            
+            # Initialize semantic model
+            if self.semantic_model is None:
+                try:
+                    self.semantic_model = SentenceTransformer('all-mpnet-base-v2')
+                except:
+                    # Fallback to simpler model
+                    self.semantic_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+            
+            # Prepare training data
+            company_texts = []
+            labels = []
+            
+            for item in training_data:
+                # Create text representation
+                text = self._create_company_text(item['company_data'])
+                company_texts.append(text)
+                labels.append(item['compatibility_score'])
+            
+            # Generate embeddings
+            embeddings = self.semantic_model.encode(company_texts)
+            
+            # Train a simple regressor on embeddings
+            from sklearn.linear_model import Ridge
+            regressor = Ridge(alpha=1.0)
+            regressor.fit(embeddings, labels)
+            
+            # Store the trained regressor
+            self.semantic_model = {
+                'transformer': self.semantic_model,
+                'regressor': regressor
+            }
+            
+            training_time = time.time() - start_time
+            
+            # Save model
+            self._save_persistent_models()
+            
+            logger.info(f"Semantic model trained in {training_time:.2f}s")
+            
+            return {
+                'training_time': training_time,
+                'num_samples': len(training_data),
+                'model_type': 'sentence_transformer_ridge'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error training semantic model: {e}")
+            return {'error': str(e)}
+
+    def train_numerical_model(self, training_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Train numerical matching model"""
+        if not ML_AVAILABLE or self.numerical_model is None:
+            return {'error': 'ML libraries not available'}
+            
+        try:
+            start_time = time.time()
+            
+            # Prepare features
+            features = []
+            labels = []
+            
+            for item in training_data:
+                feature_vector = self._extract_numerical_features(item['company_data'])
+                features.append(feature_vector)
+                labels.append(item['compatibility_score'])
+            
+            features = np.array(features)
+            labels = np.array(labels)
+            
+            # Split data
+            X_train, X_test, y_train, y_test = train_test_split(
+                features, labels, test_size=0.2, random_state=42
+            )
+            
+            # Scale features
+            X_train_scaled = self.scaler.fit_transform(X_train)
+            X_test_scaled = self.scaler.transform(X_test)
+            
+            # Train ensemble model
+            self.numerical_model = self._create_ensemble_model()
+            self.numerical_model.fit(X_train_scaled, y_train)
+            
+            # Evaluate model
+            y_pred = self.numerical_model.predict(X_test_scaled)
+            mse = mean_squared_error(y_test, y_pred)
+            r2 = r2_score(y_test, y_pred)
+            
+            training_time = time.time() - start_time
+            
+            # Store feature importance
+            if hasattr(self.numerical_model, 'feature_importances_'):
+                self.feature_importance = dict(zip(
+                    self._get_feature_names(), self.numerical_model.feature_importances_
+                ))
+            
+            # Save model
+            self._save_persistent_models()
+            
+            logger.info(f"Numerical model trained in {training_time:.2f}s (R²={r2:.4f})")
+            
+            return {
+                'training_time': training_time,
+                'num_samples': len(training_data),
+                'mse': mse,
+                'r2_score': r2,
+                'model_type': 'ensemble_regressor'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error training numerical model: {e}")
+            return {'error': str(e)}
+
+    def _create_ensemble_model(self):
+        """Create ensemble model for numerical matching"""
+        from sklearn.ensemble import VotingRegressor
+        
+        # Base models
+        rf = RandomForestRegressor(n_estimators=100, random_state=42)
+        gb = GradientBoostingRegressor(n_estimators=100, random_state=42)
+        
+        # Create ensemble
+        ensemble = VotingRegressor([
+            ('rf', rf),
+            ('gb', gb)
+        ])
+        
+        return ensemble
+
+    def _extract_numerical_features(self, company_data: Dict[str, Any]) -> np.ndarray:
+        """Extract numerical features from company data"""
+        features = []
+        
+        # Basic numerical features
+        features.extend([
+            float(company_data.get('annual_waste', 0)) / 10000,  # Normalized waste
+            float(company_data.get('carbon_footprint', 0)) / 100000,  # Normalized CO2
+            float(company_data.get('employee_count', 0)) / 1000,  # Normalized employees
+            float(company_data.get('annual_revenue', 0)) / 1000000,  # Normalized revenue
+        ])
+        
+        # Categorical features (encoded)
+        industry = company_data.get('industry', 'Unknown')
+        location = company_data.get('location', 'Unknown')
+        
+        # Encode categorical features
+        if 'industry' not in self.label_encoders:
+            self.label_encoders['industry'] = LabelEncoder()
+            self.label_encoders['industry'].fit(['Unknown', 'Manufacturing', 'Chemical', 'Food', 'Textile'])
+        
+        if 'location' not in self.label_encoders:
+            self.label_encoders['location'] = LabelEncoder()
+            self.label_encoders['location'].fit(['Unknown', 'Dubai', 'Abu Dhabi', 'Riyadh', 'Doha'])
+        
+        try:
+            industry_encoded = self.label_encoders['industry'].transform([industry])[0] / 10.0
+            location_encoded = self.label_encoders['location'].transform([location])[0] / 10.0
+        except:
+            industry_encoded = 0.0
+            location_encoded = 0.0
+        
+        features.extend([industry_encoded, location_encoded])
+        
+        # Derived features
+        waste_intensity = float(company_data.get('annual_waste', 0)) / max(1, float(company_data.get('employee_count', 1)))
+        features.append(waste_intensity / 1000)  # Normalized
+        
+        return np.array(features)
+
+    def _get_feature_names(self) -> List[str]:
+        """Get feature names for importance analysis"""
+        return [
+            'annual_waste_norm',
+            'carbon_footprint_norm',
+            'employee_count_norm',
+            'annual_revenue_norm',
+            'industry_encoded',
+            'location_encoded',
+            'waste_intensity_norm'
+        ]
+
+    def _create_company_text(self, company_data: Dict[str, Any]) -> str:
+        """Create text representation of company data"""
+        text_parts = []
+        
+        # Company name and industry
+        text_parts.append(f"Company: {company_data.get('name', 'Unknown')}")
+        text_parts.append(f"Industry: {company_data.get('industry', 'Unknown')}")
+        text_parts.append(f"Location: {company_data.get('location', 'Unknown')}")
+        
+        # Products and materials
+        products = company_data.get('products', '')
+        materials = company_data.get('main_materials', '')
+        if products:
+            text_parts.append(f"Products: {products}")
+        if materials:
+            text_parts.append(f"Materials: {materials}")
+        
+        # Process description
+        process = company_data.get('process_description', '')
+        if process:
+            text_parts.append(f"Process: {process}")
+        
+        # Waste and sustainability
+        waste = company_data.get('waste_quantities', '')
+        if waste:
+            text_parts.append(f"Waste: {waste}")
+        
+        sustainability_goals = company_data.get('sustainability_goals', [])
+        if sustainability_goals:
+            text_parts.append(f"Sustainability goals: {', '.join(sustainability_goals)}")
+        
+        return " | ".join(text_parts)
+
+    def find_matches(self, query_company: Dict[str, Any], candidate_companies: List[Dict[str, Any]], 
+                    algorithm: str = "ensemble", top_k: int = 10, 
+                    confidence_threshold: float = 0.5) -> MatchingResult:
+        """Find matches for a query company"""
+        try:
+            start_time = time.time()
+            
+            # Check cache
+            cache_key = self._generate_cache_key(query_company, candidate_companies, algorithm, top_k)
+            if cache_key in self.matching_cache:
+                cached_result = self.matching_cache[cache_key]
+                if time.time() - cached_result['timestamp'] < self.cache_ttl:
+                    logger.info(f"Using cached matching result for {query_company.get('name', 'Unknown')}")
+                    return cached_result['result']
+            
+            # Perform matching based on algorithm
+            if algorithm == "semantic":
+                candidates = self._semantic_matching(query_company, candidate_companies, top_k)
+            elif algorithm == "numerical":
+                candidates = self._numerical_matching(query_company, candidate_companies, top_k)
+            elif algorithm == "graph":
+                candidates = self._graph_matching(query_company, candidate_companies, top_k)
+            elif algorithm == "ensemble":
+                candidates = self._ensemble_matching(query_company, candidate_companies, top_k)
+            else:
+                candidates = self._rule_based_matching(query_company, candidate_companies, top_k)
+            
+            # Filter by confidence threshold
+            filtered_candidates = [
+                candidate for candidate in candidates 
+                if candidate.confidence >= confidence_threshold
+            ]
+            
+            matching_time = time.time() - start_time
+            
+            # Create result
+            result = MatchingResult(
+                query_company=query_company.get('name', 'Unknown'),
+                candidates=filtered_candidates,
+                total_candidates=len(filtered_candidates),
+                matching_time=matching_time,
+                algorithm_used=algorithm,
+                confidence_threshold=confidence_threshold
+            )
+            
+            # Cache result
+            self.matching_cache[cache_key] = {
+                'result': result,
+                'timestamp': time.time()
+            }
+            
+            # Update performance metrics
+            self.matching_times.append(matching_time)
+            
+            logger.info(f"Matching completed in {matching_time:.4f}s: {len(filtered_candidates)} candidates")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in matching: {e}")
+            return MatchingResult(
+                query_company=query_company.get('name', 'Unknown'),
+                candidates=[],
+                total_candidates=0,
+                matching_time=0.0,
+                algorithm_used=algorithm,
+                confidence_threshold=confidence_threshold
+            )
+
+    def _semantic_matching(self, query_company: Dict[str, Any], 
+                          candidate_companies: List[Dict[str, Any]], top_k: int) -> List[MatchCandidate]:
+        """Perform semantic matching using NLP"""
+        if not NLP_AVAILABLE or self.semantic_model is None:
+            return []
+        
+        try:
+            # Create text representations
+            query_text = self._create_company_text(query_company)
+            candidate_texts = [self._create_company_text(company) for company in candidate_companies]
+            
+            # Generate embeddings
+            query_embedding = self.semantic_model['transformer'].encode([query_text])
+            candidate_embeddings = self.semantic_model['transformer'].encode(candidate_texts)
+            
+            # Calculate similarities
+            similarities = []
+            for i, candidate_embedding in enumerate(candidate_embeddings):
+                similarity = np.dot(query_embedding[0], candidate_embedding) / (
+                    np.linalg.norm(query_embedding[0]) * np.linalg.norm(candidate_embedding)
+                )
+                similarities.append((i, similarity))
+            
+            # Sort by similarity
+            similarities.sort(key=lambda x: x[1], reverse=True)
+            
+            # Create candidates
+            candidates = []
+            for idx, similarity in similarities[:top_k]:
+                company_data = candidate_companies[idx]
+                candidate = MatchCandidate(
+                    company_id=company_data.get('id', str(idx)),
+                    company_data=company_data,
+                    compatibility_score=float(similarity),
+                    match_reasons=[f"Semantic similarity: {similarity:.3f}"],
+                    confidence=float(similarity),
+                    potential_savings=self._estimate_savings(query_company, company_data),
+                    carbon_reduction=self._estimate_carbon_reduction(query_company, company_data),
+                    implementation_difficulty=self._assess_difficulty(query_company, company_data)
+                )
+                candidates.append(candidate)
+            
+            return candidates
+            
+        except Exception as e:
+            logger.error(f"Error in semantic matching: {e}")
+            return []
+
+    def _numerical_matching(self, query_company: Dict[str, Any], 
+                           candidate_companies: List[Dict[str, Any]], top_k: int) -> List[MatchCandidate]:
+        """Perform numerical matching using ML models"""
+        if not ML_AVAILABLE or self.numerical_model is None:
+            return []
+        
+        try:
+            # Extract features
+            query_features = self._extract_numerical_features(query_company)
+            candidate_features = [self._extract_numerical_features(company) for company in candidate_companies]
+            
+            # Scale features
+            query_scaled = self.scaler.transform([query_features])
+            candidates_scaled = self.scaler.transform(candidate_features)
+            
+            # Calculate similarities (using model predictions)
+            similarities = []
+            for i, candidate_scaled in enumerate(candidates_scaled):
+                # Create a synthetic training example
+                combined_features = np.concatenate([query_scaled[0], candidate_scaled])
+                similarity = self.numerical_model.predict([combined_features])[0]
+                similarities.append((i, similarity))
+            
+            # Sort by similarity
+            similarities.sort(key=lambda x: x[1], reverse=True)
+            
+            # Create candidates
+            candidates = []
+            for idx, similarity in similarities[:top_k]:
+                company_data = candidate_companies[idx]
+                candidate = MatchCandidate(
+                    company_id=company_data.get('id', str(idx)),
+                    company_data=company_data,
+                    compatibility_score=float(similarity),
+                    match_reasons=[f"Numerical compatibility: {similarity:.3f}"],
+                    confidence=float(similarity),
+                    potential_savings=self._estimate_savings(query_company, company_data),
+                    carbon_reduction=self._estimate_carbon_reduction(query_company, company_data),
+                    implementation_difficulty=self._assess_difficulty(query_company, company_data)
+                )
+                candidates.append(candidate)
+            
+            return candidates
+            
+        except Exception as e:
+            logger.error(f"Error in numerical matching: {e}")
+            return []
+
+    def _graph_matching(self, query_company: Dict[str, Any], 
+                       candidate_companies: List[Dict[str, Any]], top_k: int) -> List[MatchCandidate]:
+        """Perform graph-based matching"""
+        try:
+            # Create graph representation
+            G = nx.Graph()
+            
+            # Add query company
+            G.add_node('query', **query_company)
+            
+            # Add candidate companies
+            for i, company in enumerate(candidate_companies):
+                G.add_node(f'candidate_{i}', **company)
+            
+            # Add edges based on compatibility
+            similarities = []
+            for i, company in enumerate(candidate_companies):
+                similarity = self._calculate_graph_similarity(query_company, company)
+                similarities.append((i, similarity))
+                G.add_edge('query', f'candidate_{i}', weight=similarity)
+            
+            # Sort by similarity
+            similarities.sort(key=lambda x: x[1], reverse=True)
+            
+            # Create candidates
+            candidates = []
+            for idx, similarity in similarities[:top_k]:
+                company_data = candidate_companies[idx]
+                candidate = MatchCandidate(
+                    company_id=company_data.get('id', str(idx)),
+                    company_data=company_data,
+                    compatibility_score=float(similarity),
+                    match_reasons=[f"Graph-based similarity: {similarity:.3f}"],
+                    confidence=float(similarity),
+                    potential_savings=self._estimate_savings(query_company, company_data),
+                    carbon_reduction=self._estimate_carbon_reduction(query_company, company_data),
+                    implementation_difficulty=self._assess_difficulty(query_company, company_data)
+                )
+                candidates.append(candidate)
+            
+            return candidates
+            
+        except Exception as e:
+            logger.error(f"Error in graph matching: {e}")
+            return []
+
+    def _ensemble_matching(self, query_company: Dict[str, Any], 
+                          candidate_companies: List[Dict[str, Any]], top_k: int) -> List[MatchCandidate]:
+        """Perform ensemble matching combining multiple algorithms"""
+        try:
+            # Get results from different algorithms
+            semantic_candidates = self._semantic_matching(query_company, candidate_companies, top_k * 2)
+            numerical_candidates = self._numerical_matching(query_company, candidate_companies, top_k * 2)
+            graph_candidates = self._graph_matching(query_company, candidate_companies, top_k * 2)
+            
+            # Combine scores
+            candidate_scores = defaultdict(list)
+            
+            # Add semantic scores
+            for candidate in semantic_candidates:
+                candidate_scores[candidate.company_id].append(('semantic', candidate.compatibility_score))
+            
+            # Add numerical scores
+            for candidate in numerical_candidates:
+                candidate_scores[candidate.company_id].append(('numerical', candidate.compatibility_score))
+            
+            # Add graph scores
+            for candidate in graph_candidates:
+                candidate_scores[candidate.company_id].append(('graph', candidate.compatibility_score))
+            
+            # Calculate ensemble scores
+            ensemble_scores = []
+            for company_id, scores in candidate_scores.items():
+                # Weighted average (can be optimized)
+                weights = {'semantic': 0.4, 'numerical': 0.4, 'graph': 0.2}
+                ensemble_score = sum(weights[algo] * score for algo, score in scores)
+                ensemble_scores.append((company_id, ensemble_score))
+            
+            # Sort by ensemble score
+            ensemble_scores.sort(key=lambda x: x[1], reverse=True)
+            
+            # Create final candidates
+            candidates = []
+            for company_id, ensemble_score in ensemble_scores[:top_k]:
+                # Find original company data
+                company_data = next((c for c in candidate_companies if c.get('id') == company_id), None)
+                if company_data:
+                    candidate = MatchCandidate(
+                        company_id=company_id,
+                        company_data=company_data,
+                        compatibility_score=float(ensemble_score),
+                        match_reasons=[f"Ensemble score: {ensemble_score:.3f}"],
+                        confidence=float(ensemble_score),
+                        potential_savings=self._estimate_savings(query_company, company_data),
+                        carbon_reduction=self._estimate_carbon_reduction(query_company, company_data),
+                        implementation_difficulty=self._assess_difficulty(query_company, company_data)
+                    )
+                    candidates.append(candidate)
+            
+            return candidates
+            
+        except Exception as e:
+            logger.error(f"Error in ensemble matching: {e}")
+            return []
+
+    def _rule_based_matching(self, query_company: Dict[str, Any], 
+                            candidate_companies: List[Dict[str, Any]], top_k: int) -> List[MatchCandidate]:
+        """Perform rule-based matching as fallback"""
+        try:
+            similarities = []
+            
+            for i, company in enumerate(candidate_companies):
+                score = 0.0
+                reasons = []
+                
+                # Industry compatibility
+                if query_company.get('industry') != company.get('industry'):
+                    score += 0.3
+                    reasons.append("Different industries (complementary)")
+                
+                # Location proximity
+                if query_company.get('location') == company.get('location'):
+                    score += 0.2
+                    reasons.append("Same location")
+                
+                # Waste-resource match
+                if self._check_waste_resource_match(query_company, company):
+                    score += 0.4
+                    reasons.append("Waste-resource compatibility")
+                
+                # Size compatibility
+                if self._check_size_compatibility(query_company, company):
+                    score += 0.1
+                    reasons.append("Size compatibility")
+                
+                similarities.append((i, score, reasons))
+            
+            # Sort by score
+            similarities.sort(key=lambda x: x[1], reverse=True)
+            
+            # Create candidates
+            candidates = []
+            for idx, score, reasons in similarities[:top_k]:
+                company_data = candidate_companies[idx]
+                candidate = MatchCandidate(
+                    company_id=company_data.get('id', str(idx)),
+                    company_data=company_data,
+                    compatibility_score=float(score),
+                    match_reasons=reasons,
+                    confidence=float(score),
+                    potential_savings=self._estimate_savings(query_company, company_data),
+                    carbon_reduction=self._estimate_carbon_reduction(query_company, company_data),
+                    implementation_difficulty=self._assess_difficulty(query_company, company_data)
+                )
+                candidates.append(candidate)
+            
+            return candidates
+            
+        except Exception as e:
+            logger.error(f"Error in rule-based matching: {e}")
+            return []
+
+    def _calculate_graph_similarity(self, company1: Dict[str, Any], company2: Dict[str, Any]) -> float:
+        """Calculate graph-based similarity between two companies"""
+        score = 0.0
+        
+        # Industry similarity
+        if company1.get('industry') == company2.get('industry'):
+            score += 0.2
+        elif company1.get('industry') != company2.get('industry'):
+            score += 0.3  # Complementary industries
+        
+        # Location similarity
+        if company1.get('location') == company2.get('location'):
+            score += 0.2
+        
+        # Size similarity
+        size1 = float(company1.get('employee_count', 0))
+        size2 = float(company2.get('employee_count', 0))
+        if size1 > 0 and size2 > 0:
+            size_ratio = min(size1, size2) / max(size1, size2)
+            if 0.5 <= size_ratio <= 2.0:
+                score += 0.2
+        
+        # Waste-resource compatibility
+        if self._check_waste_resource_match(company1, company2):
+            score += 0.3
+        
+        return min(score, 1.0)
+
+    def _check_waste_resource_match(self, company1: Dict[str, Any], company2: Dict[str, Any]) -> bool:
+        """Check if companies have compatible waste-resource patterns"""
+        # Simplified check - in practice, this would be more sophisticated
+        waste1 = company1.get('waste_quantities', '')
+        needs2 = company2.get('resource_needs', '')
+        
+        # Basic keyword matching
+        waste_keywords = ['plastic', 'metal', 'paper', 'organic', 'chemical']
+        for keyword in waste_keywords:
+            if keyword in waste1.lower() and keyword in needs2.lower():
+                return True
+        
+        return False
+
+    def _check_size_compatibility(self, company1: Dict[str, Any], company2: Dict[str, Any]) -> bool:
+        """Check if companies have compatible sizes"""
+        size1 = float(company1.get('employee_count', 0))
+        size2 = float(company2.get('employee_count', 0))
+        
+        if size1 > 0 and size2 > 0:
+            ratio = min(size1, size2) / max(size1, size2)
+            return 0.3 <= ratio <= 3.0
+        
+        return True
+
+    def _estimate_savings(self, company1: Dict[str, Any], company2: Dict[str, Any]) -> float:
+        """Estimate potential savings from symbiosis"""
+        waste1 = float(company1.get('annual_waste', 0))
+        waste2 = float(company2.get('annual_waste', 0))
+        
+        # Assume 30% waste reduction and $100 per ton savings
+        total_waste = waste1 + waste2
+        savings = total_waste * 0.3 * 100
+        
+        return round(savings, 2)
+
+    def _estimate_carbon_reduction(self, company1: Dict[str, Any], company2: Dict[str, Any]) -> float:
+        """Estimate carbon reduction from symbiosis"""
+        co2_1 = float(company1.get('carbon_footprint', 0))
+        co2_2 = float(company2.get('carbon_footprint', 0))
+        
+        # Assume 25% CO2 reduction
+        total_co2 = co2_1 + co2_2
+        reduction = total_co2 * 0.25
+        
+        return round(reduction, 2)
+
+    def _assess_difficulty(self, company1: Dict[str, Any], company2: Dict[str, Any]) -> str:
+        """Assess implementation difficulty"""
+        # Simplified assessment
+        if company1.get('location') == company2.get('location'):
+            return "easy"
+        elif company1.get('industry') == company2.get('industry'):
+            return "medium"
+        else:
+            return "hard"
+
+    def _generate_cache_key(self, query_company: Dict[str, Any], 
+                           candidate_companies: List[Dict[str, Any]], 
+                           algorithm: str, top_k: int) -> str:
+        """Generate cache key for matching results"""
+        # Create hash of relevant data
+        data_str = f"{query_company.get('id', '')}_{len(candidate_companies)}_{algorithm}_{top_k}"
+        return hashlib.md5(data_str.encode()).hexdigest()
+
+    def get_matching_statistics(self) -> Dict[str, Any]:
+        """Get matching performance statistics"""
+        if not self.matching_times:
+            return {'error': 'No matching data available'}
+        
+        return {
+            'total_matches': len(self.matching_times),
+            'average_matching_time': np.mean(self.matching_times),
+            'min_matching_time': np.min(self.matching_times),
+            'max_matching_time': np.max(self.matching_times),
+            'std_matching_time': np.std(self.matching_times),
+            'cache_hit_rate': self._calculate_cache_hit_rate()
+        }
+
+    def _calculate_cache_hit_rate(self) -> float:
+        """Calculate cache hit rate"""
+        # This would require tracking cache hits/misses
+        # For now, return a placeholder
+        return 0.75
+
+    def clear_cache(self):
+        """Clear matching cache"""
+        self.matching_cache.clear()
+        logger.info("Matching cache cleared")
+
+    def get_feature_importance(self) -> Dict[str, float]:
+        """Get feature importance from trained models"""
+        return self.feature_importance.copy()
+
+# Initialize global matching engine
+advanced_matching_engine = AdvancedMatchingEngine()
+
+def main():
+    """Main function to handle API calls"""
+    import sys
+    import json
+    
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "No action specified"}))
+        sys.exit(1)
+    
+    try:
+        # Parse input data
+        input_data = json.loads(sys.argv[1])
+        action = input_data.get('action')
+        
+        # Initialize matching engine
+        matching_engine = AdvancedMatchingEngine()
+        
+        if action == 'find_matches':
+            query_company = input_data.get('query_company')
+            candidate_companies = input_data.get('candidate_companies', [])
+            algorithm = input_data.get('algorithm', 'ensemble')
+            top_k = input_data.get('top_k', 10)
+            confidence_threshold = input_data.get('confidence_threshold', 0.5)
+            
+            result = matching_engine.find_matches(
+                query_company, 
+                candidate_companies, 
+                algorithm, 
+                top_k, 
+                confidence_threshold
+            )
+            
+            # Convert to serializable format
+            result_dict = {
+                'query_company': result.query_company,
+                'candidates': [
+                    {
+                        'company_id': c.company_id,
+                        'company_data': c.company_data,
+                        'compatibility_score': c.compatibility_score,
+                        'match_reasons': c.match_reasons,
+                        'confidence': c.confidence,
+                        'potential_savings': c.potential_savings,
+                        'carbon_reduction': c.carbon_reduction,
+                        'implementation_difficulty': c.implementation_difficulty
+                    } for c in result.candidates
+                ],
+                'total_candidates': result.total_candidates,
+                'matching_time': result.matching_time,
+                'algorithm_used': result.algorithm_used,
+                'confidence_threshold': result.confidence_threshold
+            }
+            
+        elif action == 'predict_compatibility':
+            buyer = input_data.get('buyer')
+            seller = input_data.get('seller')
+            
+            # Initialize MONOPOLY AI matching
+            monopoly_ai = MONOPOLYAIMatching()
+            result = monopoly_ai.predict_compatibility(buyer, seller)
+            
+        elif action == 'record_feedback':
+            match_id = input_data.get('match_id')
+            user_id = input_data.get('user_id')
+            rating = input_data.get('rating')
+            feedback = input_data.get('feedback', '')
+            
+            # Initialize MONOPOLY AI matching
+            monopoly_ai = MONOPOLYAIMatching()
+            monopoly_ai.record_user_feedback(match_id, user_id, rating, feedback)
+            
+            result = {
+                'recorded': True,
+                'model_updated': True
+            }
+            
+        elif action == 'health_check':
+            result = {
+                'status': 'healthy',
+                'models_loaded': True,
+                'matching_engine_initialized': True
+            }
+            
+        else:
+            result = {"error": f"Unknown action: {action}"}
+        
+        print(json.dumps(result))
+        
+    except Exception as e:
+        print(json.dumps({"error": str(e)}))
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ism-config
+  namespace: ism-platform
+  labels:
+    app: ism-platform
+data:
+  # Frontend Configuration
+  VITE_SUPABASE_URL: "https://your-project.supabase.co"
+  NODE_ENV: "production"
+  
+  # Backend Configuration
+  PORT: "3001"
+  REDIS_HOST: "ism-redis"
+  REDIS_PORT: "6379"
+  LOG_LEVEL: "info"
+  
+  # AI Services Configuration
+  GATEWAY_PORT: "5000"
+  GNN_PORT: "5001"
+  FEDERATED_PORT: "5002"
+  SYMBIOSIS_PORT: "5003"
+  ANALYTICS_PORT: "5004"
+  MODEL_CACHE_DIR: "/app/models"
+  
+  # Monitoring Configuration
+  PROMETHEUS_PORT: "9090"
+  GRAFANA_PORT: "3000"
+  
+  # Application Configuration
+  APP_NAME: "Industrial Symbiosis Marketplace"
+  APP_VERSION: "1.0.0"
+  API_RATE_LIMIT: "100"
+  SESSION_TIMEOUT: "3600"
+  
+  # Feature Flags
+  ENABLE_AI_FEATURES: "true"
+  ENABLE_MONITORING: "true"
+  ENABLE_ANALYTICS: "true"
+  ENABLE_FEDERATED_LEARNING: "true" 

@@ -31,13 +31,13 @@ export function MaterialForm({ onClose, type }: MaterialFormProps) {
       const { data: company, error: companyError } = await supabase
         .from('companies')
         .select('id')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
       if (!company) {
         // Try to create company record with minimal info
         await supabase.from('companies').insert([
           {
-            id: user.id,
+            user_id: user.id,
             name: user.user_metadata?.company_name || user.email,
             email: user.email,
             role: 'user'
@@ -50,7 +50,7 @@ export function MaterialForm({ onClose, type }: MaterialFormProps) {
           ...formData,
           type: listingType === 'sell' ? 'waste' : 'requirement',
           quantity: parseFloat(formData.quantity),
-          company_id: user.id
+          company_id: company?.id || user.id
         },
       ]);
 

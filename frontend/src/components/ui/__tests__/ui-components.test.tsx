@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import { Button } from '../button';
 import { Input } from '../input';
 import { Textarea } from '../textarea';
@@ -16,19 +17,26 @@ describe('Button Component', () => {
   });
 
   it('applies variant styles correctly', () => {
-    render(<Button variant="outline">Outline Button</Button>);
+    render(<Button variant="premium">Premium Button</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('border-emerald-600');
+    expect(button).toHaveClass('bg-gradient-to-r from-purple-600 to-blue-600');
   });
 
   it('applies size styles correctly', () => {
-    render(<Button size="lg">Large Button</Button>);
+    render(<Button size="xl">Extra Large Button</Button>);
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('h-12');
+    expect(button).toHaveClass('h-14');
+  });
+
+  it('shows loading state', () => {
+    render(<Button loading>Loading Button</Button>);
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+    expect(button.querySelector('svg.animate-spin')).toBeInTheDocument();
   });
 
   it('handles click events', () => {
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
     render(<Button onClick={handleClick}>Click me</Button>);
     fireEvent.click(screen.getByRole('button'));
     expect(handleClick).toHaveBeenCalledTimes(1);
@@ -46,10 +54,9 @@ describe('Input Component', () => {
     expect(screen.getByPlaceholderText('Enter text')).toBeInTheDocument();
   });
 
-  it('forwards ref correctly', () => {
-    const ref = React.createRef<HTMLInputElement>();
-    render(<Input ref={ref} />);
-    expect(ref.current).toBeInstanceOf(HTMLInputElement);
+  it('renders with label', () => {
+    render(<Input label="Email Address" />);
+    expect(screen.getByText('Email Address')).toBeInTheDocument();
   });
 
   it('shows error state and message', () => {
@@ -58,8 +65,19 @@ describe('Input Component', () => {
     expect(screen.getByRole('textbox')).toHaveClass('border-red-300');
   });
 
+  it('shows success state and message', () => {
+    render(<Input success successMessage="Valid input" />);
+    expect(screen.getByText('Valid input')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveClass('border-green-300');
+  });
+
+  it('shows helper text', () => {
+    render(<Input helperText="This is helpful information" />);
+    expect(screen.getByText('This is helpful information')).toBeInTheDocument();
+  });
+
   it('handles value changes', () => {
-    const handleChange = jest.fn();
+    const handleChange = vi.fn();
     render(<Input onChange={handleChange} />);
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
     expect(handleChange).toHaveBeenCalled();
@@ -72,10 +90,21 @@ describe('Textarea Component', () => {
     expect(screen.getByPlaceholderText('Enter text')).toBeInTheDocument();
   });
 
-  it('forwards ref correctly', () => {
-    const ref = React.createRef<HTMLTextAreaElement>();
-    render(<Textarea ref={ref} />);
-    expect(ref.current).toBeInstanceOf(HTMLTextAreaElement);
+  it('renders with label', () => {
+    render(<Textarea label="Description" />);
+    expect(screen.getByText('Description')).toBeInTheDocument();
+  });
+
+  it('shows character count when enabled', () => {
+    render(<Textarea showCharacterCount maxLength={100} />);
+    expect(screen.getByText('0/100')).toBeInTheDocument();
+  });
+
+  it('updates character count on input', () => {
+    render(<Textarea showCharacterCount maxLength={100} />);
+    const textarea = screen.getByRole('textbox');
+    fireEvent.change(textarea, { target: { value: 'Hello World' } });
+    expect(screen.getByText('11/100')).toBeInTheDocument();
   });
 
   it('shows error state and message', () => {
@@ -111,7 +140,7 @@ describe('Select Component', () => {
   });
 
   it('handles value changes', () => {
-    const handleChange = jest.fn();
+    const handleChange = vi.fn();
     render(
       <Select onChange={handleChange}>
         <SelectOption value="option1">Option 1</SelectOption>
@@ -130,7 +159,7 @@ describe('Checkbox Component', () => {
   });
 
   it('handles change events', () => {
-    const handleChange = jest.fn();
+    const handleChange = vi.fn();
     render(<Checkbox onChange={handleChange} />);
     fireEvent.click(screen.getByRole('checkbox'));
     expect(handleChange).toHaveBeenCalled();
@@ -192,17 +221,57 @@ describe('Dialog Component', () => {
   });
 
   it('calls onOpenChange when backdrop is clicked', () => {
-    const onOpenChange = jest.fn();
+    const onOpenChange = vi.fn();
     render(
       <Dialog open={true} onOpenChange={onOpenChange}>
         <DialogContent>Content</DialogContent>
       </Dialog>
     );
-    // Click on backdrop (first div with bg-black/50 class)
     const backdrop = document.querySelector('.bg-black\\/50');
     if (backdrop) {
       fireEvent.click(backdrop);
       expect(onOpenChange).toHaveBeenCalledWith(false);
     }
+  });
+});
+
+// Integration tests
+describe('UI Components Integration', () => {
+  it('form with multiple components works together', () => {
+    render(
+      <div>
+        <Input label="Email" placeholder="Enter email" />
+        <Textarea label="Message" placeholder="Enter message" />
+        <Button>Submit</Button>
+      </div>
+    );
+    
+    expect(screen.getByText('Email')).toBeInTheDocument();
+    expect(screen.getByText('Message')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
+  });
+
+  it('dialog with form components', () => {
+    render(
+      <Dialog open={true} onOpenChange={() => {}}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Company</DialogTitle>
+          </DialogHeader>
+          <Input label="Company Name" />
+          <Textarea label="Description" />
+          <DialogFooter>
+            <Button variant="outline">Cancel</Button>
+            <Button>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+    
+    expect(screen.getByText('Add Company')).toBeInTheDocument();
+    expect(screen.getByText('Company Name')).toBeInTheDocument();
+    expect(screen.getByText('Description')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
   });
 }); 

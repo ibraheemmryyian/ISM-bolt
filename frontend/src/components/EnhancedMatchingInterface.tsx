@@ -25,7 +25,8 @@ import {
   Package,
   Calculator,
   Truck,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import ComprehensiveMatchAnalysis from './ComprehensiveMatchAnalysis';
 
@@ -308,31 +309,12 @@ const EnhancedMatchingInterface: React.FC<EnhancedMatchingInterfaceProps> = ({ u
 
       {/* Loading State */}
       {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="text-lg font-semibold">Loading Enhanced Matches...</span>
-          </div>
-        </div>
+        <Loader2 className="h-6 w-6 animate-spin mx-auto my-4" />
       )}
 
       {/* Error State */}
       {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="flex items-center space-x-3">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <span className="text-red-800 font-medium">Error loading matches</span>
-            </div>
-            <p className="text-red-700 mt-2">{error}</p>
-            <button
-              onClick={loadMatches}
-              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+        <div className="bg-red-100 text-red-700 p-2 rounded mb-4 text-center">{error}</div>
       )}
 
       {/* Matches Grid */}

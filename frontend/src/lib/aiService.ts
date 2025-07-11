@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, withRetry } from './supabase';
 import { subscriptionService } from './subscriptionService';
 import { toast } from 'react-toastify';
 
@@ -23,9 +23,9 @@ interface MaterialMatch {
   error?: string;
 }
 
-interface APIResponse<T> {
+export interface AIResponse {
   success: boolean;
-  data?: T;
+  data?: any;
   error?: string;
   message?: string;
 }
@@ -65,7 +65,7 @@ class ProductionLogger {
 
   private async sendToLoggingService(logEntry: any) {
     try {
-      await fetch('/api/logs', {
+      await fetch('http://localhost:5001/api/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(logEntry)
@@ -95,8 +95,8 @@ class APIClient {
     endpoint: string, 
     options: RequestInit = {}, 
     retryCount = 0
-  ): Promise<APIResponse<T>> {
-    const url = `/api${endpoint}`;
+  ): Promise<AIResponse> {
+    const url = `http://localhost:5001/api${endpoint}`;
     
     try {
       this.logger.log('info', `API Request: ${options.method || 'GET'} ${url}`, {
@@ -173,6 +173,130 @@ class APIClient {
 class AIService {
   private apiClient = APIClient.getInstance();
   private logger = ProductionLogger.getInstance();
+  private baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+  private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<AIResponse> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    const defaultOptions: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      const response = await withRetry(async () => {
+        const res = await fetch(url, defaultOptions);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res;
+      });
+
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error: any) {
+      console.error(`AI Service Error (${endpoint}):`, error);
+      return {
+        success: false,
+        error: error.message || 'An unexpected error occurred',
+        message: this.getUserFriendlyMessage(error)
+      };
+    }
+  }
+
+  private getUserFriendlyMessage(error: any): string {
+    if (error.message?.includes('Failed to fetch')) {
+      return 'Unable to connect to the server. Please check your internet connection.';
+    }
+    if (error.message?.includes('401')) {
+      return 'Your session has expired. Please log in again.';
+    }
+    if (error.message?.includes('403')) {
+      return 'You do not have permission to perform this action.';
+    }
+    if (error.message?.includes('429')) {
+      return 'Too many requests. Please wait a moment and try again.';
+    }
+    if (error.message?.includes('500')) {
+      return 'Server error. Please try again later.';
+    }
+    return 'Something went wrong. Please try again.';
+  }
+
+  async generateListings(materialData: any): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/generate-listings', {
+      method: 'POST',
+      body: JSON.stringify(materialData),
+    });
+  }
+
+  async analyzeMatch(buyerData: any, sellerData: any): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/analyze-match', {
+      method: 'POST',
+      body: JSON.stringify({ buyerData, sellerData }),
+    });
+  }
+
+  async getRecommendations(userId: string): Promise<AIResponse> {
+    return this.makeRequest(`/api/ai/recommendations/${userId}`);
+  }
+
+  async processOnboarding(data: any): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/onboarding', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async generateComprehensivePortfolio(companyData: any): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/portfolio/generate', {
+      method: 'POST',
+      body: JSON.stringify(companyData)
+    });
+  }
+
+  async analyzeCompanyProfile(companyData: any): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/company/analyze', {
+      method: 'POST',
+      body: JSON.stringify(companyData)
+    });
+  }
+
+  async getSymbiosisOpportunities(companyId: string): Promise<AIResponse> {
+    return this.makeRequest(`/api/ai/symbiosis/${companyId}`);
+  }
+
+  async forecastImpact(transactionData: any): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/forecast-impact', {
+      method: 'POST',
+      body: JSON.stringify(transactionData),
+    });
+  }
+
+  async getCostAnalysis(materialId: string): Promise<AIResponse> {
+    return this.makeRequest(`/api/ai/cost-analysis/${materialId}`);
+  }
+
+  async validateMaterial(materialData: any): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/validate-material', {
+      method: 'POST',
+      body: JSON.stringify(materialData),
+    });
+  }
+
+  async getMarketInsights(): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/market-insights');
+  }
+
+  async optimizeLogistics(routeData: any): Promise<AIResponse> {
+    return this.makeRequest('/api/ai/optimize-logistics', {
+      method: 'POST',
+      body: JSON.stringify(routeData),
+    });
+  }
 
   async generateRecommendations(userId: string, userProfile: any): Promise<AIRecommendation[]> {
     try {

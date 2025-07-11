@@ -8,7 +8,7 @@ import logging
 
 # Import all the analysis engines
 from refinement_analysis_engine import refinement_engine
-from financial_analysis_engine import financial_engine
+from financial_analysis_engine import FinancialAnalysisEngine
 from logistics_cost_engine import LogisticsCostEngine
 from carbon_calculation_engine import carbon_engine
 from waste_tracking_engine import waste_engine
@@ -256,21 +256,33 @@ class ComprehensiveMatchAnalyzer:
                            logistics_analysis: Dict) -> Dict:
         """Analyze financial aspects of the match"""
         try:
-            # Prepare data for financial analysis
-            refinement_data = None
-            if match_data.get('refinement_required'):
-                refinement_data = {
-                    'refinement_required': True,
-                    'cost_per_ton': match_data.get('refinement_cost_per_ton', 200),
-                    'equipment_cost': match_data.get('equipment_cost', 0)
-                }
+            # Initialize financial analysis engine
+            financial_engine = FinancialAnalysisEngine()
+            
+            # Prepare material data for analysis
+            material_data = {
+                'material_name': match_data.get('material_type', ''),
+                'quantity': match_data.get('quantity', 1.0),
+                'unit': 'ton',
+                'type': 'waste' if match_data.get('is_waste', True) else 'requirement'
+            }
+            
+            # Calculate distance from logistics analysis
+            distance_km = logistics_analysis.get('distance_km', 50)
             
             # Perform financial analysis
-            financial_analysis = financial_engine.analyze_match_financials(
-                match_data, buyer_data, seller_data, logistics_analysis, refinement_data
-            )
+            financial_analysis = financial_engine.calculate_material_financials(material_data, distance_km)
             
-            return financial_analysis.__dict__
+            # Add additional financial metrics
+            financial_analysis.update({
+                'buyer_savings': financial_analysis.get('net_savings', 0),
+                'seller_revenue': financial_analysis.get('market_value', 0),
+                'total_transport_cost': financial_analysis.get('transport_cost', 0),
+                'total_processing_cost': financial_analysis.get('processing_cost', 0),
+                'roi_percentage': financial_analysis.get('roi_percentage', 0)
+            })
+            
+            return financial_analysis
             
         except Exception as e:
             logger.error(f"Error in financial analysis: {e}")

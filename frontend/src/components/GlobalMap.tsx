@@ -18,7 +18,7 @@ export function GlobalMap() {
   async function loadConnections() {
     try {
       const { data, error } = await supabase
-        .from('company_profiles')
+        .from('companies')
         .select('location')
         .not('location', 'is', null);
 

@@ -1,0 +1,265 @@
+# Database Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ism-database-backup
+  namespace: ism-platform
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: ism-backup-sa
+          containers:
+          - name: backup
+            image: postgres:15-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Create backup directory
+              mkdir -p /backup
+              
+              # Get current timestamp
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              
+              # Backup Supabase database (using pg_dump)
+              pg_dump $DATABASE_URL > /backup/supabase_backup_$TIMESTAMP.sql
+              
+              # Compress backup
+              gzip /backup/supabase_backup_$TIMESTAMP.sql
+              
+              # Upload to S3 or cloud storage
+              aws s3 cp /backup/supabase_backup_$TIMESTAMP.sql.gz s3://$BACKUP_BUCKET/database/
+              
+              # Clean up old backups (keep last 30 days)
+              aws s3 ls s3://$BACKUP_BUCKET/database/ | awk '{print $4}' | sort | head -n -30 | xargs -I {} aws s3 rm s3://$BACKUP_BUCKET/database/{}
+              
+              echo "Database backup completed: supabase_backup_$TIMESTAMP.sql.gz"
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ism-secrets
+                  key: DATABASE_URL
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ism-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ism-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+            - name: BACKUP_BUCKET
+              value: "ism-backups"
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backup
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          restartPolicy: OnFailure
+---
+# Configuration Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ism-config-backup
+  namespace: ism-platform
+spec:
+  schedule: "0 3 * * *"  # Daily at 3 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: ism-backup-sa
+          containers:
+          - name: config-backup
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Create backup directory
+              mkdir -p /backup/config
+              
+              # Get current timestamp
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              
+              # Backup ConfigMaps
+              kubectl get configmap ism-config -n ism-platform -o yaml > /backup/config/configmap_$TIMESTAMP.yaml
+              
+              # Backup Secrets (without sensitive data)
+              kubectl get secret ism-secrets -n ism-platform -o yaml > /backup/config/secret_$TIMESTAMP.yaml
+              
+              # Backup Kubernetes manifests
+              kubectl get all -n ism-platform -o yaml > /backup/config/manifests_$TIMESTAMP.yaml
+              
+              # Compress backup
+              tar -czf /backup/config_backup_$TIMESTAMP.tar.gz -C /backup config/
+              
+              # Upload to S3
+              aws s3 cp /backup/config_backup_$TIMESTAMP.tar.gz s3://$BACKUP_BUCKET/config/
+              
+              # Clean up old backups (keep last 30 days)
+              aws s3 ls s3://$BACKUP_BUCKET/config/ | awk '{print $4}' | sort | head -n -30 | xargs -I {} aws s3 rm s3://$BACKUP_BUCKET/config/{}
+              
+              echo "Configuration backup completed: config_backup_$TIMESTAMP.tar.gz"
+            env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ism-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ism-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+            - name: BACKUP_BUCKET
+              value: "ism-backups"
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backup
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          restartPolicy: OnFailure
+---
+# AI Models Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ism-ai-models-backup
+  namespace: ism-platform
+spec:
+  schedule: "0 4 * * 0"  # Weekly on Sunday at 4 AM
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 4
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: ism-backup-sa
+          containers:
+          - name: models-backup
+            image: alpine:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Install required tools
+              apk add --no-cache aws-cli tar gzip
+              
+              # Create backup directory
+              mkdir -p /backup/models
+              
+              # Get current timestamp
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              
+              # Backup AI models from PVC
+              tar -czf /backup/models_backup_$TIMESTAMP.tar.gz -C /models .
+              
+              # Upload to S3
+              aws s3 cp /backup/models_backup_$TIMESTAMP.tar.gz s3://$BACKUP_BUCKET/models/
+              
+              # Clean up old backups (keep last 4 weeks)
+              aws s3 ls s3://$BACKUP_BUCKET/models/ | awk '{print $4}' | sort | head -n -4 | xargs -I {} aws s3 rm s3://$BACKUP_BUCKET/models/{}
+              
+              echo "AI models backup completed: models_backup_$TIMESTAMP.tar.gz"
+            env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: ism-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ism-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_DEFAULT_REGION
+              value: "us-east-1"
+            - name: BACKUP_BUCKET
+              value: "ism-backups"
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backup
+            - name: ai-models
+              mountPath: /models
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-storage-pvc
+          - name: ai-models
+            persistentVolumeClaim:
+              claimName: ai-models-pvc
+          restartPolicy: OnFailure
+---
+# Backup Storage PVC
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-storage-pvc
+  namespace: ism-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: standard
+---
+# Backup Service Account
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ism-backup-sa
+  namespace: ism-platform
+---
+# Backup RBAC
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ism-backup-role
+  namespace: ism-platform
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets", "pods", "services", "persistentvolumeclaims"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies", "ingresses"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ism-backup-rolebinding
+  namespace: ism-platform
+subjects:
+  - kind: ServiceAccount
+    name: ism-backup-sa
+    namespace: ism-platform
+roleRef:
+  kind: Role
+  name: ism-backup-role
+  apiGroup: rbac.authorization.k8s.io 

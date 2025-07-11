@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 

@@ -1,41 +1,70 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent } from './ui/card';
+import { Bell, CheckCircle, XCircle, Info, AlertTriangle } from 'lucide-react';
 
 interface Notification {
   id: string;
-  type: 'match' | 'message' | 'admin' | 'info';
+  type: string;
+  title: string;
   message: string;
-  timestamp: string;
+  data?: any;
+  read_at?: string;
+  created_at: string;
 }
 
-const mockNotifications: Notification[] = [
-  { id: '1', type: 'match', message: 'New material match found: Spent Grain → Bioenergy Co.', timestamp: '2 hours ago' },
-  { id: '2', type: 'message', message: 'You received a message from Green Plastics.', timestamp: '5 hours ago' },
-  { id: '3', type: 'admin', message: 'Your subscription has been upgraded to Pro.', timestamp: '1 day ago' },
-];
+interface NotificationsPanelProps {
+  companyId: string;
+}
 
-export function NotificationsPanel() {
-  const [notifications] = useState<Notification[]>(mockNotifications);
+export const NotificationsPanel: React.FC<NotificationsPanelProps> = ({ companyId }) => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    if (!companyId) return;
+    const eventSource = new EventSource(`/api/v1/companies/${companyId}/notifications/stream`);
+    eventSource.onmessage = (event) => {
+      const notification = JSON.parse(event.data);
+      setNotifications(prev => {
+        if (prev.find(n => n.id === notification.id)) return prev;
+        return [notification, ...prev].slice(0, 10);
+      });
+    };
+    return () => eventSource.close();
+  }, [companyId]);
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'match_update': return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case 'error': return <XCircle className="w-5 h-5 text-red-400" />;
+      case 'info': return <Info className="w-5 h-5 text-blue-400" />;
+      case 'warning': return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
+      default: return <Bell className="w-5 h-5 text-emerald-400" />;
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white rounded-xl shadow-sm p-8 w-full max-w-lg">
-        <h2 className="text-2xl font-bold mb-6">Notifications</h2>
-        <div className="space-y-4">
-          {notifications.length === 0 ? (
-            <div className="text-gray-500 text-center">No notifications yet.</div>
-          ) : (
-            notifications.map((n) => (
-              <div key={n.id} className="flex items-center space-x-3 border-b pb-3 last:border-b-0">
-                <span className={`h-8 w-8 flex items-center justify-center rounded-full ${n.type === 'match' ? 'bg-emerald-100 text-emerald-600' : n.type === 'message' ? 'bg-blue-100 text-blue-600' : n.type === 'admin' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-500'}`}>{n.type.charAt(0).toUpperCase()}</span>
-                <div className="flex-1">
-                  <div className="text-gray-900">{n.message}</div>
-                  <div className="text-xs text-gray-400">{n.timestamp}</div>
-                </div>
+    <div className="space-y-2">
+      {notifications.length === 0 ? (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="p-4 text-center text-gray-400">
+            <Bell className="w-8 h-8 mx-auto mb-2" />
+            No notifications yet.
+          </CardContent>
+        </Card>
+      ) : (
+        notifications.map(n => (
+          <Card key={n.id} className="bg-slate-800/50 border-slate-700">
+            <CardContent className="flex items-center gap-3 p-4">
+              {getIcon(n.type)}
+              <div>
+                <div className="font-semibold text-white">{n.title}</div>
+                <div className="text-gray-300 text-sm">{n.message}</div>
+                <div className="text-xs text-gray-500 mt-1">{new Date(n.created_at).toLocaleString()}</div>
               </div>
-            ))
-          )}
-        </div>
-      </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
     </div>
   );
-} 
+}; 

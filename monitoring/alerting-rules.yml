@@ -1,0 +1,346 @@
+groups:
+  - name: ism-platform-alerts
+    rules:
+      # Application Health Alerts
+      - alert: ISMBackendDown
+        expr: up{job="ism-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "ISM Backend is down"
+          description: "ISM Backend has been down for more than 1 minute"
+          runbook_url: "https://github.com/ism-ai/platform/docs/runbooks/backend-down.md"
+
+      - alert: ISMFrontendDown
+        expr: up{job="ism-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: frontend
+        annotations:
+          summary: "ISM Frontend is down"
+          description: "ISM Frontend has been down for more than 1 minute"
+
+      - alert: ISMAIServicesDown
+        expr: up{job="ism-ai-services"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: ai-services
+        annotations:
+          summary: "ISM AI Services are down"
+          description: "ISM AI Services have been down for more than 2 minutes"
+
+      # Database Health Alerts
+      - alert: DatabaseConnectionFailed
+        expr: ism_database_connection_status == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection failed"
+          description: "Unable to connect to Supabase database"
+
+      - alert: DatabaseHighLatency
+        expr: ism_database_query_duration_seconds > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database queries are slow"
+          description: "Database query latency is above 2 seconds"
+
+      # API Performance Alerts
+      - alert: APIHighResponseTime
+        expr: http_request_duration_seconds{job="ism-backend"} > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "API response time is high"
+          description: "API response time is above 5 seconds"
+
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{job="ism-backend", status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High API error rate"
+          description: "API error rate is above 10%"
+
+      - alert: APIHighRequestRate
+        expr: rate(http_requests_total{job="ism-backend"}[5m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API request rate"
+          description: "API request rate is above 1000 requests per minute"
+
+      # AI Service Alerts
+      - alert: AIMatchingEngineDown
+        expr: ism_ai_matching_engine_status == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: ai-matching
+        annotations:
+          summary: "AI Matching Engine is down"
+          description: "AI Matching Engine service is not responding"
+
+      - alert: AIHighProcessingTime
+        expr: ism_ai_processing_duration_seconds > 30
+        for: 5m
+        labels:
+          severity: warning
+          component: ai-processing
+        annotations:
+          summary: "AI processing time is high"
+          description: "AI processing time is above 30 seconds"
+
+      - alert: AIHighErrorRate
+        expr: rate(ism_ai_errors_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          component: ai-processing
+        annotations:
+          summary: "High AI error rate"
+          description: "AI service error rate is above 5%"
+
+      # Authentication and Security Alerts
+      - alert: HighAuthenticationFailures
+        expr: rate(ism_auth_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is above 10%"
+
+      - alert: SuspiciousActivity
+        expr: rate(ism_suspicious_requests_total[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+          component: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "Suspicious request rate is above 5%"
+
+      - alert: RateLimitExceeded
+        expr: rate(ism_rate_limit_exceeded_total[5m]) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "Rate limit exceeded frequently"
+          description: "Rate limit exceeded rate is above 20%"
+
+      # Business Metrics Alerts
+      - alert: LowMatchingSuccessRate
+        expr: ism_matching_success_rate < 0.7
+        for: 10m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "Low matching success rate"
+          description: "AI matching success rate is below 70%"
+
+      - alert: HighUserChurn
+        expr: rate(ism_user_churn_total[1h]) > 0.1
+        for: 30m
+        labels:
+          severity: warning
+          component: business
+        annotations:
+          summary: "High user churn rate"
+          description: "User churn rate is above 10% per hour"
+
+      - alert: LowSymbiosisOpportunities
+        expr: ism_symbiosis_opportunities_count < 10
+        for: 1h
+        labels:
+          severity: info
+          component: business
+        annotations:
+          summary: "Low symbiosis opportunities"
+          description: "Number of symbiosis opportunities is below 10"
+
+      # Infrastructure Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80%"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85%"
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_avail_bytes) / node_filesystem_size_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is above 85%"
+
+      # Kubernetes Alerts
+      - alert: PodRestartingFrequently
+        expr: increase(kube_pod_container_status_restarts_total[1h]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: kubernetes
+        annotations:
+          summary: "Pod restarting frequently"
+          description: "Pod has restarted more than 5 times in the last hour"
+
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: kubernetes
+        annotations:
+          summary: "Pod in crash loop"
+          description: "Pod is restarting repeatedly"
+
+      # External Service Alerts
+      - alert: SupabaseServiceDown
+        expr: ism_supabase_health_status == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: external
+        annotations:
+          summary: "Supabase service is down"
+          description: "Supabase database service is not responding"
+
+      - alert: ExternalAPIHighLatency
+        expr: ism_external_api_duration_seconds > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: external
+        annotations:
+          summary: "External API high latency"
+          description: "External API response time is above 10 seconds"
+
+      # Custom Business Logic Alerts
+      - alert: CarbonCalculationFailure
+        expr: rate(ism_carbon_calculation_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: business-logic
+        annotations:
+          summary: "Carbon calculation failures"
+          description: "Carbon calculation error rate is above 10%"
+
+      - alert: WasteTrackingFailure
+        expr: rate(ism_waste_tracking_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: business-logic
+        annotations:
+          summary: "Waste tracking failures"
+          description: "Waste tracking error rate is above 10%"
+
+      - alert: MatchingEngineDegraded
+        expr: ism_matching_engine_accuracy < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: ai-matching
+        annotations:
+          summary: "Matching engine accuracy degraded"
+          description: "AI matching engine accuracy is below 80%"
+
+      # Data Quality Alerts
+      - alert: DataQualityIssues
+        expr: ism_data_quality_score < 0.9
+        for: 15m
+        labels:
+          severity: warning
+          component: data-quality
+        annotations:
+          summary: "Data quality issues detected"
+          description: "Data quality score is below 90%"
+
+      - alert: MissingCriticalData
+        expr: ism_missing_critical_data_count > 0
+        for: 5m
+        labels:
+          severity: critical
+          component: data-quality
+        annotations:
+          summary: "Missing critical data"
+          description: "Critical data fields are missing"
+
+      # Performance Degradation Alerts
+      - alert: FrontendPerformanceDegraded
+        expr: ism_frontend_load_time_seconds > 3
+        for: 5m
+        labels:
+          severity: warning
+          component: frontend
+        annotations:
+          summary: "Frontend performance degraded"
+          description: "Frontend load time is above 3 seconds"
+
+      - alert: BackendPerformanceDegraded
+        expr: ism_backend_response_time_seconds > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "Backend performance degraded"
+          description: "Backend response time is above 2 seconds"
+
+      # Availability Alerts
+      - alert: ServiceAvailabilityLow
+        expr: ism_service_availability_percentage < 99.5
+        for: 10m
+        labels:
+          severity: critical
+          component: availability
+        annotations:
+          summary: "Service availability is low"
+          description: "Service availability is below 99.5%"
+
+      - alert: UptimeDegraded
+        expr: ism_uptime_percentage < 99.9
+        for: 1h
+        labels:
+          severity: warning
+          component: availability
+        annotations:
+          summary: "Uptime degraded"
+          description: "System uptime is below 99.9%" 

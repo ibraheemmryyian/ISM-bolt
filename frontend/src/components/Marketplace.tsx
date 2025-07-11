@@ -20,10 +20,10 @@ import {
 import { supabase } from '../lib/supabase';
 import { messagingService } from '../lib/messagingService';
 import { MaterialForm } from './MaterialForm';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface MarketplaceProps {
-  onSignOut: () => void;
+  onSignOut?: () => void;
 }
 
 interface Material {
@@ -129,14 +129,10 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
   async function loadMarketplaceData() {
     try {
-      // Load materials with company info
+      // Show ALL materials in the marketplace
       const { data: materialsData, error: materialsError } = await supabase
         .from('materials')
-        .select(`
-          *,
-          companies(name)
-        `)
-        .order('created_at', { ascending: false });
+        .select('*');
 
       if (materialsError) throw materialsError;
 
@@ -153,24 +149,20 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
       setMaterials(enhancedMaterials);
 
-      // Load companies with profiles
+      // Show ALL companies in the marketplace
       const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
-        .select(`
-          *,
-          company_profiles(role, location, organization_type, materials_of_interest)
-        `)
-        .order('created_at', { ascending: false });
+        .select('*');
 
       if (companiesError) throw companiesError;
 
       const enhancedCompanies = companiesData?.map(company => ({
         id: company.id,
         name: company.name,
-        role: company.company_profiles?.[0]?.role || 'user',
-        location: company.company_profiles?.[0]?.location,
-        organization_type: company.company_profiles?.[0]?.organization_type,
-        materials_of_interest: company.company_profiles?.[0]?.materials_of_interest,
+        role: company.role || 'user',
+        location: company.location,
+        organization_type: company.industry,
+        materials_of_interest: company.process_description,
         sustainability_score: Math.floor(Math.random() * 30) + 70
       })) || [];
 
@@ -361,7 +353,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
         await supabase
           .from('favorites')
           .delete()
-          .eq('user_id', currentUserId)
+          .eq('company_id', currentUserId)
           .eq('material_id', materialId);
         
         setFavorites(prev => {
@@ -374,7 +366,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
         await supabase
           .from('favorites')
           .insert({
-            user_id: currentUserId,
+            company_id: currentUserId,
             material_id: materialId
           });
         
@@ -461,60 +453,6 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex items-center space-x-2">
-                <Workflow className="h-8 w-8 text-emerald-500" />
-                <span className="text-2xl font-bold text-gray-900">SymbioFlows</span>
-              </div>
-              <div className="hidden md:ml-10 md:flex md:space-x-8">
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"
-                >
-                  Dashboard
-                </button>
-                <button
-                  onClick={() => navigate('/marketplace')}
-                  className="text-emerald-600 border-b-2 border-emerald-600 px-1 pt-1 pb-4 text-sm font-medium"
-                >
-                  Marketplace
-                </button>
-                <button
-                  onClick={() => navigate('/home')}
-                  className="text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium"
-                >
-                  Home
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => navigate('/notifications')}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <Bell className="h-6 w-6" />
-              </button>
-              <button 
-                onClick={() => navigate('/chats')}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <MessageSquare className="h-6 w-6" />
-              </button>
-              <button
-                onClick={onSignOut}
-                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

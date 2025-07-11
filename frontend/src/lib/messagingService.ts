@@ -61,7 +61,7 @@ class MessagingAPIClient {
     options: RequestInit = {}, 
     retryCount = 0
   ): Promise<{ success: boolean; data?: T; error?: string }> {
-    const url = `/api${endpoint}`;
+    const url = `http://localhost:5001/api${endpoint}`;
     
     try {
       const response = await fetch(url, {
@@ -383,7 +383,7 @@ class MessagingService {
   async subscribeToMessages(conversationId: string, callback: (message: Message) => void): Promise<() => void> {
     try {
       // Try WebSocket first
-      const ws = new WebSocket(`ws://localhost:5000/ws/conversations/${conversationId}`);
+      const ws = new WebSocket(`ws://localhost:5001/ws/conversations/${conversationId}`);
       
       ws.onmessage = (event) => {
         try {

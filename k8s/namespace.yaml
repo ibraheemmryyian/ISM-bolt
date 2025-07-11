@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ism-platform
+  labels:
+    name: ism-platform
+    environment: production
+    app: industrial-symbiosis-marketplace
+  annotations:
+    description: "Industrial Symbiosis Marketplace Platform"
+    owner: "startup-founder"
+    cost-center: "ai-marketplace" 
