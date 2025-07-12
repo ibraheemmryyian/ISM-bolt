@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
@@ -23,6 +22,17 @@ from pathlib import Path
 import threading
 import random
 
+# Configure logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('monopoly_ai.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # ML imports
 try:
     import torch
@@ -44,26 +54,12 @@ except ImportError:
 try:
     from sentence_transformers import SentenceTransformer
     from transformers import AutoTokenizer, AutoModel
-    import nltk
-    from nltk.corpus import stopwords
-    from nltk.tokenize import word_tokenize
     NLP_AVAILABLE = True
 except ImportError:
     NLP_AVAILABLE = False
     logging.warning("NLP libraries not available. Semantic matching will be limited.")
 
 warnings.filterwarnings('ignore')
-
-# Configure advanced logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('monopoly_ai.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
 
 # Try to import optional modules, but don't fail if they're missing
 try:
