@@ -99,9 +99,7 @@ class PerfectAISystem:
                 gnn_persistence_enabled=True,
                 max_memory_usage=0.85,
                 health_check_interval=30,
-                performance_logging_interval=60,
-                auto_save_interval=300,
-                backup_interval=3600
+                performance_logging_interval=60
             )
             
             self.modules['orchestrator'] = self.module_classes['orchestrator'](orchestrator_config)
