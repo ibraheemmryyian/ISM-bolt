@@ -76,17 +76,19 @@ class APIIntegrationLayer:
         """Initialize the API Integration Layer"""
         self.config = config or {}
         
-        # API Keys (should be loaded from environment variables)
-        self.next_gen_materials_api_key = os.getenv('NEXT_GEN_MATERIALS_API_KEY')
-        self.freightos_api_key = os.getenv('FREIGHTOS_API_KEY')
-        self.freightos_carbon_api_key = os.getenv('FREIGHTOS_CARBON_API_KEY')
-        self.deepseek_api_key = os.getenv('DEEPSEEK_R1_API_KEY')
-        self.newsapi_key = os.getenv('NEWSAPI_KEY')
+        # API Keys (loaded from config)
+        from api_config import api_config
+        self.next_gen_materials_api_key = api_config.get_api_key('next_gen_materials')
+        self.freightos_api_key = api_config.get_api_key('freightos')
+        self.freightos_secret_key = api_config.get_api_key('freightos_secret')
+        self.freightos_carbon_api_key = api_config.get_api_key('freightos_carbon')
+        self.deepseek_api_key = api_config.get_api_key('deepseek')
+        self.newsapi_key = api_config.get_api_key('newsapi')
         
         # API Base URLs
-        self.next_gen_materials_base_url = "https://api.nextgenmaterials.org/v1"
-        self.freightos_base_url = "https://api.freightos.com/v2"
-        self.freightos_carbon_base_url = "https://api.freightos.com/carbon/v1"
+        self.next_gen_materials_base_url = "https://api.nextgenmaterials.com"
+        self.freightos_base_url = "https://api.freightos.com"
+        self.freightos_carbon_base_url = "https://api.freightos.com"
         self.deepseek_base_url = "https://api.deepseek.com/v1"
         self.newsapi_base_url = "https://newsapi.org/v2"
         
@@ -131,13 +133,11 @@ class APIIntegrationLayer:
                 logger.warning("Rate limit exceeded for Next Gen Materials API")
                 return None
             
-            url = f"{self.next_gen_materials_base_url}/analyze"
-            payload = {
-                "material": material_name,
-                "waste_stream": waste_stream,
-                "include_toxicity": True,
-                "include_environmental": True,
-                "include_market": True
+            # First search for the material
+            search_url = f"{self.next_gen_materials_base_url}/materials/search"
+            search_params = {
+                "query": material_name,
+                "limit": 1
             }
             
             headers = {
@@ -146,31 +146,47 @@ class APIIntegrationLayer:
             }
             
             async with aiohttp.ClientSession() as session:
-                async with session.post(url, json=payload, headers=headers) as response:
-                    if response.status == 200:
-                        data = await response.json()
+                async with session.get(search_url, params=search_params, headers=headers) as search_response:
+                    if search_response.status == 200:
+                        search_data = await search_response.json()
+                        materials = search_data.get('materials', [])
                         
-                        chemical_structure = ChemicalStructure(
-                            formula=data.get('formula', ''),
-                            molecular_weight=data.get('molecular_weight', 0.0),
-                            density=data.get('density', 0.0),
-                            melting_point=data.get('melting_point', 0.0),
-                            boiling_point=data.get('boiling_point', 0.0),
-                            solubility=data.get('solubility', {}),
-                            toxicity_data=data.get('toxicity', {}),
-                            environmental_impact=data.get('environmental_impact', {}),
-                            recycling_potential=data.get('recycling_potential', 0.0),
-                            market_value=data.get('market_value', 0.0)
-                        )
-                        
-                        # Cache the result
-                        self.cache[cache_key] = chemical_structure
-                        self._increment_rate_limit('next_gen_materials')
-                        
-                        logger.info(f"Chemical analysis completed for {material_name}")
-                        return chemical_structure
+                        if materials:
+                            material_id = materials[0]['id']
+                            
+                            # Get material properties
+                            properties_url = f"{self.next_gen_materials_base_url}/materials/{material_id}/properties"
+                            async with session.get(properties_url, headers=headers) as properties_response:
+                                if properties_response.status == 200:
+                                    data = await properties_response.json()
+                                    
+                                    chemical_structure = ChemicalStructure(
+                                        formula=data.get('formula', ''),
+                                        molecular_weight=data.get('molecular_weight', 0.0),
+                                        density=data.get('density', 0.0),
+                                        melting_point=data.get('melting_point', 0.0),
+                                        boiling_point=data.get('boiling_point', 0.0),
+                                        solubility=data.get('solubility', {}),
+                                        toxicity_data=data.get('toxicity', {}),
+                                        environmental_impact=data.get('environmental_impact', {}),
+                                        recycling_potential=data.get('recycling_potential', 0.0),
+                                        market_value=data.get('market_value', 0.0)
+                                    )
+                                    
+                                    # Cache the result
+                                    self.cache[cache_key] = chemical_structure
+                                    self._increment_rate_limit('next_gen_materials')
+                                    
+                                    logger.info(f"Chemical analysis completed for {material_name}")
+                                    return chemical_structure
+                                else:
+                                    logger.error(f"Material properties failed: {properties_response.status}")
+                                    return None
+                        else:
+                            logger.warning(f"No materials found for: {material_name}")
+                            return None
                     else:
-                        logger.error(f"Chemical analysis failed: {response.status}")
+                        logger.error(f"Material search failed: {search_response.status}")
                         return None
                         
         except Exception as e:
@@ -207,19 +223,19 @@ class APIIntegrationLayer:
                 logger.warning("Rate limit exceeded for Freightos API")
                 return None
             
-            url = f"{self.freightos_base_url}/quote"
+            url = f"{self.freightos_base_url}/freight/rates"
             payload = {
                 "origin": origin,
                 "destination": destination,
                 "weight": weight,
                 "volume": volume,
                 "material_type": material_type,
-                "service_level": "standard",
-                "include_carbon": True
+                "service_level": "standard"
             }
             
             headers = {
                 "Authorization": f"Bearer {self.freightos_api_key}",
+                "X-Secret-Key": self.freightos_secret_key,
                 "Content-Type": "application/json"
             }
             
@@ -285,7 +301,7 @@ class APIIntegrationLayer:
                 logger.warning("Rate limit exceeded for Freightos Carbon API")
                 return None
             
-            url = f"{self.freightos_carbon_base_url}/calculate"
+            url = f"{self.freightos_carbon_base_url}/sustainability/emissions"
             payload = {
                 "origin": origin,
                 "destination": destination,
@@ -298,6 +314,7 @@ class APIIntegrationLayer:
             
             headers = {
                 "Authorization": f"Bearer {self.freightos_carbon_api_key}",
+                "X-Secret-Key": self.freightos_secret_key,
                 "Content-Type": "application/json"
             }
             

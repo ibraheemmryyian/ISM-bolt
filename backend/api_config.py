@@ -18,30 +18,31 @@ class APIConfig:
         self.api_settings = self._load_api_settings()
         
     def _load_api_keys(self) -> Dict[str, str]:
-        """Load API keys from environment variables"""
+        """Load API keys from environment variables or use provided keys"""
         return {
-            'next_gen_materials': os.getenv('NEXT_GEN_MATERIALS_API_KEY', ''),
-            'freightos': os.getenv('FREIGHTOS_API_KEY', ''),
-            'freightos_carbon': os.getenv('FREIGHTOS_CARBON_API_KEY', ''),
-            'deepseek': os.getenv('DEEPSEEK_R1_API_KEY', ''),
-            'newsapi': os.getenv('NEWSAPI_KEY', ''),
+            'next_gen_materials': os.getenv('NEXT_GEN_MATERIALS_API_KEY', 'zSFjfpRg6m020aK84yOjM7oLIhjDNPjE'),
+            'freightos': os.getenv('FREIGHTOS_API_KEY', 'V2C6teoe9xSKKpTxL8j4xxuOFGHxQWhx'),
+            'freightos_secret': os.getenv('FREIGHTOS_SECRET_KEY', 'k6hEyfd3b6ao8rKQ'),
+            'freightos_carbon': os.getenv('FREIGHTOS_CARBON_API_KEY', 'V2C6teoe9xSKKpTxL8j4xxuOFGHxQWhx'),  # Same as freightos
+            'deepseek': os.getenv('DEEPSEEK_R1_API_KEY', 'sk-7ce79f30332d45d5b3acb8968b052132'),
+            'newsapi': os.getenv('NEWSAPI_KEY', ''),  # Will need to be set by user
         }
     
     def _load_api_settings(self) -> Dict[str, Any]:
         """Load API settings and configurations"""
         return {
             'next_gen_materials': {
-                'base_url': 'https://api.nextgenmaterials.org/v1',
+                'base_url': 'https://api.nextgenmaterials.com',
                 'rate_limit': 1000,
                 'timeout': 30
             },
             'freightos': {
-                'base_url': 'https://api.freightos.com/v2',
+                'base_url': 'https://api.freightos.com',
                 'rate_limit': 500,
                 'timeout': 30
             },
             'freightos_carbon': {
-                'base_url': 'https://api.freightos.com/carbon/v1',
+                'base_url': 'https://api.freightos.com',
                 'rate_limit': 500,
                 'timeout': 30
             },
