@@ -1,22 +1,58 @@
-import torch
-from torch_geometric.data import Data
-import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, SAGEConv, GATConv, GINConv, RGCNConv
-import networkx as nx
-import random
-from typing import List, Tuple, Dict, Optional
-from sklearn.preprocessing import OneHotEncoder
-import numpy as np
 import logging
+logger = logging.getLogger(__name__)
+
+# Import ML libraries with graceful fallbacks
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    print("PyTorch not available")
+
+try:
+    from torch_geometric.data import Data
+    from torch_geometric.nn import GCNConv, SAGEConv, GATConv, GINConv, RGCNConv
+    TORCH_GEOMETRIC_AVAILABLE = True
+except ImportError:
+    TORCH_GEOMETRIC_AVAILABLE = False
+    print("PyTorch Geometric not available")
+
+try:
+    import networkx as nx
+    NETWORKX_AVAILABLE = True
+except ImportError:
+    NETWORKX_AVAILABLE = False
+    print("NetworkX not available")
+
+try:
+    from sklearn.preprocessing import OneHotEncoder
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+    OneHotEncoder = None
+    print("Scikit-learn not available")
+
+try:
+    import numpy as np
+    import pandas as pd
+    NUMPY_PANDAS_AVAILABLE = True
+except ImportError:
+    NUMPY_PANDAS_AVAILABLE = False
+    print("NumPy/Pandas not available")
+
+import random
+from typing import List, Tuple, Dict, Optional, Any
 from datetime import datetime
-import pandas as pd
 import pickle
 from pathlib import Path
 import json
 import threading
 import time
 
-logger = logging.getLogger(__name__)
+# Check if GNN functionality is available
+GNN_AVAILABLE = TORCH_AVAILABLE and TORCH_GEOMETRIC_AVAILABLE and NETWORKX_AVAILABLE
 
 class GNNModelManager:
     """Manages multiple GNN models with persistent storage"""
@@ -57,18 +93,24 @@ class GNNModelManager:
             config = self.model_configs[model_name]
             model = self._create_model_from_config(config)
             
-            model_path = self.model_cache_dir / f"{model_name}.pth"
-            model.load_state_dict(torch.load(model_path, map_location='cpu'))
-            model.eval()
-            
-            self.models[model_name] = model
-            logger.info(f"Loaded model: {model_name}")
+            if model is not None and TORCH_AVAILABLE:
+                model_path = self.model_cache_dir / f"{model_name}.pth"
+                model.load_state_dict(torch.load(model_path, map_location='cpu'))
+                model.eval()
+                
+                self.models[model_name] = model
+                logger.info(f"Loaded model: {model_name}")
+            else:
+                logger.warning(f"Could not load model {model_name}: GNN not available")
             
         except Exception as e:
             logger.error(f"Error loading model {model_name}: {e}")
     
-    def _create_model_from_config(self, config: Dict[str, Any]) -> nn.Module:
+    def _create_model_from_config(self, config: Dict[str, Any]):
         """Create model from configuration"""
+        if not GNN_AVAILABLE:
+            return None
+            
         model_type = config.get('type', 'GCN')
         input_dim = config.get('input_dim', 128)
         hidden_dim = config.get('hidden_dim', 256)

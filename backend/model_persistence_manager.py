@@ -92,7 +92,7 @@ class ModelPersistenceManager:
         except Exception as e:
             logger.error(f"Error saving model registry: {e}")
 
-    def save_model(self, model_name: str, model: Any, metadata: Dict[str, Any] = None) -> bool:
+    def save_model(self, model_name: str, model: Any, metadata: Optional[Dict[str, Any]] = None) -> bool:
         """Save a model with metadata"""
         try:
             with self.lock:
@@ -364,7 +364,7 @@ class ModelPersistenceManager:
                     for item in temp_path.iterdir():
                         if item.is_file():
                             # Registry files
-                            if item.name in ['model_registry.json', 'model_metadata.json']]:
+                            if item.name in ['model_registry.json', 'model_metadata.json']:
                                 shutil.copy2(item, self.base_dir / item.name)
                         elif item.is_dir():
                             # Model directories
@@ -441,7 +441,7 @@ class ModelPersistenceManager:
             stats = {
                 'total_models': len(self.model_registry),
                 'total_versions': sum(len(info['versions']) for info in self.model_registry.values()),
-                'average_load_time': np.mean(list(self.load_times.values())) if self.load_times else 0,
+                'average_load_time': sum(self.load_times.values()) / len(self.load_times) if self.load_times else 0,
                 'total_backups': len(list(self.backup_config['backup_dir'].glob("backup_*.zip"))),
                 'registry_size': len(self.model_registry),
                 'metadata_size': len(self.model_metadata)
@@ -548,7 +548,9 @@ class ModelPersistenceManager:
                     model_name = metadata.get('name', f"imported_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
                 
                 # Save model
-                return self.save_model(model_name, model, metadata)
+                if model_name is not None:
+                    return self.save_model(model_name, model, metadata)
+                return False
                 
         except Exception as e:
             logger.error(f"Error importing model from {import_path}: {e}")
