@@ -140,8 +140,8 @@ class MatchingResult:
     algorithm_used: str
     confidence_threshold: float
 
-class MONOPOLYAIMatching:
-    """MONOPOLY-LEVEL Industrial Symbiosis Matching AI - The Future of Circular Economy"""
+class RevolutionaryAIMatching:
+    """Revolutionary Industrial Symbiosis Matching AI - The Future of Circular Economy"""
     
     def __init__(self):
         try:
@@ -194,7 +194,53 @@ class MONOPOLYAIMatching:
         self.anomaly_detector = self._initialize_anomaly_detector()
         self.causal_reasoner = self._initialize_causal_reasoner()
         
-        logger.info("🚀 MONOPOLY AI initialized with cutting-edge features")
+        logger.info("🚀 Revolutionary AI initialized with cutting-edge features")
+    
+    async def find_symbiosis_matches(self, buyer: Dict[str, Any], sellers: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Find symbiosis matches between buyer and sellers"""
+        try:
+            matches = []
+            confidence_scores = []
+            sustainability_impact = []
+            
+            for seller in sellers:
+                # Calculate compatibility
+                compatibility = self.predict_compatibility(buyer, seller)
+                
+                # Create match result
+                match = {
+                    'buyer_id': buyer.get('id', 'unknown'),
+                    'seller_id': seller.get('id', 'unknown'),
+                    'compatibility_score': compatibility.get('overall_score', 0.0),
+                    'confidence': compatibility.get('confidence', 0.0),
+                    'sustainability_impact': compatibility.get('sustainability_score', 0.0),
+                    'explanation': compatibility.get('explanation', 'No explanation available')
+                }
+                
+                matches.append(match)
+                confidence_scores.append(compatibility.get('confidence', 0.0))
+                sustainability_impact.append(compatibility.get('sustainability_score', 0.0))
+            
+            return {
+                'matches': matches,
+                'confidence_scores': confidence_scores,
+                'sustainability_impact': sustainability_impact,
+                'total_matches': len(matches),
+                'average_confidence': np.mean(confidence_scores) if confidence_scores else 0.0,
+                'average_sustainability': np.mean(sustainability_impact) if sustainability_impact else 0.0
+            }
+            
+        except Exception as e:
+            logger.error(f"Error finding symbiosis matches: {e}")
+            return {
+                'matches': [],
+                'confidence_scores': [],
+                'sustainability_impact': [],
+                'total_matches': 0,
+                'average_confidence': 0.0,
+                'average_sustainability': 0.0,
+                'error': str(e)
+            }
     
     def _initialize_multi_agents(self):
         """Initialize multi-agent collaboration system"""

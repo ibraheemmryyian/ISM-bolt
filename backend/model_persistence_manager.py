@@ -554,5 +554,44 @@ class ModelPersistenceManager:
             logger.error(f"Error importing model from {import_path}: {e}")
             return False
 
+    def register_model(self, model_name: str, model_info: Dict[str, Any]) -> bool:
+        """Register a model in the registry"""
+        try:
+            with self.lock:
+                if model_name not in self.model_registry:
+                    self.model_registry[model_name] = {
+                        'current_version': '1.0.0',
+                        'versions': ['1.0.0'],
+                        'created_at': datetime.now().isoformat(),
+                        'last_updated': datetime.now().isoformat()
+                    }
+                
+                # Update model info
+                self.model_registry[model_name].update(model_info)
+                self.model_registry[model_name]['last_updated'] = datetime.now().isoformat()
+                
+                # Save registry
+                self._save_registry()
+                
+                logger.info(f"Registered model {model_name}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error registering model {model_name}: {e}")
+            return False
+
+    def get_model_info(self, model_name: str) -> Optional[Dict[str, Any]]:
+        """Get model information from registry"""
+        try:
+            if model_name in self.model_registry:
+                return self.model_registry[model_name]
+            else:
+                logger.warning(f"Model {model_name} not found in registry")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error getting model info for {model_name}: {e}")
+            return None
+
 # Initialize global model persistence manager
 model_persistence_manager = ModelPersistenceManager() 

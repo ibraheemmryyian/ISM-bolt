@@ -167,6 +167,22 @@ class KnowledgeGraph:
         self.stats['edges'] = self.graph.number_of_edges()
         logger.debug(f"Added relationship: {source_id} --{rel_type}--> {target_id}")
 
+    def query_entities(self, entity_type: str, filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Query entities by type and filters"""
+        try:
+            results = []
+            for node_id, node_data in self.graph.nodes(data=True):
+                if node_data.get('entity_type') == entity_type:
+                    if self._matches_filters(node_data, filters):
+                        results.append({
+                            'id': node_id,
+                            **node_data
+                        })
+            return results
+        except Exception as e:
+            logger.error(f"Error querying entities: {e}")
+            return []
+
     def _prepare_node_features(self, attributes: Dict[str, Any], entity_type: str) -> np.ndarray:
         """Prepare node features for GNN"""
         features = np.zeros(self.feature_dim)

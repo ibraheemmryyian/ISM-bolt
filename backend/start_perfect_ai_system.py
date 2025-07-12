@@ -54,32 +54,55 @@ class PerfectAISystem:
 
     def _import_modules(self):
         """Import all AI modules with proper error handling"""
+        self.module_classes = {}
+        
         try:
             # Core AI modules
             from gnn_reasoning import GNNReasoning
+            self.module_classes['gnn_reasoning'] = GNNReasoning
+        except ImportError as e:
+            self.logger.warning(f"GNNReasoning not available: {e}")
+            self.module_classes['gnn_reasoning'] = None
+        
+        try:
             from revolutionary_ai_matching import RevolutionaryAIMatching
+            self.module_classes['revolutionary_matching'] = RevolutionaryAIMatching
+        except ImportError as e:
+            self.logger.warning(f"RevolutionaryAIMatching not available: {e}")
+            self.module_classes['revolutionary_matching'] = None
+        
+        try:
             from knowledge_graph import KnowledgeGraph
+            self.module_classes['knowledge_graph'] = KnowledgeGraph
+        except ImportError as e:
+            self.logger.warning(f"KnowledgeGraph not available: {e}")
+            self.module_classes['knowledge_graph'] = None
+        
+        try:
             from model_persistence_manager import ModelPersistenceManager
-            
+            self.module_classes['model_persistence'] = ModelPersistenceManager
+        except ImportError as e:
+            self.logger.warning(f"ModelPersistenceManager not available: {e}")
+            self.module_classes['model_persistence'] = None
+        
+        try:
             # Advanced modules
             from advanced_ai_orchestrator import AdvancedAIOrchestrator, OrchestrationConfig
-            from perfect_ai_integration import PerfectAIIntegration
-            
-            # Store module classes
-            self.module_classes = {
-                'gnn_reasoning': GNNReasoning,
-                'revolutionary_matching': RevolutionaryAIMatching,
-                'knowledge_graph': KnowledgeGraph,
-                'model_persistence': ModelPersistenceManager,
-                'orchestrator': AdvancedAIOrchestrator,
-                'integration': PerfectAIIntegration
-            }
-            
-            self.logger.info(f"Successfully imported {len(self.module_classes)} AI modules")
-            
+            self.module_classes['orchestrator'] = AdvancedAIOrchestrator
+            self.module_classes['orchestration_config'] = OrchestrationConfig
         except ImportError as e:
-            self.logger.error(f"Failed to import AI modules: {e}")
-            raise
+            self.logger.warning(f"AdvancedAIOrchestrator not available: {e}")
+            self.module_classes['orchestrator'] = None
+            self.module_classes['orchestration_config'] = None
+        
+        try:
+            from perfect_ai_integration import PerfectAIIntegration
+            self.module_classes['integration'] = PerfectAIIntegration
+        except ImportError as e:
+            self.logger.warning(f"PerfectAIIntegration not available: {e}")
+            self.module_classes['integration'] = None
+        
+        self.logger.info(f"Successfully imported {len([v for v in self.module_classes.values() if v is not None])} AI modules")
 
     def _initialize_system(self):
         """Initialize the AI system with perfect configuration"""
@@ -90,29 +113,32 @@ class PerfectAISystem:
             self._create_directories()
             
             # Initialize model persistence manager
-            self.modules['model_persistence'] = self.module_classes['model_persistence']('./models')
+            if self.module_classes.get('model_persistence'):
+                self.modules['model_persistence'] = self.module_classes['model_persistence']('./models')
             
             # Initialize orchestrator with perfect configuration
-            orchestrator_config = OrchestrationConfig(
-                max_concurrent_requests=20,
-                gnn_warm_start_enabled=True,
-                gnn_persistence_enabled=True,
-                max_memory_usage=0.85,
-                health_check_interval=30,
-                performance_logging_interval=60
-            )
-            
-            self.modules['orchestrator'] = self.module_classes['orchestrator'](orchestrator_config)
+            if self.module_classes.get('orchestrator') and self.module_classes.get('orchestration_config'):
+                orchestrator_config = self.module_classes['orchestration_config'](
+                    max_concurrent_requests=20,
+                    gnn_warm_start_enabled=True,
+                    gnn_persistence_enabled=True,
+                    max_memory_usage=0.85,
+                    health_check_interval=30,
+                    performance_logging_interval=60
+                )
+                
+                self.modules['orchestrator'] = self.module_classes['orchestrator'](orchestrator_config)
             
             # Initialize perfect integration
-            integration_config = {
-                'max_queue_size': 1000,
-                'cache_size': 500,
-                'timeout': 30.0,
-                'retry_attempts': 3
-            }
-            
-            self.modules['integration'] = self.module_classes['integration'](integration_config)
+            if self.module_classes.get('integration'):
+                integration_config = {
+                    'max_queue_size': 1000,
+                    'cache_size': 500,
+                    'timeout': 30.0,
+                    'retry_attempts': 3
+                }
+                
+                self.modules['integration'] = self.module_classes['integration'](integration_config)
             
             # Initialize core AI modules
             self._initialize_core_modules()
@@ -145,15 +171,18 @@ class PerfectAISystem:
         """Initialize core AI modules with perfect configuration"""
         try:
             # Initialize GNN Reasoning with persistent warm starts
-            self.modules['gnn_reasoning'] = self.module_classes['gnn_reasoning'](
-                model_cache_dir='./models/gnn'
-            )
+            if self.module_classes.get('gnn_reasoning'):
+                self.modules['gnn_reasoning'] = self.module_classes['gnn_reasoning'](
+                    model_cache_dir='./models/gnn'
+                )
             
             # Initialize Revolutionary AI Matching
-            self.modules['revolutionary_matching'] = self.module_classes['revolutionary_matching']()
+            if self.module_classes.get('revolutionary_matching'):
+                self.modules['revolutionary_matching'] = self.module_classes['revolutionary_matching']()
             
             # Initialize Knowledge Graph
-            self.modules['knowledge_graph'] = self.module_classes['knowledge_graph']()
+            if self.module_classes.get('knowledge_graph'):
+                self.modules['knowledge_graph'] = self.module_classes['knowledge_graph']()
             
             self.logger.info("Core AI modules initialized successfully")
             
