@@ -155,10 +155,27 @@ class RevolutionaryAIMatching:
             self.industry_model = None
             self.material_model = None
             
-        # Advanced ensemble models
-        self.adaptation_model = GradientBoostingRegressor(n_estimators=200, learning_rate=0.1)
-        self.trust_model = RandomForestRegressor(n_estimators=100, max_depth=10)
-        self.market_model = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=1000)
+        # Advanced ensemble models using ML model factory
+        try:
+            from ml_model_factory import ml_model_factory
+            if ml_model_factory:
+                self.adaptation_model = ml_model_factory.create_ensemble_model(
+                    ['gradient_boosting', 'xgboost', 'lightgbm'], 'regression'
+                )
+                self.trust_model = ml_model_factory.create_ensemble_model(
+                    ['random_forest', 'gradient_boosting', 'catboost'], 'regression'
+                )
+                self.market_model = ml_model_factory.create_ensemble_model(
+                    ['neural_network', 'xgboost', 'lightgbm'], 'regression'
+                )
+            else:
+                self.adaptation_model = GradientBoostingRegressor(n_estimators=200, learning_rate=0.1)
+                self.trust_model = RandomForestRegressor(n_estimators=100, max_depth=10)
+                self.market_model = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=1000)
+        except ImportError:
+            self.adaptation_model = GradientBoostingRegressor(n_estimators=200, learning_rate=0.1)
+            self.trust_model = RandomForestRegressor(n_estimators=100, max_depth=10)
+            self.market_model = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=1000)
         
         # MONOPOLY-LEVEL data structures
         self.transaction_history = pd.DataFrame()

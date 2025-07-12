@@ -1,7 +1,6 @@
 import torch
 from torch_geometric.data import Data
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, SAGEConv, GATConv, GINConv, RGCNConv
 import networkx as nx
 import random
 from typing import List, Tuple, Dict, Optional, Any
@@ -16,6 +15,13 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import threading
 import asyncio
+
+# Import ML model factory
+try:
+    from ml_model_factory import ml_model_factory
+except ImportError:
+    ml_model_factory = None
+    logging.warning("ML model factory not available")
 
 logger = logging.getLogger(__name__)
 
@@ -168,18 +174,29 @@ class GNNReasoning:
         edge_dim = data.edge_attr.shape[1] if hasattr(data, 'edge_attr') else 0
         num_relations = data.edge_attr.shape[1] if hasattr(data, 'edge_attr') else 1
         
-        if model_type == 'gcn':
-            model = self.SimpleGCN(in_channels, edge_dim).to(self.device)
-        elif model_type == 'sage':
-            model = self.GraphSAGE(in_channels, edge_dim).to(self.device)
-        elif model_type == 'gat':
-            model = self.GAT(in_channels, edge_dim).to(self.device)
-        elif model_type == 'gin':
-            model = self.GIN(in_channels, edge_dim).to(self.device)
-        elif model_type == 'rgcn':
-            model = self.RGCN(in_channels, num_relations).to(self.device)
+        if ml_model_factory:
+            # Use ML model factory to create models
+            model = ml_model_factory.create_gnn_model(
+                model_type=model_type,
+                input_dim=in_channels,
+                hidden_dim=64,
+                output_dim=32,
+                num_layers=3
+            ).to(self.device)
         else:
-            raise ValueError(f"Unknown model type: {model_type}")
+            # Fallback to local model classes
+            if model_type == 'gcn':
+                model = self.SimpleGCN(in_channels, edge_dim).to(self.device)
+            elif model_type == 'sage':
+                model = self.GraphSAGE(in_channels, edge_dim).to(self.device)
+            elif model_type == 'gat':
+                model = self.GAT(in_channels, edge_dim).to(self.device)
+            elif model_type == 'gin':
+                model = self.GIN(in_channels, edge_dim).to(self.device)
+            elif model_type == 'rgcn':
+                model = self.RGCN(in_channels, num_relations).to(self.device)
+            else:
+                raise ValueError(f"Unknown model type: {model_type}")
         
         return model
 
