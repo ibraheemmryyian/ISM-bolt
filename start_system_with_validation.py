@@ -24,11 +24,7 @@ def validate_environment():
         'FREIGHTOS_API_KEY', 
         'FREIGHTOS_SECRET_KEY',
         'NEXT_GEN_MATERIALS_API_KEY',
-        'HEIGHT_API_KEY',
-        'HEIGHT_WORKSPACE_ID',
-        'PAYPAL_CLIENT_ID',
-        'PAYPAL_CLIENT_SECRET',
-        'SHIPPO_API_KEY',
+        'NEWSAPI_KEY',
         'SUPABASE_URL',
         'SUPABASE_SERVICE_ROLE_KEY'
     ]

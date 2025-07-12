@@ -27,9 +27,7 @@ class SystemAPIValidator:
             'deepseek_r1': {'status': 'unknown', 'error': None},
             'freightos': {'status': 'unknown', 'error': None},
             'nextgen_materials': {'status': 'unknown', 'error': None},
-            'height': {'status': 'unknown', 'error': None},
-            'paypal': {'status': 'unknown', 'error': None},
-            'shippo': {'status': 'unknown', 'error': None},
+            'newsapi': {'status': 'unknown', 'error': None},
             'supabase': {'status': 'unknown', 'error': None}
         }
         
@@ -45,11 +43,7 @@ class SystemAPIValidator:
             'FREIGHTOS_API_KEY': 'Freightos API',
             'FREIGHTOS_SECRET_KEY': 'Freightos Secret',
             'NEXT_GEN_MATERIALS_API_KEY': 'NextGen Materials API',
-            'HEIGHT_API_KEY': 'Height API',
-            'HEIGHT_WORKSPACE_ID': 'Height Workspace ID',
-            'PAYPAL_CLIENT_ID': 'PayPal Client ID',
-            'PAYPAL_CLIENT_SECRET': 'PayPal Client Secret',
-            'SHIPPO_API_KEY': 'Shippo API',
+            'NEWSAPI_KEY': 'NewsAPI',
             'SUPABASE_URL': 'Supabase URL',
             'SUPABASE_SERVICE_ROLE_KEY': 'Supabase Service Role Key'
         }
@@ -227,122 +221,49 @@ class SystemAPIValidator:
             self.results['nextgen_materials']['error'] = error_msg
             return False
     
-    def test_height_api(self) -> bool:
-        """Test Height API connectivity"""
-        logger.info("🧪 Testing Height API...")
+    def test_newsapi(self) -> bool:
+        """Test NewsAPI connectivity"""
+        logger.info("🧪 Testing NewsAPI...")
         
         try:
-            api_key = os.getenv('HEIGHT_API_KEY')
-            workspace_id = os.getenv('HEIGHT_WORKSPACE_ID')
+            api_key = os.getenv('NEWSAPI_KEY')
             
-            headers = {
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json'
-            }
+            if not api_key:
+                error_msg = "Missing NewsAPI key"
+                logger.error(f"❌ NewsAPI: {error_msg}")
+                self.results['newsapi']['status'] = 'failed'
+                self.results['newsapi']['error'] = error_msg
+                return False
             
-            # Test workspace endpoint
+            # Test top headlines endpoint
             response = requests.get(
-                f"https://api.height.app/workspaces/{workspace_id}",
-                headers=headers,
+                "https://newsapi.org/v2/top-headlines",
+                params={
+                    'country': 'us',
+                    'apiKey': api_key
+                },
                 timeout=30
             )
             
             if response.status_code == 200:
-                logger.info("✅ Height API: Working correctly")
-                self.results['height']['status'] = 'working'
+                logger.info("✅ NewsAPI: Working correctly")
+                self.results['newsapi']['status'] = 'working'
                 return True
             else:
                 error_msg = f"HTTP {response.status_code}: {response.text}"
-                logger.error(f"❌ Height API error: {error_msg}")
-                self.results['height']['status'] = 'failed'
-                self.results['height']['error'] = error_msg
+                logger.error(f"❌ NewsAPI error: {error_msg}")
+                self.results['newsapi']['status'] = 'failed'
+                self.results['newsapi']['error'] = error_msg
                 return False
                 
         except Exception as e:
             error_msg = f"Connection failed: {str(e)}"
-            logger.error(f"❌ Height API: {error_msg}")
-            self.results['height']['status'] = 'failed'
-            self.results['height']['error'] = error_msg
+            logger.error(f"❌ NewsAPI: {error_msg}")
+            self.results['newsapi']['status'] = 'failed'
+            self.results['newsapi']['error'] = error_msg
             return False
     
-    def test_paypal_api(self) -> bool:
-        """Test PayPal API connectivity"""
-        logger.info("🧪 Testing PayPal API...")
-        
-        try:
-            client_id = os.getenv('PAYPAL_CLIENT_ID')
-            client_secret = os.getenv('PAYPAL_CLIENT_SECRET')
-            
-            if not client_id or not client_secret:
-                error_msg = "Missing PayPal credentials"
-                logger.error(f"❌ PayPal API: {error_msg}")
-                self.results['paypal']['status'] = 'failed'
-                self.results['paypal']['error'] = error_msg
-                return False
-            
-            # Test OAuth token endpoint
-            auth_response = requests.post(
-                "https://api-m.sandbox.paypal.com/v1/oauth2/token",
-                auth=(client_id, client_secret),
-                data={'grant_type': 'client_credentials'},
-                headers={'Content-Type': 'application/x-www-form-urlencoded'},
-                timeout=30
-            )
-            
-            if auth_response.status_code == 200:
-                logger.info("✅ PayPal API: Working correctly")
-                self.results['paypal']['status'] = 'working'
-                return True
-            else:
-                error_msg = f"HTTP {auth_response.status_code}: {auth_response.text}"
-                logger.error(f"❌ PayPal API error: {error_msg}")
-                self.results['paypal']['status'] = 'failed'
-                self.results['paypal']['error'] = error_msg
-                return False
-                
-        except Exception as e:
-            error_msg = f"Connection failed: {str(e)}"
-            logger.error(f"❌ PayPal API: {error_msg}")
-            self.results['paypal']['status'] = 'failed'
-            self.results['paypal']['error'] = error_msg
-            return False
-    
-    def test_shippo_api(self) -> bool:
-        """Test Shippo API connectivity"""
-        logger.info("🧪 Testing Shippo API...")
-        
-        try:
-            api_key = os.getenv('SHIPPO_API_KEY')
-            
-            headers = {
-                'Authorization': f'ShippoToken {api_key}',
-                'Content-Type': 'application/json'
-            }
-            
-            # Test carriers endpoint
-            response = requests.get(
-                "https://api.goshippo.com/carriers/",
-                headers=headers,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                logger.info("✅ Shippo API: Working correctly")
-                self.results['shippo']['status'] = 'working'
-                return True
-            else:
-                error_msg = f"HTTP {response.status_code}: {response.text}"
-                logger.error(f"❌ Shippo API error: {error_msg}")
-                self.results['shippo']['status'] = 'failed'
-                self.results['shippo']['error'] = error_msg
-                return False
-                
-        except Exception as e:
-            error_msg = f"Connection failed: {str(e)}"
-            logger.error(f"❌ Shippo API: {error_msg}")
-            self.results['shippo']['status'] = 'failed'
-            self.results['shippo']['error'] = error_msg
-            return False
+
     
     def test_supabase_connection(self) -> bool:
         """Test Supabase database connection"""
@@ -392,9 +313,7 @@ class SystemAPIValidator:
             ('DeepSeek R1', self.test_deepseek_r1_api),
             ('Freightos', self.test_freightos_api),
             ('NextGen Materials', self.test_nextgen_materials_api),
-            ('Height', self.test_height_api),
-            ('PayPal', self.test_paypal_api),
-            ('Shippo', self.test_shippo_api),
+            ('NewsAPI', self.test_newsapi),
             ('Supabase', self.test_supabase_connection)
         ]
         
@@ -412,7 +331,7 @@ class SystemAPIValidator:
         logger.info(f"📊 Test Results: {passed}/{total} APIs working")
         
         # Check if all critical APIs are working
-        critical_apis = ['deepseek_r1', 'freightos', 'nextgen_materials', 'supabase']
+        critical_apis = ['deepseek_r1', 'freightos', 'nextgen_materials', 'newsapi', 'supabase']
         critical_failures = [api for api in critical_apis if self.results[api]['status'] != 'working']
         
         if critical_failures:
