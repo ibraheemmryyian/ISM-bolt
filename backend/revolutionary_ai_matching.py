@@ -98,6 +98,17 @@ except ImportError:
     ImpactForecastingEngine = None
     logger.warning("ImpactForecastingEngine not available")
 
+# API Integration Layer
+try:
+    from api_integration_layer import APIIntegrationLayer
+    from api_config import api_config
+    API_INTEGRATION_AVAILABLE = True
+except ImportError:
+    APIIntegrationLayer = None
+    api_config = None
+    API_INTEGRATION_AVAILABLE = False
+    logger.warning("API Integration Layer not available")
+
 @dataclass
 class MatchExplanation:
     """Advanced structured explanation for MONOPOLY AI matches"""
@@ -202,6 +213,14 @@ class RevolutionaryAIMatching:
         self.market_weight = self.weights.get('market_weight', 0.12)
         self.regulatory_weight = self.weights.get('regulatory_weight', 0.08)
         self.logistics_weight = self.weights.get('logistics_weight', 0.09)
+        
+        # API Integration Layer
+        if API_INTEGRATION_AVAILABLE:
+            self.api_layer = APIIntegrationLayer()
+            logger.info("🔗 API Integration Layer connected")
+        else:
+            self.api_layer = None
+            logger.warning("API Integration Layer not available")
         
         # MONOPOLY-LEVEL features
         self.multi_agent_system = self._initialize_multi_agents()
