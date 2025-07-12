@@ -18,8 +18,16 @@ try:
     from torch_geometric.nn import GCNConv, GATConv, GraphConv
     from torch_geometric.utils import to_networkx, from_networkx
     GNN_AVAILABLE = True
+    Data = Data  # Ensure Data is available
 except ImportError:
     GNN_AVAILABLE = False
+    Data = None
+    Batch = None
+    GCNConv = None
+    GATConv = None
+    GraphConv = None
+    to_networkx = None
+    from_networkx = None
     logging.warning("PyTorch Geometric not available. GNN features will be disabled.")
 
 logger = logging.getLogger(__name__)
@@ -405,8 +413,11 @@ class KnowledgeGraph:
         except Exception as e:
             logger.error(f"Error generating embeddings: {e}")
 
-    def _convert_to_pyg(self) -> Data:
+    def _convert_to_pyg(self):
         """Convert NetworkX graph to PyTorch Geometric format"""
+        if not GNN_AVAILABLE or Data is None:
+            return None
+            
         # Create node feature matrix
         node_features = []
         node_mapping = {node: i for i, node in enumerate(self.graph.nodes())}

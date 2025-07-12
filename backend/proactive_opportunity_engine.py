@@ -703,7 +703,7 @@ class AdvancedProactiveOpportunityEngine:
         try:
             # This would calculate actual cache hit rate
             return 0.75  # Simulated 75% hit rate
-            except Exception as e:
+        except Exception as e:
             logger.error(f"Error calculating cache hit rate: {e}")
             return 0.0
 
