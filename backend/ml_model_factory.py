@@ -4,58 +4,6 @@ ML Model Factory for Perfect AI System
 Provides real ML implementations for all AI functionality
 """
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, SAGEConv, GATConv, GINConv, RGCNConv
-from torch_geometric.data import Data, Batch
-import numpy as np
-import pandas as pd
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, IsolationForest
-from sklearn.cluster import DBSCAN, KMeans, AgglomerativeClustering
-from sklearn.preprocessing import StandardScaler, LabelEncoder, RobustScaler
-from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
-from sklearn.decomposition import PCA, NMF
-from sklearn.manifold import TSNE, MDS
-from sklearn.feature_selection import SelectKBest, f_regression, mutual_info_regression
-from sklearn.model_selection import cross_val_score, GridSearchCV, RandomizedSearchCV
-from sklearn.multioutput import MultiOutputRegressor
-from sklearn.neural_network import MLPRegressor, MLPClassifier
-from sklearn.svm import SVR, SVC
-from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, Lasso
-from sklearn.naive_bayes import GaussianNB, MultinomialNB
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
-from sklearn.gaussian_process import GaussianProcessRegressor, GaussianProcessClassifier
-from sklearn.ensemble import VotingRegressor, VotingClassifier, StackingRegressor, StackingClassifier
-
-import xgboost as xgb
-import lightgbm as lgb
-from catboost import CatBoostRegressor, CatBoostClassifier
-
-from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModel, pipeline
-import networkx as nx
-from scipy.spatial.distance import cdist, pdist, squareform
-from scipy.optimize import linear_sum_assignment, minimize
-from scipy.stats import pearsonr, spearmanr, kendalltau
-from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
-from scipy.sparse import csr_matrix, lil_matrix
-from scipy.sparse.linalg import eigsh, svds
-
-import optuna
-from optuna.samplers import TPESampler, RandomSampler
-from optuna.pruners import MedianPruner, HyperbandPruner
-
-import shap
-import lime
-import lime.lime_tabular
-from lime.lime_text import LimeTextExplainer
-
-import umap
-import hdbscan
-from sklearn.cluster import SpectralClustering
-
 import logging
 from typing import Dict, List, Tuple, Optional, Any, Union
 from dataclasses import dataclass, asdict
@@ -66,6 +14,119 @@ from pathlib import Path
 import json
 
 logger = logging.getLogger(__name__)
+
+# Import ML libraries with graceful fallbacks
+try:
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    logger.warning("PyTorch not available")
+
+try:
+    from torch_geometric.nn import GCNConv, SAGEConv, GATConv, GINConv, RGCNConv
+    from torch_geometric.data import Data, Batch
+    TORCH_GEOMETRIC_AVAILABLE = True
+except ImportError:
+    TORCH_GEOMETRIC_AVAILABLE = False
+    logger.warning("PyTorch Geometric not available")
+
+try:
+    import numpy as np
+    import pandas as pd
+    NUMPY_PANDAS_AVAILABLE = True
+except ImportError:
+    NUMPY_PANDAS_AVAILABLE = False
+    logger.warning("NumPy/Pandas not available")
+
+try:
+    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, IsolationForest
+    from sklearn.cluster import DBSCAN, KMeans, AgglomerativeClustering
+    from sklearn.preprocessing import StandardScaler, LabelEncoder, RobustScaler
+    from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+    from sklearn.decomposition import PCA, NMF
+    from sklearn.manifold import TSNE, MDS
+    from sklearn.feature_selection import SelectKBest, f_regression, mutual_info_regression
+    from sklearn.model_selection import cross_val_score, GridSearchCV, RandomizedSearchCV
+    from sklearn.multioutput import MultiOutputRegressor
+    from sklearn.neural_network import MLPRegressor, MLPClassifier
+    from sklearn.svm import SVR, SVC
+    from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, Lasso
+    from sklearn.naive_bayes import GaussianNB, MultinomialNB
+    from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
+    from sklearn.neighbors import KNeighborsRegressor, KNeighborsClassifier
+    from sklearn.gaussian_process import GaussianProcessRegressor, GaussianProcessClassifier
+    from sklearn.ensemble import VotingRegressor, VotingClassifier, StackingRegressor, StackingClassifier
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+    logger.warning("Scikit-learn not available")
+
+try:
+    import xgboost as xgb
+    import lightgbm as lgb
+    from catboost import CatBoostRegressor, CatBoostClassifier
+    BOOSTING_AVAILABLE = True
+except ImportError:
+    BOOSTING_AVAILABLE = False
+    logger.warning("Boosting libraries not available")
+
+try:
+    from sentence_transformers import SentenceTransformer
+    from transformers import AutoTokenizer, AutoModel, pipeline
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+    logger.warning("Transformers not available")
+
+try:
+    import networkx as nx
+    NETWORKX_AVAILABLE = True
+except ImportError:
+    NETWORKX_AVAILABLE = False
+    logger.warning("NetworkX not available")
+
+try:
+    from scipy.spatial.distance import cdist, pdist, squareform
+    from scipy.optimize import linear_sum_assignment, minimize
+    from scipy.stats import pearsonr, spearmanr, kendalltau
+    from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
+    from scipy.sparse import csr_matrix, lil_matrix
+    from scipy.sparse.linalg import eigsh, svds
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+    logger.warning("SciPy not available")
+
+try:
+    import optuna
+    from optuna.samplers import TPESampler, RandomSampler
+    from optuna.pruners import MedianPruner, HyperbandPruner
+    OPTUNA_AVAILABLE = True
+except ImportError:
+    OPTUNA_AVAILABLE = False
+    logger.warning("Optuna not available")
+
+try:
+    import shap
+    import lime
+    import lime.lime_tabular
+    from lime.lime_text import LimeTextExplainer
+    INTERPRETABILITY_AVAILABLE = True
+except ImportError:
+    INTERPRETABILITY_AVAILABLE = False
+    logger.warning("Interpretability libraries not available")
+
+try:
+    import umap
+    import hdbscan
+    from sklearn.cluster import SpectralClustering
+    CLUSTERING_AVAILABLE = True
+except ImportError:
+    CLUSTERING_AVAILABLE = False
+    logger.warning("Clustering libraries not available")
 
 @dataclass
 class ModelConfig:
@@ -127,8 +188,12 @@ class MLModelFactory:
             self.ner_pipeline = None
 
     def create_gnn_model(self, model_type: str, input_dim: int, hidden_dim: int = 64, 
-                        output_dim: int = 32, num_layers: int = 3) -> nn.Module:
+                        output_dim: int = 32, num_layers: int = 3) -> Any:
         """Create GNN model with specified architecture"""
+        
+        if not TORCH_AVAILABLE or not TORCH_GEOMETRIC_AVAILABLE:
+            logger.warning("PyTorch or PyTorch Geometric not available for GNN models")
+            return None
         
         if model_type == 'gcn':
             return GCNModel(input_dim, hidden_dim, output_dim, num_layers)
@@ -146,6 +211,10 @@ class MLModelFactory:
     def create_ensemble_model(self, model_types: List[str], task_type: str = 'regression') -> Any:
         """Create ensemble model with multiple base models"""
         
+        if not SKLEARN_AVAILABLE:
+            logger.warning("Scikit-learn not available for ensemble models")
+            return None
+        
         base_models = []
         
         for model_type in model_types:
@@ -160,16 +229,25 @@ class MLModelFactory:
                 else:
                     model = GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
             elif model_type == 'xgboost':
+                if not BOOSTING_AVAILABLE:
+                    logger.warning(f"XGBoost not available, skipping {model_type}")
+                    continue
                 if task_type == 'regression':
                     model = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
                 else:
                     model = xgb.XGBClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
             elif model_type == 'lightgbm':
+                if not BOOSTING_AVAILABLE:
+                    logger.warning(f"LightGBM not available, skipping {model_type}")
+                    continue
                 if task_type == 'regression':
                     model = lgb.LGBMRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
                 else:
                     model = lgb.LGBMClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
             elif model_type == 'catboost':
+                if not BOOSTING_AVAILABLE:
+                    logger.warning(f"CatBoost not available, skipping {model_type}")
+                    continue
                 if task_type == 'regression':
                     model = CatBoostRegressor(iterations=100, learning_rate=0.1, random_state=42, verbose=False)
                 else:
@@ -184,6 +262,10 @@ class MLModelFactory:
             
             base_models.append((model_type, model))
         
+        if not base_models:
+            logger.warning("No valid models available for ensemble")
+            return None
+        
         if task_type == 'regression':
             ensemble = VotingRegressor(estimators=base_models)
         else:
@@ -194,11 +276,18 @@ class MLModelFactory:
     def create_clustering_model(self, model_type: str, **kwargs) -> Any:
         """Create clustering model"""
         
+        if not SKLEARN_AVAILABLE:
+            logger.warning("Scikit-learn not available for clustering models")
+            return None
+        
         if model_type == 'kmeans':
             return KMeans(n_clusters=kwargs.get('n_clusters', 5), random_state=42)
         elif model_type == 'dbscan':
             return DBSCAN(eps=kwargs.get('eps', 0.5), min_samples=kwargs.get('min_samples', 5))
         elif model_type == 'hdbscan':
+            if not CLUSTERING_AVAILABLE:
+                logger.warning("HDBSCAN not available")
+                return None
             return hdbscan.HDBSCAN(min_cluster_size=kwargs.get('min_cluster_size', 5))
         elif model_type == 'spectral':
             return SpectralClustering(n_clusters=kwargs.get('n_clusters', 5), random_state=42)
@@ -209,6 +298,10 @@ class MLModelFactory:
 
     def create_anomaly_detector(self, model_type: str, **kwargs) -> Any:
         """Create anomaly detection model"""
+        
+        if not SKLEARN_AVAILABLE:
+            logger.warning("Scikit-learn not available for anomaly detection models")
+            return None
         
         if model_type == 'isolation_forest':
             return IsolationForest(contamination=kwargs.get('contamination', 0.1), random_state=42)
@@ -380,9 +473,11 @@ class MLModelFactory:
         return list(self.models.keys())
 
 # GNN Model Classes
-class GCNModel(nn.Module):
+class GCNModel:
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int):
-        super(GCNModel, self).__init__()
+        if not TORCH_AVAILABLE or not TORCH_GEOMETRIC_AVAILABLE:
+            raise ImportError("PyTorch and PyTorch Geometric required for GNN models")
+        
         self.layers = nn.ModuleList()
         
         # Input layer
@@ -407,9 +502,11 @@ class GCNModel(nn.Module):
         x = self.layers[-1](x, edge_index, edge_weight)
         return x
 
-class GraphSAGEModel(nn.Module):
+class GraphSAGEModel:
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int):
-        super(GraphSAGEModel, self).__init__()
+        if not TORCH_AVAILABLE or not TORCH_GEOMETRIC_AVAILABLE:
+            raise ImportError("PyTorch and PyTorch Geometric required for GNN models")
+        
         self.layers = nn.ModuleList()
         
         # Input layer
@@ -434,9 +531,11 @@ class GraphSAGEModel(nn.Module):
         x = self.layers[-1](x, edge_index, edge_weight)
         return x
 
-class GATModel(nn.Module):
+class GATModel:
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int, heads: int = 4):
-        super(GATModel, self).__init__()
+        if not TORCH_AVAILABLE or not TORCH_GEOMETRIC_AVAILABLE:
+            raise ImportError("PyTorch and PyTorch Geometric required for GNN models")
+        
         self.layers = nn.ModuleList()
         
         # Input layer
@@ -461,9 +560,11 @@ class GATModel(nn.Module):
         x = self.layers[-1](x, edge_index, edge_weight)
         return x
 
-class GINModel(nn.Module):
+class GINModel:
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int):
-        super(GINModel, self).__init__()
+        if not TORCH_AVAILABLE or not TORCH_GEOMETRIC_AVAILABLE:
+            raise ImportError("PyTorch and PyTorch Geometric required for GNN models")
+        
         self.layers = nn.ModuleList()
         
         # Input layer
@@ -498,9 +599,11 @@ class GINModel(nn.Module):
         x = self.layers[-1](x, edge_index, edge_weight)
         return x
 
-class RGCNModel(nn.Module):
+class RGCNModel:
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int, num_relations: int = 1):
-        super(RGCNModel, self).__init__()
+        if not TORCH_AVAILABLE or not TORCH_GEOMETRIC_AVAILABLE:
+            raise ImportError("PyTorch and PyTorch Geometric required for GNN models")
+        
         self.layers = nn.ModuleList()
         
         # Input layer
@@ -525,9 +628,11 @@ class RGCNModel(nn.Module):
         x = self.layers[-1](x, edge_index, edge_type, edge_weight)
         return x
 
-class LSTMModel(nn.Module):
+class LSTMModel:
     def __init__(self, input_size: int, hidden_size: int, num_layers: int, output_size: int):
-        super(LSTMModel, self).__init__()
+        if not TORCH_AVAILABLE:
+            raise ImportError("PyTorch required for LSTM models")
+        
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         

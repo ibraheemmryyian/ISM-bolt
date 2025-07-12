@@ -1,31 +1,28 @@
-# Perfect AI System - Industrial Symbiosis Platform
-# Comprehensive AI/ML Dependencies
+# Perfect AI System - Comprehensive ML Dependencies
+# Core ML and AI Libraries
 
-# Core Deep Learning Framework
+# Deep Learning Framework
 torch>=2.0.0
 torchvision>=0.15.0
 torchaudio>=2.0.0
+
+# Graph Neural Networks
 torch-geometric>=2.3.0
 torch-scatter>=2.1.0
 torch-sparse>=0.6.0
 torch-cluster>=1.6.0
 torch-spline-conv>=1.2.0
 
-# Advanced ML Libraries
-scikit-learn>=1.3.0
-scipy>=1.10.0
+# Core Scientific Computing
 numpy>=1.24.0
 pandas>=2.0.0
+scipy>=1.10.0
+
+# Machine Learning
+scikit-learn>=1.3.0
 xgboost>=1.7.6
 lightgbm>=4.0.0
 catboost>=1.2.0
-
-# Graph Neural Networks and Network Analysis
-networkx>=3.0
-igraph>=0.10.6
-python-igraph>=0.10.6
-dgl>=1.1.0
-spektral>=1.2.0
 
 # Natural Language Processing
 sentence-transformers>=2.2.0
@@ -36,15 +33,24 @@ spacy>=3.6.0
 textblob>=0.17.1
 gensim>=4.3.0
 
-# Computer Vision (for material analysis)
+# Graph Analysis
+networkx>=3.0
+igraph>=0.10.6
+python-igraph>=0.10.6
+dgl>=1.1.0
+spektral>=1.2.0
+
+# Computer Vision
 opencv-python>=4.8.0
 pillow>=10.0.0
 albumentations>=1.3.0
 
-# Optimization and Mathematical Libraries
+# Optimization and Hyperparameter Tuning
 optuna>=3.2.0
 hyperopt>=0.2.7
 scikit-optimize>=0.9.0
+
+# Mathematical Optimization
 cvxpy>=1.3.0
 pulp>=2.7.0
 
@@ -57,29 +63,27 @@ pyflux>=0.4.18
 # Clustering and Dimensionality Reduction
 hdbscan>=0.8.29
 umap-learn>=0.5.3
-tsne-cuda>=2.1.0
 faiss-cpu>=1.7.4
 
 # Feature Engineering and Selection
 feature-engine>=1.6.0
 boruta>=0.3
-shap>=0.42.0
-lime>=0.2.0
 
 # Model Interpretability and Explainability
+shap>=0.42.0
+lime>=0.2.0
 interpret>=0.4.0
 eli5>=0.13.0
 alibi>=0.8.0
 
-# Federated Learning and Distributed ML
+# Federated Learning
 fedml>=0.7.0
 syft>=0.5.0
 flwr>=1.4.0
 
-# AutoML and Neural Architecture Search
+# AutoML
 autosklearn>=0.15.0
 autogluon>=0.8.0
-neural-architecture-search>=0.1.0
 
 # Database and Caching
 redis>=4.5.0
@@ -150,7 +154,6 @@ pyyaml>=6.0.1
 toml>=0.10.2
 h5py>=3.9.0
 joblib>=1.3.0
-pickle5>=0.0.12
 
 # Visualization and Plotting
 matplotlib>=3.7.2
@@ -170,11 +173,6 @@ memory-profiler>=0.61.0
 line-profiler>=4.1.0
 py-spy>=0.3.14
 
-# GPU and CUDA Support (Optional)
-# cuda-python>=12.0.0
-# cupy-cuda11x>=12.0.0  # Replace with appropriate CUDA version
-# pynvml>=11.5.0
-
 # Cloud and Deployment
 boto3>=1.28.0
 google-cloud-storage>=2.10.0
@@ -190,4 +188,14 @@ newrelic>=9.0.0
 # Development Tools
 pre-commit>=3.4.0
 tox>=4.6.0
-coverage>=7.3.0 
+coverage>=7.3.0
+
+# Additional ML Libraries
+tsne-cuda>=2.1.0
+deap>=1.4.1
+
+# Type stubs for better type checking
+types-requests>=2.31.0
+types-PyYAML>=6.0.0
+types-redis>=4.6.0
+types-psycopg2>=2.9.0 
