@@ -20,7 +20,7 @@ import pickle
 
 # ML imports
 try:
-    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, IsolationForest
+    from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, GradientBoostingRegressor, GradientBoostingClassifier, IsolationForest
     from sklearn.cluster import DBSCAN, KMeans, AgglomerativeClustering
     from sklearn.preprocessing import StandardScaler, LabelEncoder, RobustScaler
     from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score

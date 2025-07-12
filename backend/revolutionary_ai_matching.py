@@ -67,7 +67,7 @@ logger = logging.getLogger(__name__)
 
 # Try to import optional modules, but don't fail if they're missing
 try:
-    from proactive_opportunity_engine import ProactiveOpportunityEngine
+    from engines.proactive_opportunity_engine import ProactiveOpportunityEngine
 except ImportError:
     ProactiveOpportunityEngine = None
     logger.warning("ProactiveOpportunityEngine not available")
@@ -91,13 +91,13 @@ except ImportError:
     logger.warning("GNNReasoningEngine not available")
 
 try:
-    from regulatory_compliance import RegulatoryComplianceEngine
+    from engines.regulatory_compliance_engine import RegulatoryComplianceEngine
 except ImportError:
     RegulatoryComplianceEngine = None
     logger.warning("RegulatoryComplianceEngine not available")
 
 try:
-    from impact_forecasting import ImpactForecastingEngine
+    from engines.impact_forecasting_engine import ImpactForecastingEngine
 except ImportError:
     ImpactForecastingEngine = None
     logger.warning("ImpactForecastingEngine not available")
@@ -177,6 +177,9 @@ class RevolutionaryAIMatching:
             self.trust_model = RandomForestRegressor(n_estimators=100, max_depth=10)
             self.market_model = MLPRegressor(hidden_layer_sizes=(100, 50), max_iter=1000)
         
+        # Dynamic weights that adapt based on performance
+        self.config_dir = os.path.join(os.path.dirname(__file__), 'config')
+        
         # MONOPOLY-LEVEL data structures
         self.transaction_history = pd.DataFrame()
         self.trust_network = self._load_json_config('trust_network.json', default={})
@@ -187,8 +190,6 @@ class RevolutionaryAIMatching:
         self.regulatory_data = {}
         self.supply_chain_data = {}
         
-        # Dynamic weights that adapt based on performance
-        self.config_dir = os.path.join(os.path.dirname(__file__), 'config')
         self.weights = self._load_json_config('weights.json', default={
             'semantic_weight': 0.20,
             'trust_weight': 0.18,
