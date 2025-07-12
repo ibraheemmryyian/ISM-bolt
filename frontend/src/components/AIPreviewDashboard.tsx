@@ -148,33 +148,7 @@ const AIPreviewDashboard: React.FC = () => {
         
       } catch (error) {
         console.error('Error loading preview data:', error);
-        // Show error instead of fake data
-        setPreviewData({
-          company_profile: {
-            id: "error",
-            name: "Error Loading Data",
-            industry: "Unknown",
-            location: "Unknown",
-            employee_count: 0,
-            products: "Unknown",
-            main_materials: "Unknown",
-            production_volume: "Unknown",
-            process_description: "Unknown"
-          },
-          materials: [],
-          requirements: [],
-          potential_matches: [],
-          ai_insights: {
-            symbiosis_score: "0%",
-            estimated_savings: "$0/year",
-            carbon_reduction: "0 tons CO2/year",
-            top_opportunities: [],
-            recommended_partners: [],
-            implementation_roadmap: []
-          },
-          generation_status: 'error',
-          generation_progress: 0
-        });
+        console.error('Failed to load AI preview data - please ensure AI services are operational');
       } finally {
         setLoading(false);
       }

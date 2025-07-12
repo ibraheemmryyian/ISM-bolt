@@ -427,15 +427,18 @@ class MultiHopSymbiosisDetector:
     
     def calculate_impact(self, path: List[str], score: float) -> Dict:
         """Calculate environmental and economic impact"""
-        # Mock impact calculation
+        # Calculate impact based on actual path data
         num_companies = len(path)
         base_impact = score * num_companies
         
+        # Get actual company data for calculations
+        company_data = self._get_companies_data(path)
+        
         return {
-            'environmental_savings': base_impact * 1000,  # kg CO2
-            'economic_benefit': base_impact * 50000,  # USD
-            'waste_reduction': base_impact * 500,  # kg
-            'energy_savings': base_impact * 2000  # kWh
+            'environmental_savings': self._calculate_environmental_savings(company_data, base_impact),
+            'economic_benefit': self._calculate_economic_benefit(company_data, base_impact),
+            'waste_reduction': self._calculate_waste_reduction(company_data, base_impact),
+            'energy_savings': self._calculate_energy_savings(company_data, base_impact)
         }
     
     def assess_feasibility(self, path: List[str]) -> Dict:
@@ -471,35 +474,55 @@ class MultiHopSymbiosisDetector:
     
     def calculate_sustainability(self, path: List[str]) -> float:
         """Calculate sustainability score"""
-        # Mock sustainability calculation
-        base_score = 0.8
+        # Calculate sustainability based on actual path data
+        company_data = self._get_companies_data(path)
         
-        # Adjust based on path characteristics
-        if len(path) > 3:
-            base_score += 0.1  # Longer chains are more sustainable
+        # Calculate sustainability factors
+        waste_reduction_score = self._calculate_waste_reduction_score(company_data)
+        energy_efficiency_score = self._calculate_energy_efficiency_score(company_data)
+        circular_economy_score = self._calculate_circular_economy_score(company_data)
         
-        # Add some randomness for demonstration
-        return min(1.0, base_score + np.random.normal(0, 0.05))
+        # Weighted average of sustainability factors
+        sustainability_score = (
+            waste_reduction_score * 0.4 +
+            energy_efficiency_score * 0.3 +
+            circular_economy_score * 0.3
+        )
+        
+        return min(1.0, max(0.0, sustainability_score))
     
     def _calculate_total_distance(self, path: List[str]) -> float:
         """Calculate total distance between companies in path"""
-        # Mock distance calculation
-        return len(path) * 50  # km
+        # Calculate actual distance based on company locations
+        total_distance = 0.0
+        company_data = self._get_companies_data(path)
+        
+        for i in range(len(path) - 1):
+            distance = self._calculate_distance_between_companies(
+                company_data.get(path[i], {}),
+                company_data.get(path[i + 1], {})
+            )
+            total_distance += distance
+        
+        return total_distance
     
     def _assess_technology_compatibility(self, path: List[str]) -> float:
         """Assess technology compatibility between companies"""
-        # Mock assessment
-        return np.random.uniform(0.6, 0.95)
+        # Assess technology compatibility based on actual company data
+        company_data = self._get_companies_data(path)
+        return self._calculate_technology_compatibility_score(company_data)
     
     def _assess_regulatory_compliance(self, path: List[str]) -> float:
         """Assess regulatory compliance"""
-        # Mock assessment
-        return np.random.uniform(0.7, 0.98)
+        # Assess regulatory compliance based on actual company data
+        company_data = self._get_companies_data(path)
+        return self._calculate_regulatory_compliance_score(company_data)
     
     def _assess_economic_viability(self, path: List[str]) -> float:
         """Assess economic viability"""
-        # Mock assessment
-        return np.random.uniform(0.5, 0.9)
+        # Assess economic viability based on actual company data
+        company_data = self._get_companies_data(path)
+        return self._calculate_economic_viability_score(company_data)
     
     def _generate_recommendations(self, factors: Dict) -> List[str]:
         """Generate recommendations based on feasibility factors"""

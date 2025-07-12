@@ -500,16 +500,19 @@ class AdvancedFederatedLearningService:
         # Simulate training time
         await asyncio.sleep(0.1)
         
-        # Generate mock update
-        mock_update = {
+        # Generate actual model update based on client training
+        client_data = self.clients[client_id]['data']
+        training_result = self._train_client_model(client_data, client_model)
+        
+        actual_update = {
             'client_id': client_id,
-            'state_dict': client_model['state_dict'],  # In reality, this would be the updated model
+            'state_dict': training_result['state_dict'],
             'num_samples': self.clients[client_id]['data_size'],
-            'training_loss': np.random.uniform(0.1, 0.5),
-            'training_accuracy': np.random.uniform(0.7, 0.95)
+            'training_loss': training_result['loss'],
+            'training_accuracy': training_result['accuracy']
         }
         
-        return mock_update
+        return actual_update
     
     def aggregate_updates(self, client_updates: List[Dict]) -> Dict:
         """Aggregate client updates using advanced methods"""
@@ -600,9 +603,10 @@ class AdvancedFederatedLearningService:
     
     async def evaluate_global_model(self) -> float:
         """Evaluate global model performance"""
-        # In real implementation, this would evaluate on a validation set
-        # For now, return a mock performance
-        return np.random.uniform(0.8, 0.95)
+        # Evaluate on validation dataset
+        validation_data = self._get_validation_data()
+        performance = self._evaluate_model_on_data(self.global_model, validation_data)
+        return performance
     
     def update_performance_metrics(self, performance: float):
         """Update performance tracking metrics"""

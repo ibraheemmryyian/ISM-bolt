@@ -24,20 +24,22 @@ export function GlobalMap() {
 
       if (error) throw error;
 
-      // For demonstration, we'll create sample connections
-      // In a real app, this would come from actual partnership data
-      const sampleConnections = data.reduce((acc: Connection[], curr, idx, arr) => {
-        if (idx < arr.length - 1) {
-          acc.push({
-            from_location: curr.location,
-            to_location: arr[idx + 1].location,
-            type: idx % 2 === 0 ? 'material_exchange' : 'research_collaboration'
-          });
-        }
-        return acc;
-      }, []);
+      // Get actual connections from database
+      const { data: connectionsData, error: connectionsError } = await supabase
+        .from('connections')
+        .select('*')
+        .eq('status', 'active');
 
-      setConnections(sampleConnections);
+      if (connectionsError) throw connectionsError;
+
+      // Transform connections to map format
+      const actualConnections = connectionsData.map(connection => ({
+        from_location: connection.requester_location || 'Unknown',
+        to_location: connection.recipient_location || 'Unknown',
+        type: connection.connection_type || 'partnership'
+      }));
+
+      setConnections(actualConnections);
     } catch (error) {
       console.error('Error loading connections:', error);
     } finally {

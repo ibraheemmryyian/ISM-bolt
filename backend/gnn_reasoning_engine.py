@@ -536,8 +536,8 @@ class GNNReasoningEngine:
                 # Forward pass
                 out = model(pyg_data.x, pyg_data.edge_index)
                 
-                # Create dummy labels for training (in practice, use real labels)
-                labels = torch.randint(0, output_dim, (pyg_data.x.size(0),))
+                # Get actual labels from database or external source
+                labels = self._get_actual_labels(pyg_data.x.size(0), output_dim)
                 
                 # Calculate loss
                 loss = criterion(out, labels)

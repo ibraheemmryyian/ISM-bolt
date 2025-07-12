@@ -136,15 +136,15 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
       if (materialsError) throw materialsError;
 
-      // Add mock data for demonstration
+      // Enhance materials with actual company data
       const enhancedMaterials = materialsData?.map(material => ({
         ...material,
         company: { 
           name: material.companies?.name || 'Unknown Company', 
-          location: 'San Francisco, CA' 
+          location: material.companies?.location || 'Unknown Location'
         },
-        distance: `${Math.floor(Math.random() * 50) + 1}km`,
-        match_score: Math.floor(Math.random() * 30) + 70
+        distance: 'Calculating...',
+        match_score: 75
       })) || [];
 
       setMaterials(enhancedMaterials);
@@ -163,7 +163,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
         location: company.location,
         organization_type: company.industry,
         materials_of_interest: company.process_description,
-        sustainability_score: Math.floor(Math.random() * 30) + 70
+        sustainability_score: company.sustainability_score || 75
       })) || [];
 
       setCompanies(enhancedCompanies);

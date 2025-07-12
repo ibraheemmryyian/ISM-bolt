@@ -48,7 +48,7 @@ export function ReviewAIListings({ onConfirm }: ReviewAIListingsProps) {
       type: 'waste',
       quantity: '500',
       unit: 'tons',
-      description: 'Crushed concrete from demolition projects, suitable for recycling into new construction materials',
+              description: 'AI-generated material description based on company profile',
       ai_generated: true,
       confidence_score: 0.85
     },

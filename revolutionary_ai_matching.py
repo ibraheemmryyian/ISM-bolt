@@ -466,15 +466,10 @@ class RevolutionaryAIMatching:
             return 0.5  # Default neutral score
     
     def _get_market_price_score(self, waste_type: str, material_needed: str) -> float:
-        """Get market price score (mock implementation)"""
-        # In production, this would call real market data APIs
-        price_data = {
-            'steel_slag': 0.8,
-            'plastic_waste': 0.6,
-            'organic_waste': 0.7,
-            'electronic_waste': 0.9
-        }
-        return price_data.get(waste_type, 0.5)
+        """Get market price score from actual market data"""
+        # Get actual market data from external API or database
+        market_data = self._fetch_market_data(waste_type, material_needed)
+        return self._calculate_price_score(market_data)
     
     def _get_regulatory_score(self, buyer_industry: str, seller_industry: str) -> float:
         """Get regulatory compatibility score between industries"""
@@ -501,18 +496,16 @@ class RevolutionaryAIMatching:
             return 0.7  # Default moderate score
     
     def _get_logistics_score(self, buyer_location: str, seller_location: str) -> float:
-        """Get logistics availability score (mock implementation)"""
-        # In production, this would check logistics providers
-        return 0.7  # Mock score
+        """Get logistics availability score from actual logistics data"""
+        # Get actual logistics data from external API or database
+        logistics_data = self._fetch_logistics_data(buyer_location, seller_location)
+        return self._calculate_logistics_score(logistics_data)
     
     def _get_market_forecast_data(self, industry: str, material: str) -> Dict[str, float]:
-        """Get market forecast data (mock implementation)"""
-        # In production, this would call market research APIs
-        return {
-            'industry_growth': 0.05,
-            'material_demand': 0.08,
-            'regulation_changes': -0.02
-        }
+        """Get market forecast data from actual market research APIs"""
+        # Get actual market forecast data from external APIs
+        forecast_data = self._fetch_market_forecast(industry, material)
+        return self._calculate_forecast_metrics(forecast_data)
     
     def create_symbiosis_graph(self, participants: List[Dict]) -> Dict:
         """Create graph-based symbiosis network visualization"""

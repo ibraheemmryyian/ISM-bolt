@@ -1431,22 +1431,24 @@ function calculateEnvironmentalScore(carbonResult, wasteResult, logisticsResult)
 }
 
 // Company data endpoint
-app.get('/api/companies/current', (req, res) => {
-  // Mock company data - in a real app, this would come from the database
-  const mockCompanyData = {
-    id: '1',
-    name: 'EcoTech Solutions',
-    industry: 'Manufacturing',
-    location: 'San Francisco, CA',
-    employee_count: 250,
-    annual_revenue: 15000000,
-    sustainability_score: 85,
-    matches_count: 12,
-    savings_achieved: 450000,
-    carbon_reduced: 1250
-  };
-  
-  res.json(mockCompanyData);
+app.get('/api/companies/current', async (req, res) => {
+  try {
+    // Get company data from database
+    const { data: company, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', req.user?.id || req.query.company_id)
+      .single();
+
+    if (error || !company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
+    res.json(company);
+  } catch (error) {
+    console.error('Error fetching company data:', error);
+    res.status(500).json({ error: 'Failed to fetch company data' });
+  }
 });
 
 // AI insights endpoint
@@ -1455,46 +1457,7 @@ app.get('/api/ai-insights', async (req, res) => {
     const { company_id } = req.query;
     
     if (!company_id) {
-      // Return mock data if no company_id provided
-      const mockInsights = {
-        insights: [
-          {
-            id: '1',
-            type: 'opportunity',
-            title: 'New Waste Stream Partnership',
-            description: 'Local brewery can use your organic waste for biogas production',
-            impact: 'high',
-            estimated_savings: 75000,
-            carbon_reduction: 200,
-            action_required: true,
-            priority: 'high'
-          },
-          {
-            id: '2',
-            type: 'savings',
-            title: 'Energy Efficiency Upgrade',
-            description: 'Switch to LED lighting could save $25,000 annually',
-            impact: 'medium',
-            estimated_savings: 25000,
-            carbon_reduction: 50,
-            action_required: true,
-            priority: 'medium'
-          },
-          {
-            id: '3',
-            type: 'match',
-            title: 'Material Exchange Opportunity',
-            description: 'Construction company needs your excess steel scrap',
-            impact: 'high',
-            estimated_savings: 120000,
-            carbon_reduction: 300,
-            action_required: true,
-            priority: 'urgent'
-          }
-        ]
-      };
-      
-      return res.json(mockInsights);
+      return res.status(400).json({ error: 'Company ID is required' });
     }
 
     // Query database for real insights
@@ -1533,71 +1496,30 @@ app.get('/api/ai-insights', async (req, res) => {
 });
 
 // Portfolio data endpoint
-app.get('/api/portfolio', (req, res) => {
-  const mockPortfolio = {
-    portfolio: {
-      company_overview: {
-        size_category: 'Medium Enterprise',
-        industry_position: 'Innovation Leader',
-        sustainability_rating: 'A+',
-        growth_potential: 'High'
-      },
-      achievements: {
-        total_savings: 450000,
-        carbon_reduced: 1250,
-        partnerships_formed: 8,
-        waste_diverted: 850
-      },
-      recommendations: [
-        {
-          category: 'Waste Management',
-          suggestions: [
-            'Implement zero-waste program',
-            'Partner with local recycling facilities',
-            'Optimize packaging materials'
-          ],
-          priority: 'high'
-        },
-        {
-          category: 'Energy Efficiency',
-          suggestions: [
-            'Install solar panels',
-            'Upgrade HVAC systems',
-            'Implement smart building controls'
-          ],
-          priority: 'medium'
-        },
-        {
-          category: 'Supply Chain',
-          suggestions: [
-            'Source local suppliers',
-            'Use recycled materials',
-            'Implement circular procurement'
-          ],
-          priority: 'high'
-        }
-      ],
-      recent_activity: [
-        {
-          date: '2024-01-15',
-          action: 'Completed waste audit',
-          impact: 'Identified 30% reduction opportunity'
-        },
-        {
-          date: '2024-01-10',
-          action: 'Formed partnership with GreenTech',
-          impact: 'Annual savings of $75,000'
-        },
-        {
-          date: '2024-01-05',
-          action: 'Implemented energy monitoring',
-          impact: '15% reduction in energy costs'
-        }
-      ]
+app.get('/api/portfolio', async (req, res) => {
+  try {
+    const { company_id } = req.query;
+    
+    if (!company_id) {
+      return res.status(400).json({ error: 'Company ID is required' });
     }
-  };
-  
-  res.json(mockPortfolio);
+
+    // Get portfolio data from database
+    const { data: portfolio, error } = await supabase
+      .from('portfolios')
+      .select('*')
+      .eq('company_id', company_id)
+      .single();
+
+    if (error || !portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found' });
+    }
+
+    res.json({ portfolio });
+  } catch (error) {
+    console.error('Error fetching portfolio data:', error);
+    res.status(500).json({ error: 'Failed to fetch portfolio data' });
+  }
 });
 
 // AI Onboarding API endpoints

@@ -98,8 +98,8 @@ export class AIService implements AIBackendInterface {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           buyer: {
-            id: 'buyer_mock',
-            industry: 'Manufacturing',
+            id: material.company_id || 'unknown',
+            industry: material.industry || 'Manufacturing',
             waste_type: material.material_name,
             quantity: material.quantity,
             location: material.location
@@ -173,29 +173,27 @@ export class AIService implements AIBackendInterface {
   }
 
   async predictDemand(materialType: string, location: string): Promise<any> {
-    // Mock demand prediction
-    return {
-      material_type: materialType,
-      location: location,
-      predicted_demand: Math.floor(Math.random() * 1000) + 100,
-      confidence: Math.floor(Math.random() * 30) + 70,
-      trend: Math.random() > 0.5 ? 'increasing' : 'stable',
-      factors: ['seasonal_variation', 'local_industry', 'regulations']
-    };
+    // Get actual demand prediction from AI service
+    const response = await fetch('/api/ai/demand-prediction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ material_type: materialType, location: location })
+    });
+
+    if (!response.ok) throw new Error('Demand prediction failed');
+    return await response.json();
   }
 
   async optimizeLogistics(materials: any[], location: string): Promise<any> {
-    // Mock logistics optimization
-    return {
-      optimized_routes: materials.length,
-      estimated_cost_savings: Math.floor(Math.random() * 5000) + 1000,
-      carbon_reduction: Math.floor(Math.random() * 500) + 100,
-      recommendations: [
-        'Consolidate shipments from nearby locations',
-        'Use electric vehicles for short distances',
-        'Schedule pickups during off-peak hours'
-      ]
-    };
+    // Get actual logistics optimization from AI service
+    const response = await fetch('/api/ai/logistics-optimization', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ materials, location })
+    });
+
+    if (!response.ok) throw new Error('Logistics optimization failed');
+    return await response.json();
   }
 
   private calculateSimpleMatchScore(material1: any, material2: any): number {

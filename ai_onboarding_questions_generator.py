@@ -39,11 +39,11 @@ class AIOnboardingQuestionsGenerator:
                 return questions_data
             else:
                 logger.error(f"❌ Failed to generate questions for {company_profile.get('name')}")
-                return self._get_fallback_questions(company_profile)
+                raise Exception("AI question generation failed - no fallback available. Please ensure AI service is operational.")
                 
         except Exception as e:
             logger.error(f"❌ Error generating onboarding questions: {str(e)}")
-            return self._get_fallback_questions(company_profile)
+            raise Exception("AI question generation failed - no fallback available. Please ensure AI service is operational.")
     
     def _create_question_generation_prompt(self, company_profile: Dict[str, Any]) -> str:
         """
@@ -173,12 +173,12 @@ Provide the response as a JSON object with this structure:
             # Validate structure
             if 'questions' not in response:
                 logger.error("Response missing 'questions' key")
-                return self._get_fallback_questions({})
+                raise Exception("AI question generation failed - no fallback available. Please ensure AI service is operational.")
             
             questions = response.get('questions', [])
             if not questions:
                 logger.error("No questions generated")
-                return self._get_fallback_questions({})
+                raise Exception("AI question generation failed - no fallback available. Please ensure AI service is operational.")
             
             # Validate each question
             validated_questions = []
@@ -204,159 +204,7 @@ Provide the response as a JSON object with this structure:
             
         except Exception as e:
             logger.error(f"Error parsing questions response: {str(e)}")
-            return self._get_fallback_questions({})
-    
-    def _get_fallback_questions(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Fallback questions if AI generation fails
-        """
-        industry = company_profile.get('industry', 'manufacturing').lower()
-        
-        # Industry-specific fallback questions
-        fallback_questions = {
-            'manufacturing': [
-                {
-                    'id': 'q1',
-                    'category': 'production_scale',
-                    'question': 'What is your daily production output in units or tons?',
-                    'importance': 'high',
-                    'expected_answer_type': 'numeric',
-                    'follow_up_question': 'Is this consistent throughout the year?'
-                },
-                {
-                    'id': 'q2',
-                    'category': 'key_processes',
-                    'question': 'What are your main production processes?',
-                    'importance': 'high',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'Which process generates the most waste?'
-                },
-                {
-                    'id': 'q3',
-                    'category': 'materials',
-                    'question': 'What are your primary raw materials?',
-                    'importance': 'high',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'What quantities do you use monthly?'
-                },
-                {
-                    'id': 'q4',
-                    'category': 'waste_management',
-                    'question': 'How do you currently dispose of your waste?',
-                    'importance': 'medium',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'What are your disposal costs?'
-                },
-                {
-                    'id': 'q5',
-                    'category': 'resource_constraints',
-                    'question': 'What resources are most expensive or difficult to obtain?',
-                    'importance': 'medium',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'How much do you spend on these resources monthly?'
-                }
-            ],
-            'healthcare': [
-                {
-                    'id': 'q1',
-                    'category': 'facility_scale',
-                    'question': 'How many beds/patients do you serve daily?',
-                    'importance': 'high',
-                    'expected_answer_type': 'numeric',
-                    'follow_up_question': 'Is this consistent year-round?'
-                },
-                {
-                    'id': 'q2',
-                    'category': 'medical_waste',
-                    'question': 'What types of medical waste do you generate?',
-                    'importance': 'high',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'How do you currently dispose of medical waste?'
-                },
-                {
-                    'id': 'q3',
-                    'category': 'supplies',
-                    'question': 'What medical supplies do you use most frequently?',
-                    'importance': 'high',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'What are your monthly supply costs?'
-                },
-                {
-                    'id': 'q4',
-                    'category': 'linens',
-                    'question': 'How many linens/towels do you process daily?',
-                    'importance': 'medium',
-                    'expected_answer_type': 'numeric',
-                    'follow_up_question': 'Do you have in-house laundry or external service?'
-                },
-                {
-                    'id': 'q5',
-                    'category': 'energy',
-                    'question': 'What are your main energy-consuming operations?',
-                    'importance': 'medium',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'What is your monthly energy bill?'
-                }
-            ],
-            'hospitality': [
-                {
-                    'id': 'q1',
-                    'category': 'facility_scale',
-                    'question': 'How many rooms/guests do you serve daily?',
-                    'importance': 'high',
-                    'expected_answer_type': 'numeric',
-                    'follow_up_question': 'Is this seasonal or year-round?'
-                },
-                {
-                    'id': 'q2',
-                    'category': 'food_operations',
-                    'question': 'Do you have restaurants/kitchens? How many meals do you serve daily?',
-                    'importance': 'high',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'What types of food waste do you generate?'
-                },
-                {
-                    'id': 'q3',
-                    'category': 'linens',
-                    'question': 'How many linens/towels do you process daily?',
-                    'importance': 'medium',
-                    'expected_answer_type': 'numeric',
-                    'follow_up_question': 'Do you have in-house laundry or external service?'
-                },
-                {
-                    'id': 'q4',
-                    'category': 'waste_management',
-                    'question': 'How do you currently handle food waste and general waste?',
-                    'importance': 'medium',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'What are your disposal costs?'
-                },
-                {
-                    'id': 'q5',
-                    'category': 'energy',
-                    'question': 'What are your main energy-consuming operations?',
-                    'importance': 'medium',
-                    'expected_answer_type': 'text',
-                    'follow_up_question': 'What is your monthly energy bill?'
-                }
-            ]
-        }
-        
-        # Get industry-specific questions or default to manufacturing
-        questions = fallback_questions.get(industry, fallback_questions['manufacturing'])
-        
-        return {
-            'questions': questions,
-            'estimated_completion_time': '3-5 minutes',
-            'key_insights_expected': [
-                'Production capacity and waste generation potential',
-                'Primary resource requirements',
-                'Current waste management practices'
-            ],
-            'generated_at': datetime.now().isoformat(),
-            'ai_model': 'fallback',
-            'note': 'Using fallback questions due to AI generation failure'
-        }
+            raise Exception("AI question generation failed - no fallback available. Please ensure AI service is operational.")
     
     def process_onboarding_answers(self, questions: List[Dict[str, Any]], 
                                  answers: Dict[str, str]) -> Dict[str, Any]:

@@ -211,44 +211,28 @@ class AIMatchmakingService:
         In production, this would query the actual database.
         """
         
-        # This is a mock implementation - replace with actual database queries
-        mock_companies = {
-            'cattle farm': [
-                {'id': 'farm_001', 'name': 'Green Valley Cattle Farm', 'industry': 'Agriculture'},
-                {'id': 'farm_002', 'name': 'Sunset Ranch', 'industry': 'Agriculture'}
-            ],
-            'cement manufacturer': [
-                {'id': 'cement_001', 'name': 'Portland Cement Co', 'industry': 'Construction Materials'},
-                {'id': 'cement_002', 'name': 'Concrete Solutions Inc', 'industry': 'Construction Materials'}
-            ],
-            'textile manufacturer': [
-                {'id': 'textile_001', 'name': 'Fabric World Ltd', 'industry': 'Textiles'},
-                {'id': 'textile_002', 'name': 'Cotton Mills International', 'industry': 'Textiles'}
-            ],
-            'paper mill': [
-                {'id': 'paper_001', 'name': 'Green Paper Products', 'industry': 'Paper Manufacturing'},
-                {'id': 'paper_002', 'name': 'Recycled Paper Co', 'industry': 'Paper Manufacturing'}
-            ],
-            'chemical manufacturer': [
-                {'id': 'chem_001', 'name': 'Industrial Chemicals Ltd', 'industry': 'Chemical Manufacturing'},
-                {'id': 'chem_002', 'name': 'Green Chemistry Solutions', 'industry': 'Chemical Manufacturing'}
-            ]
-        }
-        
-        # Find companies that match the type (case-insensitive partial matching)
-        matching_companies = []
-        for key, companies in mock_companies.items():
-            if company_type in key or key in company_type:
-                matching_companies.extend(companies)
-        
-        # If no exact matches, return some general companies
-        if not matching_companies:
-            matching_companies = [
-                {'id': 'general_001', 'name': 'General Manufacturing Co', 'industry': 'Manufacturing'},
-                {'id': 'general_002', 'name': 'Industrial Solutions Inc', 'industry': 'Manufacturing'}
-            ]
-        
-        return matching_companies
+        # Get actual companies from database
+        try:
+            from supabase import create_client, Client
+            import os
+            
+            supabase: Client = create_client(
+                os.environ.get("SUPABASE_URL"),
+                os.environ.get("SUPABASE_ANON_KEY")
+            )
+            
+            # Query companies that match the type
+            result = supabase.table('companies').select('*').ilike('industry', f'%{company_type}%').limit(10).execute()
+            
+            if result.error:
+                logger.error(f"Error fetching companies by type: {result.error}")
+                return []
+                
+            return result.data or []
+            
+        except Exception as e:
+            logger.error(f"Error querying companies by type: {e}")
+            return []
     
     def create_matches_in_database(self, company_id: str, partner_companies: List[Dict[str, Any]], material_name: str) -> List[Dict[str, Any]]:
         """

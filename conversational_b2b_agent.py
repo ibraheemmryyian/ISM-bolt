@@ -314,7 +314,8 @@ class DeepSeekR1ConversationalAgent:
             return self._generate_fallback_response(intent)
     
     def _generate_fallback_response(self, intent: Intent) -> str:
-        """Generate fallback response when DeepSeek R1 fails"""
+        """Generate fallback response when DeepSeek R1 fails - no fallback available"""
+        raise Exception("AI service unavailable - no fallback available. Please check AI service connectivity.")
         if intent.type == IntentType.GREETING:
             return "Hello! I'm your industrial symbiosis AI assistant. How can I help you find sustainable business opportunities today?"
         elif intent.type == IntentType.MATCHING_REQUEST:

@@ -147,7 +147,7 @@ export default function RequestAccess() {
         contact_name: form.contact_name,
         contact_email: form.contact_email,
         application_answers: form.answers,
-        status: 'approved' // Auto-approve for demo
+        status: 'pending'
       }).select();
       
       console.log('Application submission result:', { data, error: supaError });

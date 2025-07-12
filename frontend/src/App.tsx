@@ -7,9 +7,8 @@ import AuthModal from './components/AuthModal';
 import AuthCallback from './components/AuthCallback';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 import Dashboard from './components/Dashboard';
-import DemoDashboard from './components/DemoDashboard';
-import DemoLandingPage from './components/DemoLandingPage';
-import DemoAIMatching from './components/DemoAIMatching';
+import LandingPage from './components/LandingPage';
+
 import AIInferenceMatching from './components/AIInferenceMatching';
 import Marketplace from './components/Marketplace';
 import AIOnboardingWizard from './components/AIOnboardingWizard';
@@ -100,13 +99,8 @@ function App() {
             />
             
             <Routes>
-              {/* Demo Landing Page */}
-              <Route path="/" element={<DemoLandingPage />} />
-              
-              {/* Demo Routes */}
-              <Route path="/demo" element={<DemoLandingPage />} />
-              <Route path="/demo/dashboard" element={<DemoDashboard />} />
-              <Route path="/demo/ai-matching" element={<DemoAIMatching />} />
+                      {/* Landing Page */}
+        <Route path="/" element={<LandingPage />} />
               
               {/* Auth Routes */}
               <Route path="/auth/callback" element={<AuthCallback />} />
