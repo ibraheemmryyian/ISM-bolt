@@ -7,7 +7,7 @@ class FreightosLogisticsService {
     this.baseUrl = 'https://api.freightos.com/api/v1';
     
     if (!this.apiKey || !this.secret) {
-      console.warn('⚠️ Freightos API credentials not found. Logistics calculations will use estimates.');
+      throw new Error('❌ Freightos API credentials not found. Real logistics calculations are required.');
     } else {
       console.log('✅ Freightos API credentials found. Real logistics calculations enabled.');
     }
@@ -18,10 +18,6 @@ class FreightosLogisticsService {
    */
   async getFreightEstimate(params) {
     try {
-      if (!this.apiKey || !this.secret) {
-        return this.getFallbackEstimate(params);
-      }
-
       const {
         origin,
         destination,
@@ -69,10 +65,8 @@ class FreightosLogisticsService {
       return result;
 
     } catch (error) {
-      console.error('Freightos API error:', error.message);
-      
-      // Fallback to estimated calculations
-      return this.getFallbackEstimate(params);
+      console.error('❌ Freightos API error:', error.message);
+      throw new Error(`Real logistics calculation failed: ${error.message}`);
     }
   }
 
@@ -279,68 +273,10 @@ class FreightosLogisticsService {
   }
 
   /**
-   * Get fallback estimates when API is unavailable
+   * Real logistics calculation required - no fallbacks allowed
    */
   getFallbackEstimate(params) {
-    const { weight, volume, mode, origin, destination } = params;
-    
-    // Fallback rate calculations
-    const baseRates = {
-      sea: 0.8, // $ per kg
-      air: 4.5, // $ per kg
-      truck: 0.3, // $ per kg
-      rail: 0.4 // $ per kg
-    };
-
-    const baseRate = baseRates[mode] || baseRates.sea;
-    const totalCost = weight * baseRate;
-
-    // Fallback emissions (kg CO2e per kg)
-    const emissionsFactors = {
-      sea: 0.02,
-      air: 0.8,
-      truck: 0.1,
-      rail: 0.03
-    };
-
-    const emissions = weight * (emissionsFactors[mode] || emissionsFactors.sea);
-
-    return {
-      freight_rates: {
-        rates: [{
-          carrier: 'Estimated',
-          total_cost: totalCost,
-          transit_time: this.getEstimatedTransitTime(mode, origin, destination),
-          mode: mode
-        }],
-        cheapest_rate: { total_cost: totalCost, carrier: 'Estimated' },
-        average_rate: totalCost
-      },
-      co2_emissions: {
-        total_emissions: emissions,
-        emissions_per_kg: emissionsFactors[mode] || emissionsFactors.sea
-      },
-      total_cost: {
-        base_rate: totalCost,
-        total_cost: totalCost * 1.3, // Include estimated fees
-        breakdown_percentage: {
-          base_rate: 77,
-          fuel_surcharge: 15,
-          handling_fees: 8
-        }
-      },
-      carbon_footprint: emissions,
-      sustainability_score: this.calculateSustainabilityScore({ total_emissions: emissions }),
-      recommendations: [{
-        type: 'api_unavailable',
-        priority: 'low',
-        title: 'Using Estimated Rates',
-        description: 'Freightos API unavailable. Consider upgrading for real-time rates.',
-        implementation: 'Contact support to enable Freightos integration'
-      }],
-      timestamp: new Date().toISOString(),
-      is_estimate: true
-    };
+    throw new Error('❌ Real logistics calculation required. Freightos API must be available.');
   }
 
   /**

@@ -232,7 +232,7 @@ function runPythonScript(scriptPath, data) {
         // Handle both object and array parameters
         const args = Array.isArray(data) ? [scriptPath, ...data] : [scriptPath, JSON.stringify(data)];
         const pythonProcess = spawn('python', args, {
-            timeout: 10000, // 10 second timeout
+            timeout: 30000, // 30 second timeout for complex AI operations
             stdio: ['pipe', 'pipe', 'pipe'],
             cwd: __dirname // Set working directory to backend folder
         });
@@ -250,19 +250,22 @@ function runPythonScript(scriptPath, data) {
         
         pythonProcess.on('close', (code) => {
             if (code !== 0) {
-                reject(new Error(`Python script failed: ${error}`));
+                console.error(`❌ Python script ${scriptPath} failed with code ${code}: ${error}`);
+                reject(new Error(`Advanced AI service failed: ${error}`));
             } else {
                 try {
                     const parsedResult = JSON.parse(result);
                     resolve(parsedResult);
                 } catch (e) {
-                    reject(new Error(`Failed to parse Python output: ${result}`));
+                    console.error(`❌ Failed to parse Python output from ${scriptPath}: ${result}`);
+                    reject(new Error(`Advanced AI service returned invalid response: ${result}`));
                 }
             }
         });
         
         pythonProcess.on('error', (err) => {
-            reject(new Error(`Failed to start Python process: ${err.message}`));
+            console.error(`❌ Failed to start Python process for ${scriptPath}: ${err.message}`);
+            reject(new Error(`Advanced AI service unavailable: ${err.message}`));
         });
     });
 }
