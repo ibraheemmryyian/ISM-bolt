@@ -1,0 +1,185 @@
+# Advanced ML/AI Dependencies for Industrial Symbiosis Platform
+
+# Core ML Libraries
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+scipy>=1.10.0
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+torchaudio>=2.0.0
+transformers>=4.30.0
+sentence-transformers>=2.2.0
+
+# Neural Networks and Advanced ML
+tensorflow>=2.13.0
+keras>=2.13.0
+xgboost>=1.7.0
+lightgbm>=4.0.0
+catboost>=1.2.0
+
+# Graph Neural Networks
+torch-geometric>=2.3.0
+networkx>=3.1
+igraph>=0.10.0
+python-igraph>=0.10.0
+
+# Clustering and Dimensionality Reduction
+umap-learn>=0.5.0
+hdbscan>=0.8.0
+tsne-cuda>=1.0.0
+faiss-cpu>=1.7.0
+faiss-gpu>=1.7.0
+
+# Optimization
+optuna>=3.2.0
+hyperopt>=0.2.7
+scikit-optimize>=0.9.0
+
+# Visualization
+plotly>=5.15.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+bokeh>=3.2.0
+dash>=2.11.0
+
+# Data Processing
+dask>=2023.6.0
+vaex>=4.15.0
+modin>=0.20.0
+
+# Feature Engineering
+feature-engine>=1.6.0
+category-encoders>=2.6.0
+tsfresh>=0.20.0
+
+# Time Series
+statsmodels>=0.14.0
+prophet>=1.1.4
+neuralprophet>=0.6.0
+
+# NLP and Text Processing
+spacy>=3.6.0
+nltk>=3.8.0
+textblob>=0.17.0
+gensim>=4.3.0
+
+# Computer Vision (for material analysis)
+opencv-python>=4.8.0
+pillow>=10.0.0
+albumentations>=1.3.0
+
+# Database and Caching
+redis>=4.6.0
+pymongo>=4.4.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# API and Web
+fastapi>=0.100.0
+uvicorn>=0.23.0
+aiohttp>=3.8.0
+requests>=2.31.0
+httpx>=0.24.0
+
+# Async and Concurrency
+asyncio-mqtt>=0.13.0
+celery>=5.3.0
+dramatiq>=1.14.0
+
+# Monitoring and Logging
+prometheus-client>=0.17.0
+structlog>=23.1.0
+loguru>=0.7.0
+
+# Configuration and Environment
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+hydra-core>=1.3.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+
+# Development Tools
+black>=23.7.0
+flake8>=6.0.0
+mypy>=1.5.0
+pre-commit>=3.3.0
+
+# Jupyter and Notebooks
+jupyter>=1.0.0
+ipywidgets>=8.0.0
+voila>=0.4.0
+
+# Model Persistence
+joblib>=1.3.0
+pickle5>=0.0.12
+onnx>=1.14.0
+onnxruntime>=1.15.0
+
+# Advanced Analytics
+shap>=0.42.0
+lime>=0.2.0
+eli5>=0.14.0
+interpret>=0.4.0
+
+# Geospatial (for location-based matching)
+geopandas>=0.13.0
+folium>=0.14.0
+geopy>=2.3.0
+
+# Financial Analysis
+yfinance>=0.2.18
+alpha-vantage>=2.3.1
+quandl>=3.7.0
+
+# Energy and Sustainability
+pvlib>=0.9.0
+windpowerlib>=0.2.0
+oemof>=0.5.0
+
+# Material Science
+pymatgen>=2023.8.0
+ase>=3.22.0
+rdkit>=2023.3.0
+
+# IoT and Sensor Data
+paho-mqtt>=1.6.0
+pyserial>=3.5.0
+opcua>=0.98.0
+
+# Blockchain (for supply chain transparency)
+web3>=6.8.0
+eth-account>=0.9.0
+
+# Security
+cryptography>=41.0.0
+bcrypt>=4.0.0
+passlib>=1.7.0
+
+# Performance Optimization
+numba>=0.57.0
+cython>=3.0.0
+mypy-extensions>=1.0.0
+
+# Cloud and Deployment
+boto3>=1.28.0
+google-cloud-storage>=2.10.0
+azure-storage-blob>=12.17.0
+
+# Containerization
+docker>=6.1.0
+kubernetes>=26.1.0
+
+# CI/CD
+github3>=4.0.0
+gitpython>=3.1.0
+
+# Documentation
+sphinx>=7.1.0
+mkdocs>=1.5.0
+mkdocs-material>=9.2.0
