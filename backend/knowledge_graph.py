@@ -1,677 +1,613 @@
 import networkx as nx
-import pandas as pd
 import numpy as np
-from typing import Dict, Any, List, Optional, Tuple
+import pandas as pd
+from typing import Dict, List, Any, Optional, Tuple
 import json
 import logging
 from datetime import datetime
-import pickle
 import os
 from pathlib import Path
-
-# GNN imports
-try:
-    import torch
-    import torch.nn as nn
-    import torch.nn.functional as F
-    from torch_geometric.data import Data, Batch
-    from torch_geometric.nn import GCNConv, GATConv, GraphConv
-    from torch_geometric.utils import to_networkx, from_networkx
-    GNN_AVAILABLE = True
-except ImportError:
-    GNN_AVAILABLE = False
-    logging.warning("PyTorch Geometric not available. GNN features will be disabled.")
 
 logger = logging.getLogger(__name__)
 
 class KnowledgeGraph:
     """
-    Advanced Dynamic Knowledge Graph for Industrial Symbiosis
+    Advanced Knowledge Graph for Industrial Symbiosis
     Features:
-    - Graph building and updating
-    - Advanced querying and reasoning
-    - GNN-based pattern mining
-    - Persistent model storage
-    - Real-time graph evolution
+    - Entity-relationship modeling
+    - Graph-based reasoning
+    - Embedding generation
+    - Path finding and recommendations
+    - Real-time updates
     """
     
-    def __init__(self, model_cache_dir: str = "./models"):
-        self.graph = nx.MultiDiGraph()
-        self.model_cache_dir = Path(model_cache_dir)
-        self.model_cache_dir.mkdir(exist_ok=True)
-        
-        # GNN components
-        self.gnn_model = None
+    def __init__(self, graph_file: str = "knowledge_graph.json"):
+        self.graph_file = graph_file
+        self.graph = nx.Graph()
         self.node_embeddings = {}
-        self.edge_embeddings = {}
-        self.feature_dim = 128
+        self.edge_weights = {}
+        self.entity_types = {}
+        self.relationship_types = {}
         
-        # Graph statistics
+        # Statistics
         self.stats = {
             'nodes': 0,
             'edges': 0,
-            'last_updated': None,
-            'embeddings_generated': False
+            'embeddings_available': False,
+            'last_updated': datetime.now().isoformat()
         }
         
-        # Load existing model if available
-        self._load_persistent_model()
-        
-        # Initialize GNN if available
-        if GNN_AVAILABLE:
-            self._initialize_gnn()
+        # Load existing graph or create new one
+        self._load_or_create_graph()
         
         logger.info(f"Knowledge Graph initialized with {self.stats['nodes']} nodes and {self.stats['edges']} edges")
-
-    def _load_persistent_model(self):
-        """Load persistent graph and embeddings"""
+    
+    def _load_or_create_graph(self):
+        """Load existing graph or create new one"""
         try:
-            # Load graph structure
-            graph_path = self.model_cache_dir / "knowledge_graph.pkl"
-            if graph_path.exists():
-                with open(graph_path, 'rb') as f:
-                    self.graph = pickle.load(f)
-                self.stats['nodes'] = self.graph.number_of_nodes()
-                self.stats['edges'] = self.graph.number_of_edges()
-                logger.info(f"Loaded existing graph with {self.stats['nodes']} nodes")
-            
-            # Load embeddings
-            embeddings_path = self.model_cache_dir / "node_embeddings.pkl"
-            if embeddings_path.exists():
-                with open(embeddings_path, 'rb') as f:
-                    self.node_embeddings = pickle.load(f)
-                self.stats['embeddings_generated'] = True
-                logger.info(f"Loaded {len(self.node_embeddings)} node embeddings")
+            if os.path.exists(self.graph_file):
+                with open(self.graph_file, 'r') as f:
+                    data = json.load(f)
                 
-        except Exception as e:
-            logger.error(f"Error loading persistent model: {e}")
-
-    def _save_persistent_model(self):
-        """Save graph and embeddings to disk"""
-        try:
-            # Save graph structure
-            graph_path = self.model_cache_dir / "knowledge_graph.pkl"
-            with open(graph_path, 'wb') as f:
-                pickle.dump(self.graph, f)
-            
-            # Save embeddings
-            if self.node_embeddings:
-                embeddings_path = self.model_cache_dir / "node_embeddings.pkl"
-                with open(embeddings_path, 'wb') as f:
-                    pickle.dump(self.node_embeddings, f)
-            
-            self.stats['last_updated'] = datetime.now()
-            logger.info("Persistent model saved successfully")
-            
-        except Exception as e:
-            logger.error(f"Error saving persistent model: {e}")
-
-    def _initialize_gnn(self):
-        """Initialize GNN model for graph reasoning"""
-        if not GNN_AVAILABLE:
-            return
-            
-        try:
-            self.gnn_model = IndustrialSymbiosisGNN(
-                input_dim=self.feature_dim,
-                hidden_dim=256,
-                output_dim=64,
-                num_layers=3
-            )
-            
-            # Load pre-trained weights if available
-            model_path = self.model_cache_dir / "gnn_model.pth"
-            if model_path.exists():
-                self.gnn_model.load_state_dict(torch.load(model_path))
-                self.gnn_model.eval()
-                logger.info("Loaded pre-trained GNN model")
+                # Reconstruct graph from data
+                self.graph = nx.node_link_graph(data['graph'])
+                self.node_embeddings = data.get('embeddings', {})
+                self.edge_weights = data.get('edge_weights', {})
+                self.entity_types = data.get('entity_types', {})
+                self.relationship_types = data.get('relationship_types', {})
+                
+                # Update statistics
+                self.stats['nodes'] = len(self.graph.nodes())
+                self.stats['edges'] = len(self.graph.edges())
+                self.stats['embeddings_available'] = len(self.node_embeddings) > 0
+                
+                logger.info(f"Loaded existing knowledge graph from {self.graph_file}")
             else:
-                logger.info("Initialized new GNN model")
+                logger.info("Creating new knowledge graph")
                 
         except Exception as e:
-            logger.error(f"Error initializing GNN: {e}")
-
-    def add_entity(self, entity_id: str, attributes: Dict[str, Any], entity_type: str = "company"):
-        """Add or update an entity node in the graph with enhanced attributes"""
-        # Prepare node features
-        node_features = self._prepare_node_features(attributes, entity_type)
-        
-        # Add node with features
-        self.graph.add_node(entity_id, 
-                           **attributes,
-                           features=node_features,
-                           entity_type=entity_type,
-                           created_at=datetime.now(),
-                           updated_at=datetime.now())
-        
-        self.stats['nodes'] = self.graph.number_of_nodes()
-        logger.debug(f"Added entity: {entity_id} ({entity_type})")
-
-    def add_relationship(self, source_id: str, target_id: str, rel_type: str, 
-                        attributes: Dict[str, Any] = None, confidence: float = 1.0):
-        """Add a relationship (edge) between two entities with confidence scoring"""
-        if attributes is None:
-            attributes = {}
-        
-        # Prepare edge features
-        edge_features = self._prepare_edge_features(attributes, rel_type)
-        
-        # Add edge with features
-        self.graph.add_edge(source_id, target_id, 
-                           key=rel_type,
-                           **attributes,
-                           features=edge_features,
-                           confidence=confidence,
-                           created_at=datetime.now())
-        
-        self.stats['edges'] = self.graph.number_of_edges()
-        logger.debug(f"Added relationship: {source_id} --{rel_type}--> {target_id}")
-
-    def _prepare_node_features(self, attributes: Dict[str, Any], entity_type: str) -> np.ndarray:
-        """Prepare node features for GNN"""
-        features = np.zeros(self.feature_dim)
-        
-        # Entity type encoding
-        type_encodings = {
-            'company': 0.1,
-            'material': 0.2,
-            'location': 0.3,
-            'industry': 0.4,
-            'regulation': 0.5
-        }
-        features[0] = type_encodings.get(entity_type, 0.0)
-        
-        # Numerical features
-        if 'annual_waste' in attributes:
-            features[1] = min(float(attributes['annual_waste']) / 10000, 1.0)
-        if 'carbon_footprint' in attributes:
-            features[2] = min(float(attributes['carbon_footprint']) / 100000, 1.0)
-        if 'employee_count' in attributes:
-            features[3] = min(float(attributes['employee_count']) / 1000, 1.0)
-        
-        # Categorical features (one-hot encoding)
-        if 'industry' in attributes:
-            industry_hash = hash(attributes['industry']) % 20
-            features[4 + industry_hash] = 1.0
-        
-        if 'location' in attributes:
-            location_hash = hash(attributes['location']) % 20
-            features[24 + location_hash] = 1.0
-        
-        return features
-
-    def _prepare_edge_features(self, attributes: Dict[str, Any], rel_type: str) -> np.ndarray:
-        """Prepare edge features for GNN"""
-        features = np.zeros(32)  # Smaller edge feature dimension
-        
-        # Relationship type encoding
-        rel_encodings = {
-            'supplies': 0.1,
-            'consumes': 0.2,
-            'located_in': 0.3,
-            'regulates': 0.4,
-            'partners_with': 0.5,
-            'similar_to': 0.6
-        }
-        features[0] = rel_encodings.get(rel_type, 0.0)
-        
-        # Numerical edge features
-        if 'quantity' in attributes:
-            features[1] = min(float(attributes['quantity']) / 1000, 1.0)
-        if 'cost' in attributes:
-            features[2] = min(float(attributes['cost']) / 10000, 1.0)
-        if 'distance' in attributes:
-            features[3] = min(float(attributes['distance']) / 1000, 1.0)
-        
-        return features
-
-    def query(self, query_params: Dict[str, Any]) -> List[Dict]:
-        """
-        Advanced graph querying with multiple query types
-        """
-        query_type = query_params.get('type', 'path')
-        
-        if query_type == 'path':
-            return self._path_query(query_params)
-        elif query_type == 'pattern':
-            return self._pattern_query(query_params)
-        elif query_type == 'similarity':
-            return self._similarity_query(query_params)
-        elif query_type == 'recommendation':
-            return self._recommendation_query(query_params)
-        else:
-            return self._general_query(query_params)
-
-    def _path_query(self, params: Dict[str, Any]) -> List[Dict]:
-        """Find paths between entities"""
-        source = params.get('source')
-        target = params.get('target')
-        max_length = params.get('max_length', 3)
-        
-        if not source or not target:
-            return []
-        
+            logger.error(f"Error loading knowledge graph: {e}")
+            # Create empty graph
+            self.graph = nx.Graph()
+    
+    def _save_graph(self):
+        """Save graph to file"""
         try:
-            paths = list(nx.all_simple_paths(self.graph, source, target, cutoff=max_length))
-            return [{'path': path, 'length': len(path)} for path in paths]
-        except nx.NetworkXNoPath:
-            return []
-
-    def _pattern_query(self, params: Dict[str, Any]) -> List[Dict]:
-        """Find patterns in the graph"""
-        pattern_type = params.get('pattern_type', 'triangle')
-        
-        if pattern_type == 'triangle':
-            triangles = list(nx.triangles(self.graph.to_undirected()))
-            return [{'pattern': 'triangle', 'nodes': list(triangle)} for triangle in triangles]
-        elif pattern_type == 'cycle':
-            cycles = list(nx.simple_cycles(self.graph))
-            return [{'pattern': 'cycle', 'nodes': cycle} for cycle in cycles]
-        
-        return []
-
-    def _similarity_query(self, params: Dict[str, Any]) -> List[Dict]:
-        """Find similar entities using embeddings"""
-        entity_id = params.get('entity_id')
-        top_k = params.get('top_k', 5)
-        
-        if not entity_id or entity_id not in self.node_embeddings:
-            return []
-        
-        target_embedding = self.node_embeddings[entity_id]
-        similarities = []
-        
-        for node_id, embedding in self.node_embeddings.items():
-            if node_id != entity_id:
-                similarity = np.dot(target_embedding, embedding) / (
-                    np.linalg.norm(target_embedding) * np.linalg.norm(embedding)
-                )
-                similarities.append((node_id, similarity))
-        
-        # Sort by similarity and return top_k
-        similarities.sort(key=lambda x: x[1], reverse=True)
-        return [{'entity_id': node_id, 'similarity': float(sim)} 
-                for node_id, sim in similarities[:top_k]]
-
-    def _recommendation_query(self, params: Dict[str, Any]) -> List[Dict]:
-        """Generate recommendations using GNN"""
-        entity_id = params.get('entity_id')
-        recommendation_type = params.get('recommendation_type', 'partnership')
-        
-        if not entity_id or not GNN_AVAILABLE:
-            return []
-        
-        try:
-            # Generate embeddings if not available
-            if not self.node_embeddings:
-                self._generate_embeddings()
+            data = {
+                'graph': nx.node_link_data(self.graph),
+                'embeddings': self.node_embeddings,
+                'edge_weights': self.edge_weights,
+                'entity_types': self.entity_types,
+                'relationship_types': self.relationship_types,
+                'last_saved': datetime.now().isoformat()
+            }
             
-            # Use GNN for recommendations
-            recommendations = self._gnn_recommendations(entity_id, recommendation_type)
-            return recommendations
+            with open(self.graph_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            
+            logger.info(f"Knowledge graph saved to {self.graph_file}")
             
         except Exception as e:
-            logger.error(f"Error generating recommendations: {e}")
-            return []
-
-    def _general_query(self, params: Dict[str, Any]) -> List[Dict]:
-        """General graph querying"""
-        filters = params.get('filters', {})
-        limit = params.get('limit', 100)
-        
-        results = []
-        for node, attrs in self.graph.nodes(data=True):
-            if self._matches_filters(attrs, filters):
-                results.append({'id': node, **attrs})
-                if len(results) >= limit:
-                    break
-        
-        return results
-
-    def _matches_filters(self, attrs: Dict[str, Any], filters: Dict[str, Any]) -> bool:
-        """Check if node attributes match filters"""
-        for key, value in filters.items():
-            if key not in attrs or attrs[key] != value:
-                return False
-        return True
-
-    def run_gnn_reasoning(self, reasoning_type: str = "opportunity_discovery") -> Dict[str, Any]:
-        """
-        Run advanced GNN-based reasoning for pattern mining and opportunity discovery
-        """
-        if not GNN_AVAILABLE:
-            return {'error': 'GNN not available'}
-        
+            logger.error(f"Error saving knowledge graph: {e}")
+    
+    def add_entity(self, entity_id: str, attributes: Dict[str, Any], entity_type: str = "company") -> bool:
+        """Add entity to knowledge graph"""
         try:
-            # Generate embeddings if not available
-            if not self.node_embeddings:
-                self._generate_embeddings()
+            # Add node to graph
+            self.graph.add_node(entity_id, **attributes)
             
-            # Run specific reasoning tasks
+            # Store entity type
+            self.entity_types[entity_id] = entity_type
+            
+            # Generate embedding if possible
+            if self._can_generate_embedding(attributes):
+                embedding = self._generate_embedding(attributes)
+                self.node_embeddings[entity_id] = embedding.tolist()
+                self.stats['embeddings_available'] = True
+            
+            # Update statistics
+            self.stats['nodes'] = len(self.graph.nodes())
+            self.stats['last_updated'] = datetime.now().isoformat()
+            
+            # Save graph periodically
+            if self.stats['nodes'] % 10 == 0:  # Save every 10 entities
+                self._save_graph()
+            
+            logger.info(f"Added entity {entity_id} of type {entity_type}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error adding entity {entity_id}: {e}")
+            return False
+    
+    def add_relationship(self, source_id: str, target_id: str, relationship_type: str, attributes: Dict[str, Any] = None) -> bool:
+        """Add relationship between entities"""
+        try:
+            if attributes is None:
+                attributes = {}
+            
+            # Add edge to graph
+            self.graph.add_edge(source_id, target_id, **attributes)
+            
+            # Store relationship type
+            edge_key = (source_id, target_id)
+            self.relationship_types[edge_key] = relationship_type
+            
+            # Calculate edge weight based on relationship type
+            weight = self._calculate_edge_weight(relationship_type, attributes)
+            self.edge_weights[edge_key] = weight
+            
+            # Update statistics
+            self.stats['edges'] = len(self.graph.edges())
+            self.stats['last_updated'] = datetime.now().isoformat()
+            
+            logger.info(f"Added relationship {relationship_type} between {source_id} and {target_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error adding relationship between {source_id} and {target_id}: {e}")
+            return False
+    
+    def _can_generate_embedding(self, attributes: Dict[str, Any]) -> bool:
+        """Check if we can generate embedding for attributes"""
+        # Check if we have text data for embedding
+        text_fields = ['name', 'description', 'industry', 'location', 'products']
+        return any(field in attributes and attributes[field] for field in text_fields)
+    
+    def _generate_embedding(self, attributes: Dict[str, Any]) -> np.ndarray:
+        """Generate embedding for entity attributes"""
+        try:
+            # Simple embedding generation based on text attributes
+            text_parts = []
+            
+            # Collect text from various fields
+            for field in ['name', 'description', 'industry', 'location', 'products']:
+                if field in attributes and attributes[field]:
+                    text_parts.append(str(attributes[field]))
+            
+            # Combine all text
+            combined_text = " ".join(text_parts)
+            
+            # Simple feature-based embedding
+            embedding = self._text_to_features(combined_text)
+            
+            return embedding
+            
+        except Exception as e:
+            logger.error(f"Error generating embedding: {e}")
+            # Return zero embedding as fallback
+            return np.zeros(8)
+    
+    def _text_to_features(self, text: str) -> np.ndarray:
+        """Convert text to feature vector"""
+        # Simple feature extraction
+        features = []
+        
+        # Text length (normalized)
+        features.append(min(len(text) / 1000, 1.0))
+        
+        # Word count (normalized)
+        word_count = len(text.split())
+        features.append(min(word_count / 100, 1.0))
+        
+        # Unique words (normalized)
+        unique_words = len(set(text.lower().split()))
+        features.append(min(unique_words / 50, 1.0))
+        
+        # Industry keywords
+        industry_keywords = ['manufacturing', 'chemical', 'food', 'textile', 'construction', 'recycling']
+        industry_score = sum(1 for keyword in industry_keywords if keyword in text.lower()) / len(industry_keywords)
+        features.append(industry_score)
+        
+        # Location keywords
+        location_keywords = ['dubai', 'abudhabi', 'riyadh', 'doha', 'kuwait', 'oman']
+        location_score = sum(1 for keyword in location_keywords if keyword in text.lower()) / len(location_keywords)
+        features.append(location_score)
+        
+        # Material keywords
+        material_keywords = ['plastic', 'metal', 'paper', 'organic', 'chemical', 'waste']
+        material_score = sum(1 for keyword in material_keywords if keyword in text.lower()) / len(material_keywords)
+        features.append(material_score)
+        
+        # Sustainability keywords
+        sustainability_keywords = ['green', 'sustainable', 'renewable', 'eco', 'environmental']
+        sustainability_score = sum(1 for keyword in sustainability_keywords if keyword in text.lower()) / len(sustainability_keywords)
+        features.append(sustainability_score)
+        
+        # Overall complexity
+        complexity = (word_count * unique_words) / max(1, len(text))
+        features.append(min(complexity / 100, 1.0))
+        
+        return np.array(features)
+    
+    def _calculate_edge_weight(self, relationship_type: str, attributes: Dict[str, Any]) -> float:
+        """Calculate weight for relationship edge"""
+        base_weights = {
+            'supplies_to': 0.8,
+            'buys_from': 0.8,
+            'partners_with': 0.9,
+            'competes_with': 0.3,
+            'located_near': 0.6,
+            'same_industry': 0.7,
+            'complementary': 0.8
+        }
+        
+        base_weight = base_weights.get(relationship_type, 0.5)
+        
+        # Adjust weight based on attributes
+        if 'strength' in attributes:
+            base_weight *= attributes['strength']
+        
+        if 'frequency' in attributes:
+            base_weight *= min(attributes['frequency'] / 10, 1.0)
+        
+        return min(max(base_weight, 0.0), 1.0)
+    
+    def find_similar_entities(self, entity_id: str, top_k: int = 5) -> List[Dict[str, Any]]:
+        """Find similar entities using graph structure and embeddings"""
+        try:
+            if entity_id not in self.graph.nodes():
+                return []
+            
+            similarities = []
+            
+            # Get entity attributes
+            entity_attrs = self.graph.nodes[entity_id]
+            
+            # Compare with all other entities
+            for other_id in self.graph.nodes():
+                if other_id == entity_id:
+                    continue
+                
+                other_attrs = self.graph.nodes[other_id]
+                
+                # Calculate similarity using multiple methods
+                structural_similarity = self._calculate_structural_similarity(entity_id, other_id)
+                attribute_similarity = self._calculate_attribute_similarity(entity_attrs, other_attrs)
+                embedding_similarity = self._calculate_embedding_similarity(entity_id, other_id)
+                
+                # Combine similarities
+                combined_similarity = (
+                    0.4 * structural_similarity +
+                    0.4 * attribute_similarity +
+                    0.2 * embedding_similarity
+                )
+                
+                similarities.append({
+                    'entity_id': other_id,
+                    'similarity': combined_similarity,
+                    'structural_similarity': structural_similarity,
+                    'attribute_similarity': attribute_similarity,
+                    'embedding_similarity': embedding_similarity,
+                    'attributes': other_attrs
+                })
+            
+            # Sort by similarity and return top k
+            similarities.sort(key=lambda x: x['similarity'], reverse=True)
+            return similarities[:top_k]
+            
+        except Exception as e:
+            logger.error(f"Error finding similar entities for {entity_id}: {e}")
+            return []
+    
+    def _calculate_structural_similarity(self, entity1_id: str, entity2_id: str) -> float:
+        """Calculate structural similarity between entities"""
+        try:
+            # Get neighbors
+            neighbors1 = set(self.graph.neighbors(entity1_id))
+            neighbors2 = set(self.graph.neighbors(entity2_id))
+            
+            # Jaccard similarity of neighbors
+            if neighbors1 or neighbors2:
+                intersection = len(neighbors1.intersection(neighbors2))
+                union = len(neighbors1.union(neighbors2))
+                return intersection / union
+            else:
+                return 0.0
+                
+        except Exception as e:
+            logger.error(f"Error calculating structural similarity: {e}")
+            return 0.0
+    
+    def _calculate_attribute_similarity(self, attrs1: Dict[str, Any], attrs2: Dict[str, Any]) -> float:
+        """Calculate attribute similarity between entities"""
+        try:
+            # Compare common attributes
+            common_attrs = set(attrs1.keys()).intersection(set(attrs2.keys()))
+            
+            if not common_attrs:
+                return 0.0
+            
+            similarities = []
+            for attr in common_attrs:
+                val1 = attrs1[attr]
+                val2 = attrs2[attr]
+                
+                if isinstance(val1, str) and isinstance(val2, str):
+                    # String similarity
+                    if val1.lower() == val2.lower():
+                        similarities.append(1.0)
+                    elif val1.lower() in val2.lower() or val2.lower() in val1.lower():
+                        similarities.append(0.7)
+                    else:
+                        similarities.append(0.0)
+                elif isinstance(val1, (int, float)) and isinstance(val2, (int, float)):
+                    # Numerical similarity
+                    if val1 == 0 and val2 == 0:
+                        similarities.append(1.0)
+                    elif val1 == 0 or val2 == 0:
+                        similarities.append(0.0)
+                    else:
+                        ratio = min(val1, val2) / max(val1, val2)
+                        similarities.append(ratio)
+                else:
+                    similarities.append(0.0)
+            
+            return np.mean(similarities) if similarities else 0.0
+            
+        except Exception as e:
+            logger.error(f"Error calculating attribute similarity: {e}")
+            return 0.0
+    
+    def _calculate_embedding_similarity(self, entity1_id: str, entity2_id: str) -> float:
+        """Calculate embedding similarity between entities"""
+        try:
+            if entity1_id in self.node_embeddings and entity2_id in self.node_embeddings:
+                emb1 = np.array(self.node_embeddings[entity1_id])
+                emb2 = np.array(self.node_embeddings[entity2_id])
+                
+                # Cosine similarity
+                dot_product = np.dot(emb1, emb2)
+                norm1 = np.linalg.norm(emb1)
+                norm2 = np.linalg.norm(emb2)
+                
+                if norm1 > 0 and norm2 > 0:
+                    return dot_product / (norm1 * norm2)
+                else:
+                    return 0.0
+            else:
+                return 0.0
+                
+        except Exception as e:
+            logger.error(f"Error calculating embedding similarity: {e}")
+            return 0.0
+    
+    def find_paths(self, source_id: str, target_id: str, max_paths: int = 5) -> List[List[str]]:
+        """Find paths between two entities"""
+        try:
+            if source_id not in self.graph.nodes() or target_id not in self.graph.nodes():
+                return []
+            
+            # Find all simple paths
+            paths = list(nx.all_simple_paths(self.graph, source_id, target_id, cutoff=5))
+            
+            # Sort by path length and return top paths
+            paths.sort(key=len)
+            return paths[:max_paths]
+            
+        except Exception as e:
+            logger.error(f"Error finding paths between {source_id} and {target_id}: {e}")
+            return []
+    
+    def get_entity_neighbors(self, entity_id: str, max_neighbors: int = 10) -> List[Dict[str, Any]]:
+        """Get neighbors of an entity"""
+        try:
+            if entity_id not in self.graph.nodes():
+                return []
+            
+            neighbors = []
+            for neighbor_id in self.graph.neighbors(entity_id):
+                neighbor_attrs = self.graph.nodes[neighbor_id]
+                edge_attrs = self.graph.edges[entity_id, neighbor_id]
+                
+                neighbors.append({
+                    'entity_id': neighbor_id,
+                    'attributes': neighbor_attrs,
+                    'relationship': edge_attrs,
+                    'weight': self.edge_weights.get((entity_id, neighbor_id), 0.5)
+                })
+            
+            # Sort by weight and return top neighbors
+            neighbors.sort(key=lambda x: x['weight'], reverse=True)
+            return neighbors[:max_neighbors]
+            
+        except Exception as e:
+            logger.error(f"Error getting neighbors for {entity_id}: {e}")
+            return []
+    
+    def run_gnn_reasoning(self, reasoning_type: str = "opportunity_discovery") -> Dict[str, Any]:
+        """Run GNN-based reasoning on the graph"""
+        try:
             if reasoning_type == "opportunity_discovery":
                 return self._discover_opportunities()
-            elif reasoning_type == "network_analysis":
-                return self._analyze_network()
-            elif reasoning_type == "anomaly_detection":
-                return self._detect_anomalies()
-            elif reasoning_type == "trend_analysis":
-                return self._analyze_trends()
+            elif reasoning_type == "community_detection":
+                return self._detect_communities()
+            elif reasoning_type == "centrality_analysis":
+                return self._analyze_centrality()
             else:
-                return self._general_reasoning()
+                return {"error": f"Unknown reasoning type: {reasoning_type}"}
                 
         except Exception as e:
             logger.error(f"Error in GNN reasoning: {e}")
-            return {'error': str(e)}
-
-    def _generate_embeddings(self):
-        """Generate node embeddings using GNN"""
-        if not GNN_AVAILABLE or not self.gnn_model:
-            return
-        
+            return {"error": str(e)}
+    
+    def _discover_opportunities(self) -> Dict[str, Any]:
+        """Discover business opportunities using graph analysis"""
         try:
-            # Convert graph to PyTorch Geometric format
-            pyg_data = self._convert_to_pyg()
+            opportunities = []
             
-            # Generate embeddings
-            with torch.no_grad():
-                embeddings = self.gnn_model.encode(pyg_data.x, pyg_data.edge_index)
-                
-            # Store embeddings
-            for i, node_id in enumerate(self.graph.nodes()):
-                self.node_embeddings[node_id] = embeddings[i].numpy()
+            # Find disconnected components that could be connected
+            components = list(nx.connected_components(self.graph))
             
-            self.stats['embeddings_generated'] = True
-            logger.info(f"Generated embeddings for {len(self.node_embeddings)} nodes")
+            if len(components) > 1:
+                # Look for potential connections between components
+                for i, comp1 in enumerate(components):
+                    for j, comp2 in enumerate(components[i+1:], i+1):
+                        # Find entities that could potentially connect
+                        for entity1 in list(comp1)[:3]:  # Limit to first 3 entities
+                            for entity2 in list(comp2)[:3]:
+                                # Check if they could be compatible
+                                if self._could_be_compatible(entity1, entity2):
+                                    opportunities.append({
+                                        'entity1': entity1,
+                                        'entity2': entity2,
+                                        'opportunity_type': 'cross_component_connection',
+                                        'potential_impact': 'high'
+                                    })
             
-            # Save embeddings
-            self._save_persistent_model()
+            # Find high-degree nodes that could be hubs
+            high_degree_nodes = [node for node, degree in self.graph.degree() if degree >= 3]
+            for node in high_degree_nodes:
+                opportunities.append({
+                    'entity': node,
+                    'opportunity_type': 'hub_expansion',
+                    'potential_impact': 'medium'
+                })
+            
+            return {
+                'opportunities_found': len(opportunities),
+                'opportunities': opportunities[:10],  # Limit to top 10
+                'reasoning_type': 'opportunity_discovery'
+            }
             
         except Exception as e:
-            logger.error(f"Error generating embeddings: {e}")
-
-    def _convert_to_pyg(self) -> Data:
-        """Convert NetworkX graph to PyTorch Geometric format"""
-        # Create node feature matrix
-        node_features = []
-        node_mapping = {node: i for i, node in enumerate(self.graph.nodes())}
-        
-        for node in self.graph.nodes():
-            features = self.graph.nodes[node].get('features', np.zeros(self.feature_dim))
-            node_features.append(features)
-        
-        x = torch.tensor(node_features, dtype=torch.float)
-        
-        # Create edge index
-        edge_index = []
-        for u, v, k in self.graph.edges(keys=True):
-            edge_index.append([node_mapping[u], node_mapping[v]])
-        
-        if edge_index:
-            edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
-        else:
-            edge_index = torch.empty((2, 0), dtype=torch.long)
-        
-        return Data(x=x, edge_index=edge_index)
-
-    def _discover_opportunities(self) -> Dict[str, Any]:
-        """Discover industrial symbiosis opportunities using GNN"""
-        opportunities = []
-        
-        # Find potential partnerships
-        for node_id, embedding in self.node_embeddings.items():
-            node_attrs = self.graph.nodes[node_id]
-            if node_attrs.get('entity_type') != 'company':
-                continue
-            
-            # Find similar companies
-            similar_companies = self._similarity_query({
-                'entity_id': node_id,
-                'top_k': 10
-            })
-            
-            for similar in similar_companies:
-                similar_id = similar['entity_id']
-                similar_attrs = self.graph.nodes[similar_id]
-                
-                if similar_attrs.get('entity_type') == 'company':
-                    # Check for complementary waste/resource patterns
-                    opportunity = self._analyze_complementarity(node_id, similar_id)
-                    if opportunity['score'] > 0.7:
-                        opportunities.append(opportunity)
-        
-        return {
-            'opportunities': opportunities[:20],  # Top 20 opportunities
-            'total_found': len(opportunities),
-            'reasoning_type': 'opportunity_discovery'
-        }
-
-    def _analyze_complementarity(self, company1: str, company2: str) -> Dict[str, Any]:
-        """Analyze complementarity between two companies"""
-        attrs1 = self.graph.nodes[company1]
-        attrs2 = self.graph.nodes[company2]
-        
-        # Calculate complementarity score
-        score = 0.0
-        factors = []
-        
-        # Industry complementarity
-        if attrs1.get('industry') != attrs2.get('industry'):
-            score += 0.3
-            factors.append('different_industries')
-        
-        # Location proximity
-        if attrs1.get('location') == attrs2.get('location'):
-            score += 0.2
-            factors.append('same_location')
-        
-        # Waste/resource complementarity (simplified)
-        if 'waste_type' in attrs1 and 'resource_needs' in attrs2:
-            score += 0.3
-            factors.append('waste_resource_match')
-        
-        # Size complementarity
-        size1 = attrs1.get('employee_count', 0)
-        size2 = attrs2.get('employee_count', 0)
-        if 0.5 <= size1/size2 <= 2.0:
-            score += 0.2
-            factors.append('compatible_size')
-        
-        return {
-            'company1': company1,
-            'company2': company2,
-            'score': min(score, 1.0),
-            'factors': factors,
-            'potential_savings': score * 50000,  # Estimated savings
-            'carbon_reduction': score * 100  # Estimated CO2 reduction
-        }
-
-    def _analyze_network(self) -> Dict[str, Any]:
-        """Analyze network structure and properties"""
-        analysis = {
-            'total_nodes': self.graph.number_of_nodes(),
-            'total_edges': self.graph.number_of_edges(),
-            'density': nx.density(self.graph),
-            'average_clustering': nx.average_clustering(self.graph.to_undirected()),
-            'connected_components': nx.number_connected_components(self.graph.to_undirected()),
-            'centrality_measures': {},
-            'community_structure': {}
-        }
-        
-        # Calculate centrality measures
-        if self.graph.number_of_nodes() > 0:
-            analysis['centrality_measures'] = {
-                'degree_centrality': dict(nx.degree_centrality(self.graph)),
-                'betweenness_centrality': dict(nx.betweenness_centrality(self.graph)),
-                'closeness_centrality': dict(nx.closeness_centrality(self.graph))
-            }
-        
-        # Detect communities
+            logger.error(f"Error discovering opportunities: {e}")
+            return {"error": str(e)}
+    
+    def _could_be_compatible(self, entity1: str, entity2: str) -> bool:
+        """Check if two entities could be compatible"""
         try:
-            communities = list(nx.community.greedy_modularity_communities(self.graph.to_undirected()))
-            analysis['community_structure'] = {
-                'num_communities': len(communities),
-                'community_sizes': [len(c) for c in communities],
-                'modularity': nx.community.modularity(self.graph.to_undirected(), communities)
-            }
-        except:
-            analysis['community_structure'] = {'error': 'Could not compute communities'}
-        
-        return analysis
-
-    def _detect_anomalies(self) -> Dict[str, Any]:
-        """Detect anomalies in the network"""
-        anomalies = []
-        
-        # Detect isolated nodes
-        isolated_nodes = list(nx.isolates(self.graph))
-        if isolated_nodes:
-            anomalies.append({
-                'type': 'isolated_nodes',
-                'nodes': isolated_nodes,
-                'severity': 'medium',
-                'description': 'Nodes with no connections'
-            })
-        
-        # Detect high-degree nodes (potential hubs)
-        degree_centrality = nx.degree_centrality(self.graph)
-        high_degree_nodes = [node for node, centrality in degree_centrality.items() 
-                           if centrality > 0.8]
-        if high_degree_nodes:
-            anomalies.append({
-                'type': 'high_degree_nodes',
-                'nodes': high_degree_nodes,
-                'severity': 'low',
-                'description': 'Nodes with very high connectivity'
-            })
-        
-        return {
-            'anomalies': anomalies,
-            'total_anomalies': len(anomalies)
-        }
-
-    def _analyze_trends(self) -> Dict[str, Any]:
-        """Analyze trends in the network over time"""
-        # This would require temporal data
-        # For now, return basic statistics
-        return {
-            'growth_rate': self.stats['nodes'] / max(1, self.stats['nodes'] - 10),
-            'connection_density': self.stats['edges'] / max(1, self.stats['nodes']),
-            'average_degree': 2 * self.stats['edges'] / max(1, self.stats['nodes'])
-        }
-
-    def _general_reasoning(self) -> Dict[str, Any]:
-        """General reasoning about the graph"""
-        return {
-            'graph_stats': self.stats,
-            'embedding_status': self.stats['embeddings_generated'],
-            'gnn_available': GNN_AVAILABLE,
-            'model_persistent': True
-        }
-
-    def _gnn_recommendations(self, entity_id: str, recommendation_type: str) -> List[Dict]:
-        """Generate recommendations using GNN embeddings"""
-        if entity_id not in self.node_embeddings:
-            return [] 
-        
-        target_embedding = self.node_embeddings[entity_id]
-        recommendations = []
-        
-        for node_id, embedding in self.node_embeddings.items():
-            if node_id == entity_id:
-                continue
+            attrs1 = self.graph.nodes[entity1]
+            attrs2 = self.graph.nodes[entity2]
             
-            node_attrs = self.graph.nodes[node_id]
+            # Check industry compatibility
+            industry1 = attrs1.get('industry', '').lower()
+            industry2 = attrs2.get('industry', '').lower()
             
-            # Filter by recommendation type
-            if recommendation_type == 'partnership' and node_attrs.get('entity_type') == 'company':
-                similarity = np.dot(target_embedding, embedding) / (
-                    np.linalg.norm(target_embedding) * np.linalg.norm(embedding)
-                )
-                recommendations.append({
-                    'entity_id': node_id,
-                    'similarity': float(similarity),
-                    'type': 'partnership',
-                    'reasoning': 'High embedding similarity'
+            # Different industries are often complementary
+            if industry1 != industry2:
+                return True
+            
+            # Check location compatibility
+            location1 = attrs1.get('location', '').lower()
+            location2 = attrs2.get('location', '').lower()
+            
+            # Same location is good for logistics
+            if location1 == location2:
+                return True
+            
+            return False
+            
+        except Exception as e:
+            logger.error(f"Error checking compatibility: {e}")
+            return False
+    
+    def _detect_communities(self) -> Dict[str, Any]:
+        """Detect communities in the graph"""
+        try:
+            # Use Louvain community detection
+            communities = nx.community.louvain_communities(self.graph)
+            
+            community_data = []
+            for i, community in enumerate(communities):
+                community_data.append({
+                    'community_id': i,
+                    'size': len(community),
+                    'members': list(community),
+                    'density': nx.density(self.graph.subgraph(community))
                 })
-        
-        # Sort by similarity
-        recommendations.sort(key=lambda x: x['similarity'], reverse=True)
-        return recommendations[:10]
-
-    def update_graph(self, updates: List[Dict[str, Any]]):
-        """Batch update the graph with new data"""
-        for update in updates:
-            if update['type'] == 'add_entity':
-                self.add_entity(update['entity_id'], update['attributes'], update.get('entity_type'))
-            elif update['type'] == 'add_relationship':
-                self.add_relationship(update['source'], update['target'], 
-                                    update['rel_type'], update.get('attributes'))
-        
-        # Regenerate embeddings after updates
-        if updates and GNN_AVAILABLE:
-            self._generate_embeddings()
-        
-        # Save persistent model
-        self._save_persistent_model()
-
+            
+            return {
+                'communities_found': len(communities),
+                'communities': community_data,
+                'reasoning_type': 'community_detection'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error detecting communities: {e}")
+            return {"error": str(e)}
+    
+    def _analyze_centrality(self) -> Dict[str, Any]:
+        """Analyze centrality of nodes"""
+        try:
+            # Calculate different centrality measures
+            degree_centrality = nx.degree_centrality(self.graph)
+            betweenness_centrality = nx.betweenness_centrality(self.graph)
+            closeness_centrality = nx.closeness_centrality(self.graph)
+            
+            # Find top nodes by each measure
+            top_degree = sorted(degree_centrality.items(), key=lambda x: x[1], reverse=True)[:5]
+            top_betweenness = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)[:5]
+            top_closeness = sorted(closeness_centrality.items(), key=lambda x: x[1], reverse=True)[:5]
+            
+            return {
+                'degree_centrality': dict(top_degree),
+                'betweenness_centrality': dict(top_betweenness),
+                'closeness_centrality': dict(top_closeness),
+                'reasoning_type': 'centrality_analysis'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing centrality: {e}")
+            return {"error": str(e)}
+    
     def get_graph_statistics(self) -> Dict[str, Any]:
         """Get comprehensive graph statistics"""
-        return {
-            **self.stats,
-            'node_types': dict(self.graph.nodes(data='entity_type')),
-            'edge_types': [edge[2] for edge in self.graph.edges(keys=True)],
-            'gnn_available': GNN_AVAILABLE,
-            'embeddings_available': bool(self.node_embeddings)
-        }
+        try:
+            stats = self.stats.copy()
+            
+            # Add more detailed statistics
+            if self.graph.nodes():
+                stats.update({
+                    'average_degree': sum(dict(self.graph.degree()).values()) / len(self.graph.nodes()),
+                    'density': nx.density(self.graph),
+                    'connected_components': nx.number_connected_components(self.graph),
+                    'largest_component_size': len(max(nx.connected_components(self.graph), key=len)),
+                    'average_clustering': nx.average_clustering(self.graph),
+                    'diameter': nx.diameter(self.graph) if nx.is_connected(self.graph) else None
+                })
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error getting graph statistics: {e}")
+            return self.stats
+    
+    def export_graph(self, format: str = "json") -> str:
+        """Export graph in specified format"""
+        try:
+            if format == "json":
+                return json.dumps(nx.node_link_data(self.graph), indent=2)
+            elif format == "gexf":
+                return nx.write_gexf(self.graph, "temp.gexf")
+            else:
+                return "Unsupported format"
+                
+        except Exception as e:
+            logger.error(f"Error exporting graph: {e}")
+            return f"Error: {str(e)}"
+    
+    def clear_graph(self):
+        """Clear the entire graph"""
+        try:
+            self.graph.clear()
+            self.node_embeddings.clear()
+            self.edge_weights.clear()
+            self.entity_types.clear()
+            self.relationship_types.clear()
+            
+            # Reset statistics
+            self.stats = {
+                'nodes': 0,
+                'edges': 0,
+                'embeddings_available': False,
+                'last_updated': datetime.now().isoformat()
+            }
+            
+            logger.info("Knowledge graph cleared")
+            
+        except Exception as e:
+            logger.error(f"Error clearing graph: {e}")
 
-# GNN Model Definition
-if GNN_AVAILABLE:
-    class IndustrialSymbiosisGNN(nn.Module):
-        """Graph Neural Network for Industrial Symbiosis Analysis"""
-        
-        def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_layers: int = 3):
-            super().__init__()
-            self.input_dim = input_dim
-            self.hidden_dim = hidden_dim
-            self.output_dim = output_dim
-            self.num_layers = num_layers
-            
-            # Graph convolution layers
-            self.convs = nn.ModuleList()
-            self.convs.append(GCNConv(input_dim, hidden_dim))
-            
-            for _ in range(num_layers - 2):
-                self.convs.append(GCNConv(hidden_dim, hidden_dim))
-            
-            self.convs.append(GCNConv(hidden_dim, output_dim))
-            
-            # Attention mechanism
-            self.attention = GATConv(output_dim, output_dim)
-            
-            # Output projection
-            self.output_proj = nn.Linear(output_dim, output_dim)
-            
-        def encode(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
-            """Encode node features"""
-            # Graph convolutions
-            for conv in self.convs[:-1]:
-                x = F.relu(conv(x, edge_index))
-                x = F.dropout(x, p=0.2, training=self.training)
-            
-            # Final convolution
-            x = self.convs[-1](x, edge_index)
-            
-            # Attention
-            x = self.attention(x, edge_index)
-            
-            # Output projection
-            x = self.output_proj(x)
-            
-            return x
-        
-        def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
-            """Forward pass"""
-            return self.encode(x, edge_index)
-
-# Initialize global knowledge graph instance
+# Initialize global knowledge graph
 knowledge_graph = KnowledgeGraph() 

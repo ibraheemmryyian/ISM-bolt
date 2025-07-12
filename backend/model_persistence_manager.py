@@ -1,220 +1,314 @@
-import os
 import json
 import pickle
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Any, Optional, Union
 import logging
-import hashlib
-import shutil
+from datetime import datetime
+import os
 from pathlib import Path
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Union
 import threading
 import time
-import zipfile
-import tempfile
+import hashlib
+import shutil
 
 logger = logging.getLogger(__name__)
 
 class ModelPersistenceManager:
     """
-    Centralized Model Persistence Manager for ISM AI Platform
+    Advanced Model Persistence Manager for AI Models
     Features:
-    - Unified model storage and loading
-    - Version control and rollback
-    - Model metadata tracking
+    - Multi-format model storage (JSON, Pickle, HDF5)
+    - Version control and model tracking
     - Automatic backup and recovery
-    - Model performance monitoring
-    - Cross-platform compatibility
+    - Model metadata management
+    - Performance monitoring
     """
     
-    def __init__(self, base_dir: str = "./models"):
-        self.base_dir = Path(base_dir)
-        self.base_dir.mkdir(exist_ok=True)
+    def __init__(self, storage_dir: str = "model_storage"):
+        self.storage_dir = Path(storage_dir)
+        self.storage_dir.mkdir(exist_ok=True)
+        
+        # Storage structure
+        self.models_dir = self.storage_dir / "models"
+        self.backups_dir = self.storage_dir / "backups"
+        self.metadata_dir = self.storage_dir / "metadata"
+        
+        # Create directories
+        for dir_path in [self.models_dir, self.backups_dir, self.metadata_dir]:
+            dir_path.mkdir(exist_ok=True)
         
         # Model registry
         self.model_registry = {}
-        self.model_metadata = {}
         self.model_versions = {}
+        self.model_metadata = {}
         
         # Performance tracking
-        self.performance_history = {}
-        self.load_times = {}
+        self.save_times = []
+        self.load_times = []
+        self.backup_times = []
         
-        # Backup configuration
-        self.backup_config = {
-            'auto_backup': True,
-            'backup_interval_hours': 24,
-            'max_backups': 10,
-            'backup_dir': self.base_dir / "backups"
-        }
-        self.backup_config['backup_dir'].mkdir(exist_ok=True)
-        
-        # Threading
+        # Threading for concurrent operations
         self.lock = threading.Lock()
         
         # Load existing registry
         self._load_registry()
         
-        # Start backup scheduler
-        self._start_backup_scheduler()
-        
-        logger.info(f"Model Persistence Manager initialized at {self.base_dir}")
-
+        logger.info(f"Model Persistence Manager initialized at {self.storage_dir}")
+    
     def _load_registry(self):
         """Load existing model registry"""
         try:
-            registry_path = self.base_dir / "model_registry.json"
-            if registry_path.exists():
-                with open(registry_path, 'r') as f:
-                    self.model_registry = json.load(f)
-                logger.info(f"Loaded {len(self.model_registry)} models from registry")
-            
-            metadata_path = self.base_dir / "model_metadata.json"
-            if metadata_path.exists():
-                with open(metadata_path, 'r') as f:
-                    self.model_metadata = json.load(f)
-                logger.info(f"Loaded metadata for {len(self.model_metadata)} models")
-                    
-        except Exception as e:
-            logger.error(f"Error loading model registry: {e}")
-
-    def _save_registry(self):
-        """Save model registry to disk"""
-        try:
-            with self.lock:
-                registry_path = self.base_dir / "model_registry.json"
-                with open(registry_path, 'w') as f:
-                    json.dump(self.model_registry, f, indent=2)
+            registry_file = self.storage_dir / "model_registry.json"
+            if registry_file.exists():
+                with open(registry_file, 'r') as f:
+                    data = json.load(f)
+                    self.model_registry = data.get('models', {})
+                    self.model_versions = data.get('versions', {})
+                    self.model_metadata = data.get('metadata', {})
                 
-                metadata_path = self.base_dir / "model_metadata.json"
-                with open(metadata_path, 'w') as f:
-                    json.dump(self.model_metadata, f, indent=2)
-                    
+                logger.info(f"Loaded registry with {len(self.model_registry)} models")
+            else:
+                logger.info("No existing registry found, starting fresh")
+                
         except Exception as e:
-            logger.error(f"Error saving model registry: {e}")
-
-    def save_model(self, model_name: str, model: Any, metadata: Dict[str, Any] = None) -> bool:
+            logger.error(f"Error loading registry: {e}")
+    
+    def _save_registry(self):
+        """Save model registry to file"""
+        try:
+            registry_file = self.storage_dir / "model_registry.json"
+            data = {
+                'models': self.model_registry,
+                'versions': self.model_versions,
+                'metadata': self.model_metadata,
+                'last_updated': datetime.now().isoformat()
+            }
+            
+            with open(registry_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            
+            logger.debug("Model registry saved")
+            
+        except Exception as e:
+            logger.error(f"Error saving registry: {e}")
+    
+    def save_model(self, model_name: str, model_data: Any, metadata: Dict[str, Any] = None) -> bool:
         """Save a model with metadata"""
         try:
+            start_time = time.time()
+            
             with self.lock:
-                start_time = time.time()
+                # Generate model hash
+                model_hash = self._generate_model_hash(model_data)
                 
-                # Create model directory
-                model_dir = self.base_dir / model_name
-                model_dir.mkdir(exist_ok=True)
-                
-                # Generate version
-                version = self._generate_version(model_name)
-                
-                # Create version directory
-                version_dir = model_dir / f"v{version}"
-                version_dir.mkdir(exist_ok=True)
-                
-                # Save model
-                model_path = version_dir / "model.pkl"
-                with open(model_path, 'wb') as f:
-                    pickle.dump(model, f)
+                # Create version
+                version = self._get_next_version(model_name)
                 
                 # Prepare metadata
-                if metadata is None:
-                    metadata = {}
-                
                 model_metadata = {
                     'name': model_name,
                     'version': version,
+                    'hash': model_hash,
                     'created_at': datetime.now().isoformat(),
-                    'model_type': type(model).__name__,
-                    'file_size': model_path.stat().st_size,
-                    'checksum': self._calculate_checksum(model_path),
-                    **metadata
+                    'size_bytes': self._estimate_model_size(model_data),
+                    'format': self._determine_format(model_data),
+                    'custom_metadata': metadata or {}
                 }
                 
-                # Save metadata
-                metadata_path = version_dir / "metadata.json"
-                with open(metadata_path, 'w') as f:
-                    json.dump(model_metadata, f, indent=2)
+                # Save model data
+                success = self._save_model_data(model_name, version, model_data, model_metadata['format'])
                 
-                # Update registry
-                if model_name not in self.model_registry:
-                    self.model_registry[model_name] = {
-                        'current_version': version,
-                        'versions': [],
-                        'created_at': datetime.now().isoformat(),
-                        'last_updated': datetime.now().isoformat()
-                    }
-                
-                self.model_registry[model_name]['current_version'] = version
-                self.model_registry[model_name]['last_updated'] = datetime.now().isoformat()
-                
-                if version not in self.model_registry[model_name]['versions']:
-                    self.model_registry[model_name]['versions'].append(version)
-                
-                # Store metadata
-                self.model_metadata[f"{model_name}_v{version}"] = model_metadata
-                
-                # Save registry
-                self._save_registry()
-                
-                save_time = time.time() - start_time
-                logger.info(f"Saved model {model_name} v{version} in {save_time:.2f}s")
-                
-                return True
+                if success:
+                    # Update registry
+                    if model_name not in self.model_registry:
+                        self.model_registry[model_name] = []
+                    
+                    self.model_registry[model_name].append({
+                        'version': version,
+                        'hash': model_hash,
+                        'created_at': model_metadata['created_at'],
+                        'format': model_metadata['format']
+                    })
+                    
+                    # Store metadata
+                    self.model_metadata[f"{model_name}_v{version}"] = model_metadata
+                    
+                    # Update versions
+                    self.model_versions[model_name] = version
+                    
+                    # Save registry
+                    self._save_registry()
+                    
+                    # Create backup
+                    self._create_backup(model_name, version)
+                    
+                    save_time = time.time() - start_time
+                    self.save_times.append(save_time)
+                    
+                    logger.info(f"Saved model {model_name} v{version} in {save_time:.2f}s")
+                    return True
+                else:
+                    logger.error(f"Failed to save model data for {model_name}")
+                    return False
                 
         except Exception as e:
             logger.error(f"Error saving model {model_name}: {e}")
             return False
-
-    def load_model(self, model_name: str, version: Optional[str] = None) -> Optional[Any]:
+    
+    def _save_model_data(self, model_name: str, version: int, model_data: Any, format_type: str) -> bool:
+        """Save model data in specified format"""
+        try:
+            model_file = self.models_dir / f"{model_name}_v{version}.{format_type}"
+            
+            if format_type == "json":
+                # Save as JSON (for simple data structures)
+                if isinstance(model_data, (dict, list, str, int, float, bool)) or model_data is None:
+                    with open(model_file, 'w') as f:
+                        json.dump(model_data, f, indent=2)
+                else:
+                    # Convert to serializable format
+                    serializable_data = self._convert_to_serializable(model_data)
+                    with open(model_file, 'w') as f:
+                        json.dump(serializable_data, f, indent=2)
+            
+            elif format_type == "pkl":
+                # Save as pickle
+                with open(model_file, 'wb') as f:
+                    pickle.dump(model_data, f)
+            
+            elif format_type == "npz":
+                # Save as numpy compressed format
+                if isinstance(model_data, np.ndarray):
+                    np.savez_compressed(model_file, data=model_data)
+                else:
+                    # Convert to numpy array
+                    np_data = np.array(model_data)
+                    np.savez_compressed(model_file, data=np_data)
+            
+            else:
+                # Default to JSON
+                serializable_data = self._convert_to_serializable(model_data)
+                with open(model_file, 'w') as f:
+                    json.dump(serializable_data, f, indent=2)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error saving model data: {e}")
+            return False
+    
+    def _convert_to_serializable(self, obj: Any) -> Any:
+        """Convert object to JSON-serializable format"""
+        try:
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, pd.DataFrame):
+                return obj.to_dict('records')
+            elif isinstance(obj, pd.Series):
+                return obj.to_dict()
+            elif hasattr(obj, '__dict__'):
+                return obj.__dict__
+            elif hasattr(obj, 'tolist'):
+                return obj.tolist()
+            else:
+                return str(obj)
+        except Exception as e:
+            logger.error(f"Error converting to serializable: {e}")
+            return str(obj)
+    
+    def load_model(self, model_name: str, version: Optional[int] = None) -> Optional[Any]:
         """Load a model by name and version"""
         try:
+            start_time = time.time()
+            
             with self.lock:
-                start_time = time.time()
-                
-                # Get version to load
+                # Get version
                 if version is None:
-                    if model_name not in self.model_registry:
-                        logger.error(f"Model {model_name} not found in registry")
+                    version = self.model_versions.get(model_name)
+                    if version is None:
+                        logger.error(f"No version found for model {model_name}")
                         return None
-                    version = self.model_registry[model_name]['current_version']
                 
-                # Construct path
-                model_path = self.base_dir / model_name / f"v{version}" / "model.pkl"
-                
-                if not model_path.exists():
-                    logger.error(f"Model file not found: {model_path}")
+                # Check if model exists
+                if model_name not in self.model_registry:
+                    logger.error(f"Model {model_name} not found in registry")
                     return None
                 
-                # Load model
-                with open(model_path, 'rb') as f:
-                    model = pickle.load(f)
+                # Find model in registry
+                model_info = None
+                for model in self.model_registry[model_name]:
+                    if model['version'] == version:
+                        model_info = model
+                        break
                 
-                load_time = time.time() - start_time
-                self.load_times[f"{model_name}_v{version}"] = load_time
+                if model_info is None:
+                    logger.error(f"Version {version} not found for model {model_name}")
+                    return None
                 
-                logger.info(f"Loaded model {model_name} v{version} in {load_time:.2f}s")
+                # Load model data
+                model_data = self._load_model_data(model_name, version, model_info['format'])
                 
-                return model
+                if model_data is not None:
+                    load_time = time.time() - start_time
+                    self.load_times.append(load_time)
+                    
+                    logger.info(f"Loaded model {model_name} v{version} in {load_time:.2f}s")
+                    return model_data
+                else:
+                    logger.error(f"Failed to load model data for {model_name} v{version}")
+                    return None
                 
         except Exception as e:
-            logger.error(f"Error loading model {model_name} v{version}: {e}")
+            logger.error(f"Error loading model {model_name}: {e}")
             return None
-
+    
+    def _load_model_data(self, model_name: str, version: int, format_type: str) -> Optional[Any]:
+        """Load model data from file"""
+        try:
+            model_file = self.models_dir / f"{model_name}_v{version}.{format_type}"
+            
+            if not model_file.exists():
+                logger.error(f"Model file not found: {model_file}")
+                return None
+            
+            if format_type == "json":
+                with open(model_file, 'r') as f:
+                    return json.load(f)
+            
+            elif format_type == "pkl":
+                with open(model_file, 'rb') as f:
+                    return pickle.load(f)
+            
+            elif format_type == "npz":
+                data = np.load(model_file)
+                return data['data']
+            
+            else:
+                # Try JSON as fallback
+                with open(model_file, 'r') as f:
+                    return json.load(f)
+            
+        except Exception as e:
+            logger.error(f"Error loading model data: {e}")
+            return None
+    
     def list_models(self) -> List[Dict[str, Any]]:
-        """List all available models"""
+        """List all available models with metadata"""
         try:
             models = []
-            for model_name, info in self.model_registry.items():
-                current_version = info['current_version']
-                metadata_key = f"{model_name}_v{current_version}"
-                metadata = self.model_metadata.get(metadata_key, {})
+            
+            for model_name, versions in self.model_registry.items():
+                latest_version = self.model_versions.get(model_name, 0)
+                latest_metadata = self.model_metadata.get(f"{model_name}_v{latest_version}", {})
                 
                 models.append({
                     'name': model_name,
-                    'current_version': current_version,
-                    'versions': info['versions'],
-                    'created_at': info['created_at'],
-                    'last_updated': info['last_updated'],
-                    'model_type': metadata.get('model_type', 'Unknown'),
-                    'file_size': metadata.get('file_size', 0)
+                    'latest_version': latest_version,
+                    'total_versions': len(versions),
+                    'created_at': latest_metadata.get('created_at'),
+                    'size_bytes': latest_metadata.get('size_bytes', 0),
+                    'format': latest_metadata.get('format', 'unknown')
                 })
             
             return models
@@ -222,337 +316,300 @@ class ModelPersistenceManager:
         except Exception as e:
             logger.error(f"Error listing models: {e}")
             return []
-
-    def get_model_metadata(self, model_name: str, version: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """Get metadata for a specific model version"""
+    
+    def get_model_versions(self, model_name: str) -> List[Dict[str, Any]]:
+        """Get all versions of a specific model"""
         try:
-            if version is None:
-                if model_name not in self.model_registry:
-                    return None
-                version = self.model_registry[model_name]['current_version']
+            if model_name not in self.model_registry:
+                return []
             
-            metadata_key = f"{model_name}_v{version}"
-            return self.model_metadata.get(metadata_key)
+            versions = []
+            for model_info in self.model_registry[model_name]:
+                version = model_info['version']
+                metadata = self.model_metadata.get(f"{model_name}_v{version}", {})
+                
+                versions.append({
+                    'version': version,
+                    'hash': model_info['hash'],
+                    'created_at': model_info['created_at'],
+                    'format': model_info['format'],
+                    'size_bytes': metadata.get('size_bytes', 0),
+                    'custom_metadata': metadata.get('custom_metadata', {})
+                })
+            
+            # Sort by version
+            versions.sort(key=lambda x: x['version'], reverse=True)
+            return versions
             
         except Exception as e:
-            logger.error(f"Error getting metadata for {model_name} v{version}: {e}")
-            return None
-
-    def delete_model(self, model_name: str, version: Optional[str] = None) -> bool:
-        """Delete a model version"""
-        try:
-            with self.lock:
-                if version is None:
-                    if model_name not in self.model_registry:
-                        return False
-                    version = self.model_registry[model_name]['current_version']
-                
-                # Remove from registry
-                if model_name in self.model_registry:
-                    if version in self.model_registry[model_name]['versions']:
-                        self.model_registry[model_name]['versions'].remove(version)
-                    
-                    # If no versions left, remove model entirely
-                    if not self.model_registry[model_name]['versions']:
-                        del self.model_registry[model_name]
-                    else:
-                        # Update current version if needed
-                        if self.model_registry[model_name]['current_version'] == version:
-                            self.model_registry[model_name]['current_version'] = self.model_registry[model_name]['versions'][-1]
-                
-                # Remove metadata
-                metadata_key = f"{model_name}_v{version}"
-                if metadata_key in self.model_metadata:
-                    del self.model_metadata[metadata_key]
-                
-                # Remove files
-                model_dir = self.base_dir / model_name / f"v{version}"
-                if model_dir.exists():
-                    shutil.rmtree(model_dir)
-                
-                # Save registry
-                self._save_registry()
-                
-                logger.info(f"Deleted model {model_name} v{version}")
-                return True
-                
-        except Exception as e:
-            logger.error(f"Error deleting model {model_name} v{version}: {e}")
-            return False
-
-    def rollback_model(self, model_name: str, version: str) -> bool:
-        """Rollback to a specific model version"""
+            logger.error(f"Error getting versions for {model_name}: {e}")
+            return []
+    
+    def delete_model(self, model_name: str, version: Optional[int] = None) -> bool:
+        """Delete a model or specific version"""
         try:
             with self.lock:
                 if model_name not in self.model_registry:
                     logger.error(f"Model {model_name} not found")
                     return False
                 
-                if version not in self.model_registry[model_name]['versions']:
-                    logger.error(f"Version {version} not found for model {model_name}")
-                    return False
-                
-                # Update current version
-                self.model_registry[model_name]['current_version'] = version
-                self.model_registry[model_name]['last_updated'] = datetime.now().isoformat()
+                if version is None:
+                    # Delete all versions
+                    versions_to_delete = [model['version'] for model in self.model_registry[model_name]]
+                    
+                    for v in versions_to_delete:
+                        self._delete_model_version(model_name, v)
+                    
+                    # Remove from registry
+                    del self.model_registry[model_name]
+                    if model_name in self.model_versions:
+                        del self.model_versions[model_name]
+                    
+                    logger.info(f"Deleted all versions of model {model_name}")
+                    
+                else:
+                    # Delete specific version
+                    success = self._delete_model_version(model_name, version)
+                    if success:
+                        # Remove from registry
+                        self.model_registry[model_name] = [
+                            model for model in self.model_registry[model_name] 
+                            if model['version'] != version
+                        ]
+                        
+                        # Update latest version if needed
+                        if self.model_versions.get(model_name) == version:
+                            if self.model_registry[model_name]:
+                                self.model_versions[model_name] = max(
+                                    model['version'] for model in self.model_registry[model_name]
+                                )
+                            else:
+                                del self.model_versions[model_name]
+                        
+                        logger.info(f"Deleted model {model_name} v{version}")
+                    else:
+                        return False
                 
                 # Save registry
                 self._save_registry()
-                
-                logger.info(f"Rolled back model {model_name} to version {version}")
                 return True
                 
         except Exception as e:
-            logger.error(f"Error rolling back model {model_name} to v{version}: {e}")
+            logger.error(f"Error deleting model {model_name}: {e}")
             return False
-
-    def create_backup(self) -> bool:
-        """Create a backup of all models"""
+    
+    def _delete_model_version(self, model_name: str, version: int) -> bool:
+        """Delete a specific model version"""
         try:
-            with self.lock:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                backup_path = self.backup_config['backup_dir'] / f"backup_{timestamp}.zip"
-                
-                with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                    # Add all model files
-                    for model_name in self.model_registry.keys():
-                        model_dir = self.base_dir / model_name
-                        if model_dir.exists():
-                            for root, dirs, files in os.walk(model_dir):
-                                for file in files:
-                                    file_path = Path(root) / file
-                                    arc_name = file_path.relative_to(self.base_dir)
-                                    zipf.write(file_path, arc_name)
-                    
-                    # Add registry files
-                    registry_path = self.base_dir / "model_registry.json"
-                    if registry_path.exists():
-                        zipf.write(registry_path, "model_registry.json")
-                    
-                    metadata_path = self.base_dir / "model_metadata.json"
-                    if metadata_path.exists():
-                        zipf.write(metadata_path, "model_metadata.json")
-                
-                # Clean old backups
-                self._cleanup_old_backups()
-                
-                logger.info(f"Created backup: {backup_path}")
-                return True
-                
-        except Exception as e:
-            logger.error(f"Error creating backup: {e}")
-            return False
-
-    def restore_backup(self, backup_path: str) -> bool:
-        """Restore from a backup file"""
-        try:
-            with self.lock:
-                backup_file = Path(backup_path)
-                if not backup_file.exists():
-                    logger.error(f"Backup file not found: {backup_path}")
-                    return False
-                
-                # Create temporary directory for extraction
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    temp_path = Path(temp_dir)
-                    
-                    # Extract backup
-                    with zipfile.ZipFile(backup_file, 'r') as zipf:
-                        zipf.extractall(temp_path)
-                    
-                    # Restore files
-                    for item in temp_path.iterdir():
-                        if item.is_file():
-                            # Registry files
-                            if item.name in ['model_registry.json', 'model_metadata.json']]:
-                                shutil.copy2(item, self.base_dir / item.name)
-                        elif item.is_dir():
-                            # Model directories
-                            shutil.copytree(item, self.base_dir / item.name, dirs_exist_ok=True)
-                
-                # Reload registry
-                self._load_registry()
-                
-                logger.info(f"Restored from backup: {backup_path}")
-                return True
-                
-        except Exception as e:
-            logger.error(f"Error restoring backup: {e}")
-            return False
-
-    def _generate_version(self, model_name: str) -> str:
-        """Generate a new version number for a model"""
-        if model_name not in self.model_registry:
-            return "1.0.0"
-        
-        current_version = self.model_registry[model_name]['current_version']
-        
-        # Simple version increment
-        try:
-            major, minor, patch = map(int, current_version.split('.'))
-            patch += 1
-            return f"{major}.{minor}.{patch}"
-        except:
-            return f"{current_version}.1"
-
-    def _calculate_checksum(self, file_path: Path) -> str:
-        """Calculate SHA256 checksum of a file"""
-        sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(chunk)
-        return sha256_hash.hexdigest()
-
-    def _cleanup_old_backups(self):
-        """Remove old backup files"""
-        try:
-            backup_files = list(self.backup_config['backup_dir'].glob("backup_*.zip"))
-            backup_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+            # Get model info
+            model_info = None
+            for model in self.model_registry[model_name]:
+                if model['version'] == version:
+                    model_info = model
+                    break
             
-            # Keep only the most recent backups
-            for backup_file in backup_files[self.backup_config['max_backups']:]:
-                backup_file.unlink()
-                logger.info(f"Removed old backup: {backup_file}")
-                
-        except Exception as e:
-            logger.error(f"Error cleaning up old backups: {e}")
-
-    def _start_backup_scheduler(self):
-        """Start automatic backup scheduler"""
-        if not self.backup_config['auto_backup']:
-            return
-        
-        def backup_scheduler():
-            while True:
-                try:
-                    time.sleep(self.backup_config['backup_interval_hours'] * 3600)
-                    self.create_backup()
-                except Exception as e:
-                    logger.error(f"Error in backup scheduler: {e}")
-        
-        # Start backup thread
-        backup_thread = threading.Thread(target=backup_scheduler, daemon=True)
-        backup_thread.start()
-        logger.info("Backup scheduler started")
-
-    def get_performance_stats(self) -> Dict[str, Any]:
-        """Get performance statistics"""
-        try:
-            stats = {
-                'total_models': len(self.model_registry),
-                'total_versions': sum(len(info['versions']) for info in self.model_registry.values()),
-                'average_load_time': np.mean(list(self.load_times.values())) if self.load_times else 0,
-                'total_backups': len(list(self.backup_config['backup_dir'].glob("backup_*.zip"))),
-                'registry_size': len(self.model_registry),
-                'metadata_size': len(self.model_metadata)
-            }
-            
-            return stats
-            
-        except Exception as e:
-            logger.error(f"Error getting performance stats: {e}")
-            return {}
-
-    def validate_model(self, model_name: str, version: Optional[str] = None) -> bool:
-        """Validate a model's integrity"""
-        try:
-            if version is None:
-                if model_name not in self.model_registry:
-                    return False
-                version = self.model_registry[model_name]['current_version']
-            
-            # Check if files exist
-            model_path = self.base_dir / model_name / f"v{version}" / "model.pkl"
-            metadata_path = self.base_dir / model_name / f"v{version}" / "metadata.json"
-            
-            if not model_path.exists() or not metadata_path.exists():
+            if model_info is None:
                 return False
             
-            # Check checksum
-            metadata = self.get_model_metadata(model_name, version)
-            if metadata:
-                current_checksum = self._calculate_checksum(model_path)
-                stored_checksum = metadata.get('checksum')
-                if current_checksum != stored_checksum:
-                    logger.warning(f"Checksum mismatch for {model_name} v{version}")
-                    return False
+            # Delete model file
+            model_file = self.models_dir / f"{model_name}_v{version}.{model_info['format']}"
+            if model_file.exists():
+                model_file.unlink()
+            
+            # Delete metadata
+            metadata_key = f"{model_name}_v{version}"
+            if metadata_key in self.model_metadata:
+                del self.model_metadata[metadata_key]
+            
+            # Delete backup
+            backup_file = self.backups_dir / f"{model_name}_v{version}.{model_info['format']}"
+            if backup_file.exists():
+                backup_file.unlink()
             
             return True
             
         except Exception as e:
-            logger.error(f"Error validating model {model_name} v{version}: {e}")
+            logger.error(f"Error deleting model version {model_name} v{version}: {e}")
             return False
-
-    def export_model(self, model_name: str, version: Optional[str] = None, 
-                    export_path: Optional[str] = None) -> Optional[str]:
-        """Export a model to a portable format"""
+    
+    def _generate_model_hash(self, model_data: Any) -> str:
+        """Generate hash for model data"""
         try:
-            if version is None:
-                if model_name not in self.model_registry:
-                    return None
-                version = self.model_registry[model_name]['current_version']
+            # Convert to string representation
+            if isinstance(model_data, (dict, list)):
+                data_str = json.dumps(model_data, sort_keys=True)
+            else:
+                data_str = str(model_data)
             
+            # Generate hash
+            return hashlib.sha256(data_str.encode()).hexdigest()[:16]
+            
+        except Exception as e:
+            logger.error(f"Error generating model hash: {e}")
+            return "unknown"
+    
+    def _get_next_version(self, model_name: str) -> int:
+        """Get next version number for model"""
+        current_version = self.model_versions.get(model_name, 0)
+        return current_version + 1
+    
+    def _estimate_model_size(self, model_data: Any) -> int:
+        """Estimate size of model data in bytes"""
+        try:
+            if isinstance(model_data, (dict, list)):
+                return len(json.dumps(model_data).encode())
+            elif isinstance(model_data, np.ndarray):
+                return model_data.nbytes
+            elif isinstance(model_data, pd.DataFrame):
+                return model_data.memory_usage(deep=True).sum()
+            else:
+                return len(str(model_data).encode())
+        except Exception as e:
+            logger.error(f"Error estimating model size: {e}")
+            return 0
+    
+    def _determine_format(self, model_data: Any) -> str:
+        """Determine best format for model data"""
+        try:
+            if isinstance(model_data, np.ndarray):
+                return "npz"
+            elif isinstance(model_data, (dict, list, str, int, float, bool)) or model_data is None:
+                return "json"
+            else:
+                return "pkl"
+        except Exception as e:
+            logger.error(f"Error determining format: {e}")
+            return "json"
+    
+    def _create_backup(self, model_name: str, version: int):
+        """Create backup of model"""
+        try:
+            start_time = time.time()
+            
+            # Find model file
+            model_files = list(self.models_dir.glob(f"{model_name}_v{version}.*"))
+            if not model_files:
+                return
+            
+            model_file = model_files[0]
+            backup_file = self.backups_dir / model_file.name
+            
+            # Copy file
+            shutil.copy2(model_file, backup_file)
+            
+            backup_time = time.time() - start_time
+            self.backup_times.append(backup_time)
+            
+            logger.debug(f"Created backup of {model_name} v{version} in {backup_time:.2f}s")
+            
+        except Exception as e:
+            logger.error(f"Error creating backup: {e}")
+    
+    def restore_from_backup(self, model_name: str, version: int) -> bool:
+        """Restore model from backup"""
+        try:
+            # Find backup file
+            backup_files = list(self.backups_dir.glob(f"{model_name}_v{version}.*"))
+            if not backup_files:
+                logger.error(f"No backup found for {model_name} v{version}")
+                return False
+            
+            backup_file = backup_files[0]
+            model_file = self.models_dir / backup_file.name
+            
+            # Copy from backup
+            shutil.copy2(backup_file, model_file)
+            
+            logger.info(f"Restored {model_name} v{version} from backup")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error restoring from backup: {e}")
+            return False
+    
+    def get_performance_stats(self) -> Dict[str, Any]:
+        """Get performance statistics"""
+        try:
+            return {
+                'total_models': len(self.model_registry),
+                'total_versions': sum(len(versions) for versions in self.model_registry.values()),
+                'total_size_bytes': sum(
+                    self.model_metadata.get(f"{model_name}_v{self.model_versions[model_name]}", {}).get('size_bytes', 0)
+                    for model_name in self.model_versions.keys()
+                ),
+                'avg_save_time': np.mean(self.save_times) if self.save_times else 0,
+                'avg_load_time': np.mean(self.load_times) if self.load_times else 0,
+                'avg_backup_time': np.mean(self.backup_times) if self.backup_times else 0,
+                'total_saves': len(self.save_times),
+                'total_loads': len(self.load_times),
+                'total_backups': len(self.backup_times)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting performance stats: {e}")
+            return {
+                'total_models': 0,
+                'total_versions': 0,
+                'total_size_bytes': 0,
+                'avg_save_time': 0,
+                'avg_load_time': 0,
+                'avg_backup_time': 0,
+                'total_saves': 0,
+                'total_loads': 0,
+                'total_backups': 0
+            }
+    
+    def cleanup_old_versions(self, model_name: str, keep_versions: int = 3) -> int:
+        """Clean up old versions of a model, keeping only the latest N versions"""
+        try:
+            if model_name not in self.model_registry:
+                return 0
+            
+            versions = [model['version'] for model in self.model_registry[model_name]]
+            versions.sort(reverse=True)
+            
+            versions_to_delete = versions[keep_versions:]
+            deleted_count = 0
+            
+            for version in versions_to_delete:
+                if self.delete_model(model_name, version):
+                    deleted_count += 1
+            
+            logger.info(f"Cleaned up {deleted_count} old versions of {model_name}")
+            return deleted_count
+            
+        except Exception as e:
+            logger.error(f"Error cleaning up old versions: {e}")
+            return 0
+    
+    def export_model(self, model_name: str, version: Optional[int] = None, 
+                    export_path: str = None) -> Optional[str]:
+        """Export model to external location"""
+        try:
             # Load model
-            model = self.load_model(model_name, version)
-            if model is None:
+            model_data = self.load_model(model_name, version)
+            if model_data is None:
                 return None
             
-            # Get metadata
-            metadata = self.get_model_metadata(model_name, version)
-            
-            # Create export package
+            # Determine export path
             if export_path is None:
-                export_path = f"{model_name}_v{version}_export.zip"
+                export_path = f"{model_name}_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
             
-            with zipfile.ZipFile(export_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                # Add model
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.pkl') as tmp:
-                    pickle.dump(model, tmp)
-                    tmp_path = tmp.name
-                
-                zipf.write(tmp_path, "model.pkl")
-                os.unlink(tmp_path)
-                
-                # Add metadata
-                if metadata:
-                    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as tmp:
-                        json.dump(metadata, tmp, indent=2)
-                        tmp_path = tmp.name
-                    
-                    zipf.write(tmp_path, "metadata.json")
-                    os.unlink(tmp_path)
+            # Export model
+            if isinstance(model_data, (dict, list, str, int, float, bool)) or model_data is None:
+                with open(export_path, 'w') as f:
+                    json.dump(model_data, f, indent=2)
+            else:
+                # Use pickle for complex objects
+                with open(export_path, 'wb') as f:
+                    pickle.dump(model_data, f)
             
-            logger.info(f"Exported model {model_name} v{version} to {export_path}")
+            logger.info(f"Exported model {model_name} to {export_path}")
             return export_path
             
         except Exception as e:
-            logger.error(f"Error exporting model {model_name} v{version}: {e}")
+            logger.error(f"Error exporting model: {e}")
             return None
-
-    def import_model(self, import_path: str, model_name: Optional[str] = None) -> bool:
-        """Import a model from an export package"""
-        try:
-            with zipfile.ZipFile(import_path, 'r') as zipf:
-                # Extract model
-                model_data = zipf.read("model.pkl")
-                model = pickle.loads(model_data)
-                
-                # Extract metadata
-                metadata = {}
-                if "metadata.json" in zipf.namelist():
-                    metadata_data = zipf.read("metadata.json")
-                    metadata = json.loads(metadata_data)
-                
-                # Determine model name
-                if model_name is None:
-                    model_name = metadata.get('name', f"imported_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
-                
-                # Save model
-                return self.save_model(model_name, model, metadata)
-                
-        except Exception as e:
-            logger.error(f"Error importing model from {import_path}: {e}")
-            return False
 
 # Initialize global model persistence manager
 model_persistence_manager = ModelPersistenceManager() 

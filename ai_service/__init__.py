@@ -100,8 +100,8 @@ class SecureAIService:
             try:
                 return json.loads(response)
             except:
-                return self._fallback_analysis(company_data)
-        return self._fallback_analysis(company_data)
+                raise Exception("Failed to parse AI response for analyze_company_data")
+        raise Exception("AI service unavailable for analyze_company_data")
     
     def generate_intelligent_questions(self, company_data: Dict, context: str = "") -> List[Dict]:
         """Generate intelligent, contextual questions using DeepSeek R1's reasoning"""
@@ -153,8 +153,8 @@ class SecureAIService:
             try:
                 return json.loads(response)
             except:
-                return self._fallback_questions(company_data)
-        return self._fallback_questions(company_data)
+                raise Exception("Failed to parse AI response for generate_intelligent_questions")
+        raise Exception("AI service unavailable for generate_intelligent_questions")
     
     def generate_material_listings(self, company_data: Dict) -> List[Dict]:
         """Generate intelligent material listings using DeepSeek R1's reasoning"""
@@ -216,8 +216,8 @@ class SecureAIService:
             try:
                 return json.loads(response)
             except:
-                return self._fallback_material_listings(company_data)
-        return self._fallback_material_listings(company_data)
+                raise Exception("Failed to parse AI response for generate_material_listings")
+        raise Exception("AI service unavailable for generate_material_listings")
     
     def generate_sustainability_insights(self, company_data: Dict) -> Dict:
         """Generate comprehensive sustainability insights using DeepSeek R1's reasoning"""
@@ -334,8 +334,8 @@ class SecureAIService:
             try:
                 return json.loads(response)
             except:
-                return self._fallback_sustainability_insights(company_data)
-        return self._fallback_sustainability_insights(company_data)
+                raise Exception("Failed to parse AI response for generate_sustainability_insights")
+        raise Exception("AI service unavailable for generate_sustainability_insights")
     
     def analyze_conversational_input(self, user_input: str, conversation_context: Dict) -> Dict:
         """Analyze conversational input to extract intent, entities, and sentiment"""
@@ -379,128 +379,8 @@ class SecureAIService:
             try:
                 return json.loads(response)
             except:
-                return self._fallback_conversational_analysis(user_input)
-        return self._fallback_conversational_analysis(user_input)
-    
-    def _fallback_analysis(self, company_data: Dict) -> Dict:
-        """Fallback analysis when AI service is unavailable"""
-        return {
-            "waste_opportunities": ["General waste streams based on industry"],
-            "recycling_potential": ["Standard recycling opportunities"],
-            "sustainability_goals": ["Reduce waste, improve efficiency"],
-            "market_opportunities": ["Circular economy partnerships"],
-            "risk_factors": ["Regulatory compliance, market changes"],
-            "improvement_areas": ["Process optimization, waste reduction"],
-            "similar_companies": ["Companies in same industry"],
-            "regulatory_considerations": ["Local environmental regulations"]
-        }
-    
-    def _fallback_questions(self, company_data: Dict) -> List[Dict]:
-        """Fallback questions when AI service is unavailable"""
-        return [
-            {
-                "question": "What are your main waste streams?",
-                "type": "textarea",
-                "key": "waste_streams",
-                "required": False,
-                "reasoning": "Understanding waste streams helps identify recycling opportunities",
-                "category": "waste"
-            },
-            {
-                "question": "What sustainability goals do you have?",
-                "type": "textarea",
-                "key": "sustainability_goals",
-                "required": False,
-                "reasoning": "Sustainability goals help align with circular economy opportunities",
-                "category": "sustainability"
-            }
-        ]
-    
-    def _fallback_material_listings(self, company_data: Dict) -> List[Dict]:
-        """Fallback material listings when AI service is unavailable"""
-        return [
-            {
-                "name": "General Waste Materials",
-                "type": "waste",
-                "description": "Various waste materials from production",
-                "quantity": "Variable",
-                "frequency": "Regular",
-                "specifications": "Mixed",
-                "sustainability_impact": "Reduces landfill waste",
-                "market_value": "Variable",
-                "logistics_notes": "Local pickup preferred"
-            }
-        ]
-    
-    def _fallback_sustainability_insights(self, company_data: Dict) -> Dict:
-        """Fallback sustainability insights when AI service is unavailable"""
-        return {
-            "carbon_footprint_analysis": {
-                "estimated_emissions": "Variable based on operations",
-                "reduction_opportunities": ["Energy efficiency", "Waste reduction"],
-                "carbon_credits_potential": "Moderate"
-            },
-            "waste_reduction_strategies": {
-                "current_waste_streams": ["Production waste", "Packaging waste"],
-                "reduction_targets": ["10-20% waste reduction"],
-                "implementation_steps": ["Audit current waste", "Identify opportunities"]
-            },
-            "circular_economy_opportunities": {
-                "resource_recovery": ["Material recycling", "Energy recovery"],
-                "byproduct_utilization": ["Waste-to-resource conversion"],
-                "closed_loop_systems": ["Internal recycling loops"]
-            },
-            "regulatory_compliance": {
-                "current_requirements": ["Environmental regulations"],
-                "upcoming_changes": ["Stricter waste management"],
-                "compliance_strategies": ["Regular audits", "Proactive compliance"]
-            },
-            "financial_benefits": {
-                "cost_savings": ["Reduced waste disposal costs"],
-                "revenue_opportunities": ["Waste-to-resource sales"],
-                "investment_requirements": ["Process optimization investments"]
-            }
-        }
-
-    def _fallback_conversational_analysis(self, user_input: str) -> Dict:
-        """Fallback conversational analysis when AI service is unavailable"""
-        user_input_lower = user_input.lower()
-        
-        # Simple keyword-based intent detection
-        intent = "general"
-        if any(word in user_input_lower for word in ["company", "name", "industry", "location", "materials", "processes"]):
-            intent = "provide_company_info"
-        elif any(word in user_input_lower for word in ["what", "how", "why", "when", "where", "?"]):
-            intent = "ask_question"
-        elif any(word in user_input_lower for word in ["unclear", "confused", "don't understand", "not sure"]):
-            intent = "clarify_information"
-        elif any(word in user_input_lower for word in ["concern", "worried", "problem", "issue"]):
-            intent = "express_concern"
-        elif any(word in user_input_lower for word in ["help", "assist", "support"]):
-            intent = "request_help"
-        
-        # Simple entity extraction
-        entities = {}
-        if "company" in user_input_lower and "name" in user_input_lower:
-            entities["company_name"] = "extracted"
-        if "industry" in user_input_lower:
-            entities["industry"] = "extracted"
-        if "location" in user_input_lower or "city" in user_input_lower or "country" in user_input_lower:
-            entities["location"] = "extracted"
-        
-        # Simple sentiment analysis
-        sentiment = "neutral"
-        if any(word in user_input_lower for word in ["good", "great", "excellent", "happy", "satisfied"]):
-            sentiment = "positive"
-        elif any(word in user_input_lower for word in ["bad", "terrible", "worried", "concerned", "frustrated"]):
-            sentiment = "negative"
-        
-        return {
-            "intent": intent,
-            "entities": entities,
-            "sentiment": sentiment,
-            "confidence": 0.6
-        }
+                raise Exception("Failed to parse AI response for analyze_conversational_input")
+        raise Exception("AI service unavailable for analyze_conversational_input")
 
 # Global instance
 ai_service = SecureAIService()

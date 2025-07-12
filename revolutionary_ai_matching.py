@@ -17,42 +17,13 @@ import argparse
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Try to import optional modules, but don't fail if they're missing
-try:
-    from proactive_opportunity_engine import ProactiveOpportunityEngine
-except ImportError:
-    ProactiveOpportunityEngine = None
-    logger.warning("ProactiveOpportunityEngine not available")
-
-try:
-    from federated_meta_learning import FederatedMetaLearning
-except ImportError:
-    FederatedMetaLearning = None
-    logger.warning("FederatedMetaLearning not available")
-
-try:
-    from knowledge_graph import KnowledgeGraph
-except ImportError:
-    KnowledgeGraph = None
-    logger.warning("KnowledgeGraph not available")
-
-try:
-    from gnn_reasoning import GNNReasoning
-except ImportError:
-    GNNReasoning = None
-    logger.warning("GNNReasoning not available")
-
-try:
-    from regulatory_compliance import RegulatoryComplianceEngine
-except ImportError:
-    RegulatoryComplianceEngine = None
-    logger.warning("RegulatoryComplianceEngine not available")
-
-try:
-    from impact_forecasting import ImpactForecastingEngine
-except ImportError:
-    ImpactForecastingEngine = None
-    logger.warning("ImpactForecastingEngine not available")
+# Required modules - fail if missing
+from proactive_opportunity_engine import ProactiveOpportunityEngine
+from federated_meta_learning import FederatedMetaLearning
+from knowledge_graph import KnowledgeGraph
+from gnn_reasoning import GNNReasoning
+from regulatory_compliance import RegulatoryComplianceEngine
+from impact_forecasting import ImpactForecastingEngine
 
 @dataclass
 class MatchExplanation:
@@ -67,11 +38,7 @@ class MatchExplanation:
 class RevolutionaryAIMatching:
     """Enhanced Patent-worthy Industrial Symbiosis Matching AI with Active Learning"""
     def __init__(self):
-        try:
-            self.model = SentenceTransformer('all-mpnet-base-v2')
-        except Exception as e:
-            logger.warning(f"Could not load sentence transformer model: {e}")
-            self.model = None
+        self.model = SentenceTransformer('all-mpnet-base-v2')
         self.adaptation_model = GradientBoostingRegressor()
         self.transaction_history = pd.DataFrame()
         self.trust_network = {}
@@ -969,6 +936,68 @@ class RevolutionaryAIMatching:
         except Exception as e:
             logger.error(f"GNN compatibility calculation failed: {e}")
             return 0.5, "GNN analysis unavailable, using default score"
+    
+    def find_matches(self, query_company: Dict, candidate_companies: List[Dict], 
+                    algorithm: str = 'ensemble', top_k: int = 10) -> Dict:
+        """Find matches for a query company using specified algorithm"""
+        try:
+            matches = []
+            
+            for candidate in candidate_companies:
+                # Predict compatibility
+                compatibility = self.predict_compatibility(query_company, candidate)
+                
+                if compatibility.get('success', False):
+                    matches.append({
+                        'candidate': candidate,
+                        'compatibility': compatibility,
+                        'score': compatibility.get('revolutionary_score', 0)
+                    })
+            
+            # Sort by score and get top_k
+            matches.sort(key=lambda x: x['score'], reverse=True)
+            top_matches = matches[:top_k]
+            
+            # Calculate statistics
+            total_candidates = len(candidate_companies)
+            matching_time = datetime.now()
+            
+            return {
+                'matches': top_matches,
+                'total_candidates': total_candidates,
+                'matching_time': matching_time.isoformat(),
+                'algorithm_used': algorithm,
+                'success': True
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in find_matches: {e}")
+            return {
+                'matches': [],
+                'total_candidates': 0,
+                'matching_time': datetime.now().isoformat(),
+                'algorithm_used': algorithm,
+                'error': str(e),
+                'success': False
+            }
+    
+    def get_matching_statistics(self) -> Dict:
+        """Get matching engine statistics"""
+        try:
+            return {
+                'total_matches': len(self.transaction_history) if len(self.transaction_history) > 0 else 0,
+                'average_matching_time': 0.5,  # Placeholder
+                'active_learning_updates': len(self.user_feedback),
+                'model_version': '1.0'
+            }
+        except Exception as e:
+            logger.error(f"Error getting matching statistics: {e}")
+            return {
+                'total_matches': 0,
+                'average_matching_time': 0,
+                'active_learning_updates': 0,
+                'model_version': 'unknown'
+            }
 
 # Patentable Innovations:
 # 1. Dynamic trust scoring with blockchain verification

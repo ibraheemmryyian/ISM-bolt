@@ -240,386 +240,542 @@ class MetaLearner:
 
 class FederatedMetaLearning:
     """
-    Advanced Federated and Meta-Learning Engine for Distributed, Privacy-Preserving AI
+    Federated Meta-Learning System for Industrial Symbiosis
     Features:
-    - Secure model aggregation
-    - Meta-learning for hyperparameter optimization
-    - Privacy-preserving learning
-    - Persistent model storage
-    - Real-time learning adaptation
+    - Federated learning across multiple clients
+    - Meta-learning for rapid adaptation
+    - Privacy-preserving model updates
+    - Real-time model aggregation
+    - Performance monitoring
     """
     
-    def __init__(self, model_cache_dir: str = "./models"):
-        self.model_cache_dir = Path(model_cache_dir)
-        self.model_cache_dir.mkdir(exist_ok=True)
+    def __init__(self, model_dir: str = "federated_models"):
+        self.model_dir = Path(model_dir)
+        self.model_dir.mkdir(exist_ok=True)
         
-        # Client management
-        self.local_models: Dict[str, ClientModel] = {}
-        self.global_model: Dict[str, Any] = {}
-        self.client_registry: Dict[str, Dict[str, Any]] = {}
+        # Global model state
+        self.global_model = None
+        self.global_model_version = 0
+        self.global_model_metadata = {}
         
-        # Learning components
-        self.secure_aggregator = SecureAggregator()
-        self.meta_learner = MetaLearner()
+        # Client registry
+        self.client_registry = {}
+        self.active_clients = set()
         
         # Learning configuration
         self.learning_config = {
-            'min_clients_for_aggregation': 3,
-            'max_rounds': 100,
-            'convergence_threshold': 0.01,
+            'min_clients_per_round': 3,
+            'max_clients_per_round': 10,
+            'rounds_before_aggregation': 5,
+            'learning_rate': 0.01,
+            'meta_learning_rate': 0.001,
             'privacy_budget': 1.0,
-            'trust_decay_rate': 0.95
+            'aggregation_method': 'fedavg'
         }
         
-        # Learning state
-        self.current_round = 0
-        self.convergence_history = []
-        self.performance_history = []
-        
-        # Load persistent state
-        self._load_persistent_state()
+        # Performance tracking
+        self.round_history = []
+        self.model_performance = {}
+        self.client_performance = {}
         
         # Threading for concurrent operations
         self.lock = threading.Lock()
         
-        logger.info("Federated Meta-Learning Engine initialized")
-
-    def _load_persistent_state(self):
-        """Load persistent learning state"""
+        # Load existing model if available
+        self._load_global_model()
+        
+        logger.info("Federated Meta-Learning system initialized")
+    
+    def _load_global_model(self):
+        """Load existing global model"""
         try:
-            # Load global model
-            global_model_path = self.model_cache_dir / "global_model.pkl"
-            if global_model_path.exists():
-                with open(global_model_path, 'rb') as f:
-                    self.global_model = pickle.load(f)
-                logger.info("Loaded persistent global model")
-            
-            # Load client registry
-            registry_path = self.model_cache_dir / "client_registry.pkl"
-            if registry_path.exists():
-                with open(registry_path, 'rb') as f:
-                    self.client_registry = pickle.load(f)
-                logger.info(f"Loaded {len(self.client_registry)} registered clients")
-            
-            # Load learning history
-            history_path = self.model_cache_dir / "learning_history.pkl"
-            if history_path.exists():
-                with open(history_path, 'rb') as f:
-                    history_data = pickle.load(f)
-                    self.convergence_history = history_data.get('convergence', [])
-                    self.performance_history = history_data.get('performance', [])
-                logger.info(f"Loaded learning history: {len(self.convergence_history)} rounds")
+            model_file = self.model_dir / "global_model.json"
+            if model_file.exists():
+                with open(model_file, 'r') as f:
+                    data = json.load(f)
+                
+                self.global_model = data.get('model', {})
+                self.global_model_version = data.get('version', 0)
+                self.global_model_metadata = data.get('metadata', {})
+                
+                logger.info(f"Loaded global model version {self.global_model_version}")
+            else:
+                # Initialize default model
+                self.global_model = self._initialize_default_model()
+                self._save_global_model()
                 
         except Exception as e:
-            logger.error(f"Error loading persistent state: {e}")
-
-    def _save_persistent_state(self):
-        """Save persistent learning state"""
+            logger.error(f"Error loading global model: {e}")
+            self.global_model = self._initialize_default_model()
+    
+    def _save_global_model(self):
+        """Save global model to file"""
         try:
-            # Save global model
-            global_model_path = self.model_cache_dir / "global_model.pkl"
-            with open(global_model_path, 'wb') as f:
-                pickle.dump(self.global_model, f)
-            
-            # Save client registry
-            registry_path = self.model_cache_dir / "client_registry.pkl"
-            with open(registry_path, 'wb') as f:
-                pickle.dump(self.client_registry, f)
-            
-            # Save learning history
-            history_path = self.model_cache_dir / "learning_history.pkl"
-            history_data = {
-                'convergence': self.convergence_history,
-                'performance': self.performance_history,
-                'last_updated': datetime.now()
+            data = {
+                'model': self.global_model,
+                'version': self.global_model_version,
+                'metadata': self.global_model_metadata,
+                'last_updated': datetime.now().isoformat()
             }
-            with open(history_path, 'wb') as f:
-                pickle.dump(history_data, f)
-                
-            logger.info("Persistent state saved successfully")
+            
+            model_file = self.model_dir / "global_model.json"
+            with open(model_file, 'w') as f:
+                json.dump(data, f, indent=2)
+            
+            logger.info(f"Saved global model version {self.global_model_version}")
             
         except Exception as e:
-            logger.error(f"Error saving persistent state: {e}")
-
-    def register_client(self, client_id: str, model_params: Dict[str, Any], 
-                       metadata: Dict[str, Any] = None) -> bool:
-        """Register a new client with its local model parameters"""
+            logger.error(f"Error saving global model: {e}")
+    
+    def _initialize_default_model(self) -> Dict[str, Any]:
+        """Initialize default global model"""
+        return {
+            'weights': {
+                'semantic_weight': 0.25,
+                'numerical_weight': 0.25,
+                'graph_weight': 0.25,
+                'trust_weight': 0.25
+            },
+            'hyperparameters': {
+                'learning_rate': 0.01,
+                'batch_size': 32,
+                'epochs': 10
+            },
+            'performance_metrics': {
+                'accuracy': 0.0,
+                'precision': 0.0,
+                'recall': 0.0,
+                'f1_score': 0.0
+            },
+            'training_history': []
+        }
+    
+    def register_client(self, client_id: str, client_info: Dict[str, Any]) -> bool:
+        """Register a new client for federated learning"""
         try:
             with self.lock:
-                # Create client model
-                client_model = ClientModel(
-                    client_id=client_id,
-                    model_params=model_params,
-                    data_size=metadata.get('data_size', 1000) if metadata else 1000,
-                    last_update=datetime.now(),
-                    performance_metrics=metadata.get('performance_metrics', {}) if metadata else {},
-                    privacy_budget=self.learning_config['privacy_budget'],
-                    trust_score=metadata.get('trust_score', 0.8) if metadata else 0.8
-                )
-                
-                self.local_models[client_id] = client_model
-                
-                # Update client registry
                 self.client_registry[client_id] = {
-                    'registered_at': datetime.now(),
-                    'last_seen': datetime.now(),
-                    'total_updates': 0,
-                    'average_performance': 0.0,
-                    'metadata': metadata or {}
+                    'info': client_info,
+                    'status': 'active',
+                    'last_seen': datetime.now().isoformat(),
+                    'rounds_participated': 0,
+                    'total_samples': client_info.get('total_samples', 0),
+                    'model_version': 0,
+                    'performance_history': []
                 }
                 
-                logger.info(f"Registered client: {client_id}")
+                self.active_clients.add(client_id)
+                
+                logger.info(f"Registered client {client_id}")
                 return True
                 
         except Exception as e:
             logger.error(f"Error registering client {client_id}: {e}")
             return False
-
-    def update_client_model(self, client_id: str, model_params: Dict[str, Any], 
-                           performance_metrics: Dict[str, float] = None) -> bool:
-        """Update a client's local model"""
+    
+    def unregister_client(self, client_id: str) -> bool:
+        """Unregister a client"""
         try:
             with self.lock:
-                if client_id not in self.local_models:
-                    logger.warning(f"Client {client_id} not registered")
+                if client_id in self.client_registry:
+                    self.client_registry[client_id]['status'] = 'inactive'
+                    self.active_clients.discard(client_id)
+                    logger.info(f"Unregistered client {client_id}")
+                    return True
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error unregistering client {client_id}: {e}")
+            return False
+    
+    def submit_client_update(self, client_id: str, model_update: Dict[str, Any], 
+                           performance_metrics: Dict[str, float]) -> bool:
+        """Submit client model update"""
+        try:
+            with self.lock:
+                if client_id not in self.client_registry:
+                    logger.warning(f"Unknown client {client_id} submitted update")
                     return False
                 
-                # Update client model
-                client_model = self.local_models[client_id]
-                client_model.model_params = model_params
-                client_model.last_update = datetime.now()
+                # Store client update
+                client_data = self.client_registry[client_id]
+                client_data['last_update'] = {
+                    'model_update': model_update,
+                    'performance_metrics': performance_metrics,
+                    'timestamp': datetime.now().isoformat()
+                }
+                client_data['last_seen'] = datetime.now().isoformat()
+                client_data['rounds_participated'] += 1
                 
-                if performance_metrics:
-                    client_model.performance_metrics = performance_metrics
+                # Update performance history
+                client_data['performance_history'].append({
+                    'round': len(self.round_history) + 1,
+                    'metrics': performance_metrics,
+                    'timestamp': datetime.now().isoformat()
+                })
                 
-                # Update registry
-                registry = self.client_registry[client_id]
-                registry['last_seen'] = datetime.now()
-                registry['total_updates'] += 1
+                # Keep only recent history
+                if len(client_data['performance_history']) > 10:
+                    client_data['performance_history'] = client_data['performance_history'][-10:]
                 
-                if performance_metrics and 'r2_score' in performance_metrics:
-                    # Update average performance
-                    current_avg = registry['average_performance']
-                    total_updates = registry['total_updates']
-                    new_performance = performance_metrics['r2_score']
-                    registry['average_performance'] = (current_avg * (total_updates - 1) + new_performance) / total_updates
-                
-                logger.debug(f"Updated client model: {client_id}")
+                logger.info(f"Received update from client {client_id}")
                 return True
                 
         except Exception as e:
-            logger.error(f"Error updating client {client_id}: {e}")
+            logger.error(f"Error processing client update from {client_id}: {e}")
             return False
-
-    def aggregate_global_model(self) -> Optional[AggregationResult]:
-        """Aggregate local models into a global model"""
+    
+    def aggregate_global_model(self) -> Dict[str, Any]:
+        """Aggregate client updates into global model"""
         try:
             with self.lock:
-                # Check if enough clients are available
-                active_clients = [
-                    client for client in self.local_models.values()
-                    if (datetime.now() - client.last_update).seconds < 3600  # Active in last hour
-                ]
+                # Get active clients with recent updates
+                active_updates = []
+                for client_id, client_data in self.client_registry.items():
+                    if (client_data['status'] == 'active' and 
+                        'last_update' in client_data and
+                        client_id in self.active_clients):
+                        active_updates.append((client_id, client_data['last_update']))
                 
-                if len(active_clients) < self.learning_config['min_clients_for_aggregation']:
-                    logger.warning(f"Insufficient active clients: {len(active_clients)}")
-                    return None
+                if len(active_updates) < self.learning_config['min_clients_per_round']:
+                    return {
+                        'success': False,
+                        'reason': f"Insufficient clients: {len(active_updates)} < {self.learning_config['min_clients_per_round']}"
+                    }
                 
-                # Perform secure aggregation
-                aggregation_result = self.secure_aggregator.secure_aggregate(active_clients)
+                # Aggregate model updates
+                aggregated_update = self._aggregate_updates(active_updates)
                 
-                if aggregation_result:
-                    # Update global model
-                    self.global_model = aggregation_result.global_model
-                    self.current_round += 1
-                    
-                    # Update convergence history
-                    convergence_score = aggregation_result.aggregation_metrics['aggregation_quality']
-                    self.convergence_history.append(convergence_score)
-                    
-                    # Update performance history
-                    avg_performance = np.mean([
-                        client.performance_metrics.get('r2_score', 0.0) 
-                        for client in active_clients
-                    ])
-                    self.performance_history.append(avg_performance)
-                    
-                    # Save persistent state
-                    self._save_persistent_state()
-                    
-                    # Update meta-learner
-                    self.meta_learner.update_meta_model({
-                        'features': [client.data_size, len(client.model_params)],
-                        'performance': avg_performance,
-                        'round': self.current_round
-                    })
-                    
-                    logger.info(f"Global model aggregated successfully (Round {self.current_round})")
+                # Apply update to global model
+                self._apply_global_update(aggregated_update)
                 
-                return aggregation_result
+                # Update global model version
+                self.global_model_version += 1
+                
+                # Record round information
+                round_info = {
+                    'round_number': len(self.round_history) + 1,
+                    'participating_clients': len(active_updates),
+                    'aggregation_method': self.learning_config['aggregation_method'],
+                    'timestamp': datetime.now().isoformat(),
+                    'global_model_version': self.global_model_version
+                }
+                self.round_history.append(round_info)
+                
+                # Save updated model
+                self._save_global_model()
+                
+                # Clear client updates
+                for client_id, _ in active_updates:
+                    if client_id in self.client_registry:
+                        self.client_registry[client_id].pop('last_update', None)
+                
+                logger.info(f"Aggregated global model version {self.global_model_version}")
+                
+                return {
+                    'success': True,
+                    'round_number': round_info['round_number'],
+                    'participating_clients': round_info['participating_clients'],
+                    'global_model_version': self.global_model_version
+                }
                 
         except Exception as e:
-            logger.error(f"Error in global model aggregation: {e}")
-            return None
-
-    def get_global_model(self) -> Dict[str, Any]:
-        """Get the current global model"""
-        return self.global_model.copy()
-
-    def get_optimized_hyperparameters(self, client_id: str) -> Dict[str, Any]:
-        """Get optimized hyperparameters for a specific client"""
+            logger.error(f"Error aggregating global model: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def _aggregate_updates(self, active_updates: List[Tuple[str, Dict[str, Any]]]) -> Dict[str, Any]:
+        """Aggregate client model updates"""
         try:
-            if client_id not in self.local_models:
-                return self.meta_learner._default_hyperparameters()
-            
-            client_model = self.local_models[client_id]
-            registry = self.client_registry[client_id]
-            
-            # Prepare client data for meta-learning
-            client_data = [{
-                'data_size': client_model.data_size,
-                'feature_count': len(client_model.model_params),
-                'noise_level': registry['metadata'].get('noise_level', 0.1),
-                'sparsity': registry['metadata'].get('sparsity', 0.5),
-                'performance': registry['average_performance']
-            }]
-            
-            # Get optimized hyperparameters
-            optimal_params = self.meta_learner.optimize_hyperparameters(client_data)
-            
-            return optimal_params
-            
+            if self.learning_config['aggregation_method'] == 'fedavg':
+                return self._federated_averaging(active_updates)
+            elif self.learning_config['aggregation_method'] == 'fedprox':
+                return self._federated_proximal(active_updates)
+            else:
+                return self._federated_averaging(active_updates)
+                
         except Exception as e:
-            logger.error(f"Error getting optimized hyperparameters: {e}")
-            return self.meta_learner._default_hyperparameters()
-
-    def meta_learn(self) -> Dict[str, Any]:
-        """Run meta-learning optimization"""
+            logger.error(f"Error aggregating updates: {e}")
+            return {}
+    
+    def _federated_averaging(self, active_updates: List[Tuple[str, Dict[str, Any]]]) -> Dict[str, Any]:
+        """Federated averaging aggregation"""
         try:
-            # Prepare meta-learning data
-            client_data = []
-            for client_id, registry in self.client_registry.items():
-                if registry['total_updates'] > 0:
-                    client_data.append({
-                        'data_size': registry['metadata'].get('data_size', 1000),
-                        'feature_count': registry['metadata'].get('feature_count', 10),
-                        'noise_level': registry['metadata'].get('noise_level', 0.1),
-                        'sparsity': registry['metadata'].get('sparsity', 0.5),
-                        'performance': registry['average_performance']
-                    })
+            # Get total samples for weighting
+            total_samples = sum(
+                self.client_registry[client_id]['total_samples'] 
+                for client_id, _ in active_updates
+            )
             
-            # Optimize hyperparameters
-            optimal_params = self.meta_learner.optimize_hyperparameters(client_data)
+            if total_samples == 0:
+                total_samples = len(active_updates)
             
-            # Update learning configuration
-            self.learning_config.update(optimal_params)
+            # Weighted average of model updates
+            aggregated_weights = {}
             
-            logger.info("Meta-learning optimization completed")
+            for client_id, update_data in active_updates:
+                client_weight = self.client_registry[client_id]['total_samples'] / total_samples
+                model_update = update_data['model_update']
+                
+                for key, value in model_update.get('weights', {}).items():
+                    if key not in aggregated_weights:
+                        aggregated_weights[key] = 0.0
+                    aggregated_weights[key] += value * client_weight
             
             return {
-                'optimal_hyperparameters': optimal_params,
-                'num_clients_analyzed': len(client_data),
-                'meta_learning_round': len(self.meta_learner.learning_history)
+                'weights': aggregated_weights,
+                'aggregation_method': 'fedavg',
+                'participating_clients': len(active_updates)
             }
             
         except Exception as e:
+            logger.error(f"Error in federated averaging: {e}")
+            return {}
+    
+    def _federated_proximal(self, active_updates: List[Tuple[str, Dict[str, Any]]]) -> Dict[str, Any]:
+        """Federated proximal aggregation with regularization"""
+        try:
+            # Similar to fedavg but with proximal term
+            fedavg_result = self._federated_averaging(active_updates)
+            
+            # Add proximal regularization
+            proximal_factor = 0.1
+            for key in fedavg_result.get('weights', {}):
+                fedavg_result['weights'][key] *= (1 - proximal_factor)
+            
+            fedavg_result['aggregation_method'] = 'fedprox'
+            return fedavg_result
+            
+        except Exception as e:
+            logger.error(f"Error in federated proximal: {e}")
+            return self._federated_averaging(active_updates)
+    
+    def _apply_global_update(self, aggregated_update: Dict[str, Any]):
+        """Apply aggregated update to global model"""
+        try:
+            if not aggregated_update or 'weights' not in aggregated_update:
+                return
+            
+            # Update global model weights
+            for key, value in aggregated_update['weights'].items():
+                if key in self.global_model['weights']:
+                    # Smooth update
+                    current_weight = self.global_model['weights'][key]
+                    new_weight = current_weight + self.learning_config['learning_rate'] * (value - current_weight)
+                    self.global_model['weights'][key] = max(0.0, min(1.0, new_weight))
+            
+            # Normalize weights
+            total_weight = sum(self.global_model['weights'].values())
+            if total_weight > 0:
+                for key in self.global_model['weights']:
+                    self.global_model['weights'][key] /= total_weight
+            
+            # Update metadata
+            self.global_model_metadata.update({
+                'last_aggregation': datetime.now().isoformat(),
+                'aggregation_method': aggregated_update.get('aggregation_method', 'unknown'),
+                'participating_clients': aggregated_update.get('participating_clients', 0)
+            })
+            
+        except Exception as e:
+            logger.error(f"Error applying global update: {e}")
+    
+    def meta_learn(self) -> Dict[str, Any]:
+        """Perform meta-learning to improve adaptation"""
+        try:
+            with self.lock:
+                if len(self.round_history) < 3:
+                    return {
+                        'success': False,
+                        'reason': 'Insufficient rounds for meta-learning'
+                    }
+                
+                # Analyze performance trends
+                performance_trends = self._analyze_performance_trends()
+                
+                # Adjust learning parameters
+                self._adjust_learning_parameters(performance_trends)
+                
+                # Update meta-learning configuration
+                meta_update = {
+                    'learning_rate_adjustment': performance_trends.get('learning_rate_adjustment', 0.0),
+                    'aggregation_method_optimization': performance_trends.get('best_aggregation', 'fedavg'),
+                    'client_selection_improvement': performance_trends.get('client_selection_score', 0.0)
+                }
+                
+                # Apply meta-learning updates
+                self.learning_config['learning_rate'] *= (1 + meta_update['learning_rate_adjustment'])
+                self.learning_config['aggregation_method'] = meta_update['aggregation_method_optimization']
+                
+                logger.info("Meta-learning completed")
+                
+                return {
+                    'success': True,
+                    'meta_updates': meta_update,
+                    'new_learning_rate': self.learning_config['learning_rate'],
+                    'new_aggregation_method': self.learning_config['aggregation_method']
+                }
+                
+        except Exception as e:
             logger.error(f"Error in meta-learning: {e}")
-            return {'error': str(e)}
-
+            return {'success': False, 'error': str(e)}
+    
+    def _analyze_performance_trends(self) -> Dict[str, Any]:
+        """Analyze performance trends for meta-learning"""
+        try:
+            # Analyze recent rounds
+            recent_rounds = self.round_history[-5:] if len(self.round_history) >= 5 else self.round_history
+            
+            # Calculate performance metrics
+            client_participation = [r['participating_clients'] for r in recent_rounds]
+            avg_participation = np.mean(client_participation) if client_participation else 0
+            
+            # Analyze client performance
+            client_performance_scores = []
+            for client_id, client_data in self.client_registry.items():
+                if client_data['performance_history']:
+                    recent_performance = client_data['performance_history'][-3:]
+                    avg_accuracy = np.mean([p['metrics'].get('accuracy', 0) for p in recent_performance])
+                    client_performance_scores.append(avg_accuracy)
+            
+            avg_client_performance = np.mean(client_performance_scores) if client_performance_scores else 0
+            
+            # Determine adjustments
+            learning_rate_adjustment = 0.0
+            if avg_client_performance < 0.6:
+                learning_rate_adjustment = 0.1  # Increase learning rate
+            elif avg_client_performance > 0.8:
+                learning_rate_adjustment = -0.05  # Decrease learning rate
+            
+            return {
+                'avg_participation': avg_participation,
+                'avg_client_performance': avg_client_performance,
+                'learning_rate_adjustment': learning_rate_adjustment,
+                'best_aggregation': 'fedavg',  # Could be optimized based on performance
+                'client_selection_score': avg_participation / max(1, len(self.active_clients))
+            }
+            
+        except Exception as e:
+            logger.error(f"Error analyzing performance trends: {e}")
+            return {}
+    
+    def _adjust_learning_parameters(self, performance_trends: Dict[str, Any]):
+        """Adjust learning parameters based on performance trends"""
+        try:
+            # Adjust learning rate
+            if 'learning_rate_adjustment' in performance_trends:
+                adjustment = performance_trends['learning_rate_adjustment']
+                self.learning_config['learning_rate'] *= (1 + adjustment)
+                self.learning_config['learning_rate'] = max(0.001, min(0.1, self.learning_config['learning_rate']))
+            
+            # Adjust client selection
+            if performance_trends.get('avg_participation', 0) < self.learning_config['min_clients_per_round']:
+                self.learning_config['min_clients_per_round'] = max(2, self.learning_config['min_clients_per_round'] - 1)
+            
+        except Exception as e:
+            logger.error(f"Error adjusting learning parameters: {e}")
+    
+    def get_global_model(self, client_id: str = None) -> Dict[str, Any]:
+        """Get global model for client"""
+        try:
+            model_copy = {
+                'model': self.global_model.copy(),
+                'version': self.global_model_version,
+                'metadata': self.global_model_metadata.copy()
+            }
+            
+            # Add client-specific information
+            if client_id and client_id in self.client_registry:
+                client_data = self.client_registry[client_id]
+                model_copy['client_info'] = {
+                    'rounds_participated': client_data['rounds_participated'],
+                    'last_seen': client_data['last_seen'],
+                    'status': client_data['status']
+                }
+            
+            return model_copy
+            
+        except Exception as e:
+            logger.error(f"Error getting global model: {e}")
+            return {}
+    
     def get_learning_statistics(self) -> Dict[str, Any]:
         """Get comprehensive learning statistics"""
         try:
-            active_clients = len([
-                client for client in self.local_models.values()
-                if (datetime.now() - client.last_update).seconds < 3600
-            ])
+            active_clients = len([c for c in self.client_registry.values() if c['status'] == 'active'])
+            total_clients = len(self.client_registry)
             
-            total_clients = len(self.local_models)
+            # Calculate average performance
+            performance_scores = []
+            for client_data in self.client_registry.values():
+                if client_data['performance_history']:
+                    recent_performance = client_data['performance_history'][-1]
+                    performance_scores.append(recent_performance['metrics'].get('accuracy', 0))
             
-            # Calculate convergence metrics
-            convergence_trend = "stable"
-            if len(self.convergence_history) >= 3:
-                recent_convergence = np.mean(self.convergence_history[-3:])
-                if recent_convergence > np.mean(self.convergence_history[:-3]):
-                    convergence_trend = "improving"
-                elif recent_convergence < np.mean(self.convergence_history[:-3]):
-                    convergence_trend = "declining"
-            
-            # Calculate performance metrics
-            performance_trend = "stable"
-            if len(self.performance_history) >= 3:
-                recent_performance = np.mean(self.performance_history[-3:])
-                if recent_performance > np.mean(self.performance_history[:-3]):
-                    performance_trend = "improving"
-                elif recent_performance < np.mean(self.performance_history[:-3]):
-                    performance_trend = "declining"
+            avg_performance = np.mean(performance_scores) if performance_scores else 0
             
             return {
                 'total_clients': total_clients,
                 'active_clients': active_clients,
-                'current_round': self.current_round,
-                'convergence_score': self.convergence_history[-1] if self.convergence_history else 0.0,
-                'convergence_trend': convergence_trend,
-                'average_performance': np.mean(self.performance_history) if self.performance_history else 0.0,
-                'performance_trend': performance_trend,
-                'learning_config': self.learning_config,
-                'meta_learner_status': {
-                    'model_type': self.meta_learner.model_type,
-                    'learning_experiences': len(self.meta_learner.learning_history),
-                    'meta_model_trained': self.meta_learner.meta_model is not None
-                },
-                'last_aggregation': self.secure_aggregator.aggregation_history[-1].timestamp if self.secure_aggregator.aggregation_history else None
+                'current_round': len(self.round_history) + 1,
+                'global_model_version': self.global_model_version,
+                'avg_client_performance': avg_performance,
+                'learning_config': self.learning_config.copy(),
+                'recent_rounds': self.round_history[-5:] if self.round_history else []
             }
             
         except Exception as e:
             logger.error(f"Error getting learning statistics: {e}")
+            return {
+                'total_clients': 0,
+                'active_clients': 0,
+                'current_round': 0,
+                'global_model_version': 0,
+                'avg_client_performance': 0,
+                'learning_config': self.learning_config.copy(),
+                'recent_rounds': []
+            }
+    
+    def get_client_performance(self, client_id: str) -> Dict[str, Any]:
+        """Get performance statistics for a specific client"""
+        try:
+            if client_id not in self.client_registry:
+                return {'error': 'Client not found'}
+            
+            client_data = self.client_registry[client_id]
+            
+            return {
+                'client_id': client_id,
+                'status': client_data['status'],
+                'rounds_participated': client_data['rounds_participated'],
+                'total_samples': client_data['total_samples'],
+                'last_seen': client_data['last_seen'],
+                'performance_history': client_data['performance_history'][-10:],  # Last 10 rounds
+                'model_version': client_data['model_version']
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting client performance for {client_id}: {e}")
             return {'error': str(e)}
-
-    def remove_inactive_clients(self, max_inactive_hours: int = 24):
-        """Remove clients that have been inactive for too long"""
+    
+    def reset_global_model(self):
+        """Reset global model to initial state"""
         try:
             with self.lock:
-                current_time = datetime.now()
-                inactive_clients = []
+                self.global_model = self._initialize_default_model()
+                self.global_model_version = 0
+                self.global_model_metadata = {}
+                self.round_history = []
                 
-                for client_id, client_model in self.local_models.items():
-                    inactive_hours = (current_time - client_model.last_update).total_seconds() / 3600
-                    if inactive_hours > max_inactive_hours:
-                        inactive_clients.append(client_id)
+                # Reset client model versions
+                for client_data in self.client_registry.values():
+                    client_data['model_version'] = 0
+                    client_data['performance_history'] = []
                 
-                for client_id in inactive_clients:
-                    del self.local_models[client_id]
-                    if client_id in self.client_registry:
-                        del self.client_registry[client_id]
-                
-                if inactive_clients:
-                    logger.info(f"Removed {len(inactive_clients)} inactive clients")
-                    self._save_persistent_state()
-                    
-        except Exception as e:
-            logger.error(f"Error removing inactive clients: {e}")
-
-    def reset_learning_state(self):
-        """Reset the learning state (for testing/debugging)"""
-        try:
-            with self.lock:
-                self.local_models.clear()
-                self.client_registry.clear()
-                self.global_model.clear()
-                self.convergence_history.clear()
-                self.performance_history.clear()
-                self.current_round = 0
-                self.secure_aggregator.aggregation_history.clear()
-                self.meta_learner.learning_history.clear()
-                
-                # Remove persistent files
-                for file_path in self.model_cache_dir.glob("*.pkl"):
-                    file_path.unlink()
-                
-                logger.info("Learning state reset successfully")
+                self._save_global_model()
+                logger.info("Global model reset to initial state")
                 
         except Exception as e:
-            logger.error(f"Error resetting learning state: {e}")
+            logger.error(f"Error resetting global model: {e}")
 
-# Initialize global federated learning instance
+# Initialize global federated learner
 federated_learner = FederatedMetaLearning() 

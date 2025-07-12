@@ -18,8 +18,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import DBSCAN
 import networkx as nx
-from textblob import TextBlob
-import yfinance as yf
 from newsapi import NewsApiClient
 import redis
 import pickle
@@ -123,7 +121,7 @@ class AdvancedProactiveOpportunityEngine:
         return {
             'redis_host': 'localhost',
             'redis_port': 6379,
-            'news_api_key': '',
+            'news_api_key': '33d86c63e63c46c58c7dfd81068e79a4',
             'yfinance_enabled': True,
             'sentiment_analysis_enabled': True,
             'anomaly_detection_enabled': True,
@@ -529,19 +527,109 @@ class AdvancedProactiveOpportunityEngine:
             )
     
     async def _get_industry_news(self, industry: str) -> Dict[str, Any]:
-        """Get industry news and sentiment analysis"""
+        """Get industry news and sentiment analysis using real NewsAPI"""
         try:
-            # Simulate news data (replace with real NewsAPI calls)
-            return {
-                'sentiment_score': np.random.uniform(0.4, 0.8),
-                'article_count': np.random.randint(10, 100),
-                'positive_articles': np.random.randint(5, 50),
-                'negative_articles': np.random.randint(1, 20),
-                'trending_topics': ['sustainability', 'digital_transformation', 'supply_chain']
-            }
+            # Check cache first
+            cache_key = f"news:{industry}"
+            cached_data = self._get_cached_result(cache_key)
+            if cached_data:
+                return cached_data
+            
+            # Use real NewsAPI to get industry news
+            try:
+                # Get top headlines for the industry
+                headlines = self.news_api.get_top_headlines(
+                    q=industry,
+                    language='en',
+                    page_size=50
+                )
+                
+                # Get everything for broader industry coverage
+                everything = self.news_api.get_everything(
+                    q=f"{industry} AND (manufacturing OR supply OR materials OR sustainability)",
+                    language='en',
+                    sort_by='relevancy',
+                    page_size=50
+                )
+                
+                # Combine and analyze articles
+                all_articles = []
+                if headlines.get('articles'):
+                    all_articles.extend(headlines['articles'])
+                if everything.get('articles'):
+                    all_articles.extend(everything['articles'])
+                
+                # Analyze sentiment and extract insights
+                positive_count = 0
+                negative_count = 0
+                neutral_count = 0
+                trending_topics = []
+                
+                for article in all_articles[:30]:  # Analyze first 30 articles
+                    title = article.get('title', '').lower()
+                    description = article.get('description', '').lower()
+                    content = f"{title} {description}"
+                    
+                    # Simple sentiment analysis based on keywords
+                    positive_words = ['growth', 'increase', 'profit', 'success', 'innovation', 'sustainable', 'green', 'efficient']
+                    negative_words = ['decline', 'loss', 'crisis', 'shortage', 'disruption', 'pollution', 'waste', 'cost']
+                    
+                    positive_score = sum(1 for word in positive_words if word in content)
+                    negative_score = sum(1 for word in negative_words if word in content)
+                    
+                    if positive_score > negative_score:
+                        positive_count += 1
+                    elif negative_score > positive_score:
+                        negative_count += 1
+                    else:
+                        neutral_count += 1
+                    
+                    # Extract trending topics
+                    topic_keywords = ['sustainability', 'digital', 'ai', 'automation', 'supply chain', 'recycling', 'circular economy']
+                    for topic in topic_keywords:
+                        if topic in content and topic not in trending_topics:
+                            trending_topics.append(topic)
+                
+                # Calculate sentiment score
+                total_articles = len(all_articles)
+                if total_articles > 0:
+                    sentiment_score = (positive_count - negative_count) / total_articles
+                    sentiment_score = (sentiment_score + 1) / 2  # Normalize to 0-1
+                else:
+                    sentiment_score = 0.5
+                
+                news_data = {
+                    'sentiment_score': max(0.1, min(0.9, sentiment_score)),  # Clamp between 0.1 and 0.9
+                    'article_count': total_articles,
+                    'positive_articles': positive_count,
+                    'negative_articles': negative_count,
+                    'neutral_articles': neutral_count,
+                    'trending_topics': trending_topics[:5],  # Top 5 trending topics
+                    'data_source': 'NewsAPI',
+                    'last_updated': datetime.now().isoformat()
+                }
+                
+                # Cache the result
+                self._cache_result(cache_key, news_data)
+                
+                logger.info(f"Retrieved {total_articles} articles for {industry} with sentiment score {sentiment_score:.2f}")
+                return news_data
+                
+            except Exception as api_error:
+                logger.warning(f"NewsAPI call failed for {industry}: {api_error}")
+                # Fallback to simulated data
+                return {
+                    'sentiment_score': np.random.uniform(0.4, 0.8),
+                    'article_count': np.random.randint(10, 100),
+                    'positive_articles': np.random.randint(5, 50),
+                    'negative_articles': np.random.randint(1, 20),
+                    'trending_topics': ['sustainability', 'digital_transformation', 'supply_chain'],
+                    'data_source': 'simulated_fallback'
+                }
+                
         except Exception as e:
             logger.error(f"Error getting industry news: {e}")
-            return {'sentiment_score': 0.5, 'article_count': 0}
+            return {'sentiment_score': 0.5, 'article_count': 0, 'data_source': 'error_fallback'}
     
     async def _get_regulatory_updates(self, industry: str, location: str) -> Dict[str, Any]:
         """Get regulatory updates and changes"""
@@ -703,7 +791,7 @@ class AdvancedProactiveOpportunityEngine:
         try:
             # This would calculate actual cache hit rate
             return 0.75  # Simulated 75% hit rate
-            except Exception as e:
+        except Exception as e:
             logger.error(f"Error calculating cache hit rate: {e}")
             return 0.0
 
