@@ -16,9 +16,10 @@ import {
   Send,
   Bot
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface OnboardingWizardProps {
-  onComplete: () => void;
+  onComplete?: () => void;
 }
 
 interface OnboardingField {
@@ -43,7 +44,7 @@ interface ChatMessage {
   entities?: any[];
 }
 
-export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
+export function OnboardingWizard({ onComplete = () => {} }: OnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [onboardingFlow, setOnboardingFlow] = useState<OnboardingStep[]>([]);
   const [formData, setFormData] = useState<{[key: string]: any}>({});
@@ -82,10 +83,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         employee_count: null
       };
       
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/ai-infer-listings', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
     companyName: '',
@@ -142,10 +147,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   async function loadAIQuestions(companyData: any) {
     try {
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/ai-questions', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ companyData })
       });
@@ -204,10 +213,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     setIsChatLoading(true);
 
     try {
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/conversational-onboarding', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
           message: message,
@@ -318,10 +331,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   async function validateDataRealTime() {
     try {
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/validate-company-data', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ companyData: formData })
       });
@@ -388,10 +405,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   async function handleSubmit() {
       setLoading(true);
       try {
+      // Get the current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/ai-infer-listings', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
           },
         body: JSON.stringify({
           companyName: formData.name || '',

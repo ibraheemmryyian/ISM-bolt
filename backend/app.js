@@ -232,7 +232,7 @@ function runPythonScript(scriptPath, data) {
         // Handle both object and array parameters
         const args = Array.isArray(data) ? [scriptPath, ...data] : [scriptPath, JSON.stringify(data)];
         const pythonProcess = spawn('python', args, {
-            timeout: 10000, // 10 second timeout
+            timeout: 30000, // 30 second timeout for complex AI operations
             stdio: ['pipe', 'pipe', 'pipe'],
             cwd: __dirname // Set working directory to backend folder
         });
@@ -250,19 +250,22 @@ function runPythonScript(scriptPath, data) {
         
         pythonProcess.on('close', (code) => {
             if (code !== 0) {
-                reject(new Error(`Python script failed: ${error}`));
+                console.error(`❌ Python script ${scriptPath} failed with code ${code}: ${error}`);
+                reject(new Error(`Advanced AI service failed: ${error}`));
             } else {
                 try {
                     const parsedResult = JSON.parse(result);
                     resolve(parsedResult);
                 } catch (e) {
-                    reject(new Error(`Failed to parse Python output: ${result}`));
+                    console.error(`❌ Failed to parse Python output from ${scriptPath}: ${result}`);
+                    reject(new Error(`Advanced AI service returned invalid response: ${result}`));
                 }
             }
         });
         
         pythonProcess.on('error', (err) => {
-            reject(new Error(`Failed to start Python process: ${err.message}`));
+            console.error(`❌ Failed to start Python process for ${scriptPath}: ${err.message}`);
+            reject(new Error(`Advanced AI service unavailable: ${err.message}`));
         });
     });
 }
@@ -1431,22 +1434,92 @@ function calculateEnvironmentalScore(carbonResult, wasteResult, logisticsResult)
 }
 
 // Company data endpoint
-app.get('/api/companies/current', (req, res) => {
-  // Mock company data - in a real app, this would come from the database
-  const mockCompanyData = {
-    id: '1',
-    name: 'EcoTech Solutions',
-    industry: 'Manufacturing',
-    location: 'San Francisco, CA',
-    employee_count: 250,
-    annual_revenue: 15000000,
-    sustainability_score: 85,
-    matches_count: 12,
-    savings_achieved: 450000,
-    carbon_reduced: 1250
-  };
-  
-  res.json(mockCompanyData);
+app.get('/api/companies/current', async (req, res) => {
+  try {
+    // Get the authenticated user from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify the token with Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Query database for real company data
+    const { data: company, error } = await supabase
+      .from('companies')
+      .select(`
+        id,
+        name,
+        industry,
+        location,
+        employee_count,
+        annual_revenue,
+        sustainability_score,
+        onboarding_completed,
+        created_at,
+        updated_at
+      `)
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching company data:', error);
+      return res.status(500).json({ error: 'Failed to fetch company data' });
+    }
+
+    if (!company) {
+      return res.status(404).json({ error: 'Company profile not found' });
+    }
+
+    // Get additional metrics from related tables
+    const { data: matches, error: matchesError } = await supabase
+      .from('matches')
+      .select('id')
+      .eq('company_id', company.id);
+
+    const { data: materials, error: materialsError } = await supabase
+      .from('materials')
+      .select('id')
+      .eq('company_id', company.id);
+
+    // Calculate savings and carbon reduction from actual data
+    const { data: savings, error: savingsError } = await supabase
+      .from('exchanges')
+      .select('cost_savings, carbon_reduction')
+      .eq('company_id', company.id)
+      .not('cost_savings', 'is', null);
+
+    const totalSavings = savings?.reduce((sum, exchange) => sum + (exchange.cost_savings || 0), 0) || 0;
+    const totalCarbonReduction = savings?.reduce((sum, exchange) => sum + (exchange.carbon_reduction || 0), 0) || 0;
+
+    const companyData = {
+      id: company.id,
+      name: company.name,
+      industry: company.industry,
+      location: company.location,
+      employee_count: company.employee_count,
+      annual_revenue: company.annual_revenue,
+      sustainability_score: company.sustainability_score || 0,
+      matches_count: matches?.length || 0,
+      materials_count: materials?.length || 0,
+      savings_achieved: totalSavings,
+      carbon_reduced: totalCarbonReduction,
+      onboarding_completed: company.onboarding_completed || false,
+      created_at: company.created_at,
+      updated_at: company.updated_at
+    };
+
+    res.json(companyData);
+  } catch (error) {
+    console.error('Company data endpoint error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // AI insights endpoint
@@ -1455,46 +1528,7 @@ app.get('/api/ai-insights', async (req, res) => {
     const { company_id } = req.query;
     
     if (!company_id) {
-      // Return mock data if no company_id provided
-      const mockInsights = {
-        insights: [
-          {
-            id: '1',
-            type: 'opportunity',
-            title: 'New Waste Stream Partnership',
-            description: 'Local brewery can use your organic waste for biogas production',
-            impact: 'high',
-            estimated_savings: 75000,
-            carbon_reduction: 200,
-            action_required: true,
-            priority: 'high'
-          },
-          {
-            id: '2',
-            type: 'savings',
-            title: 'Energy Efficiency Upgrade',
-            description: 'Switch to LED lighting could save $25,000 annually',
-            impact: 'medium',
-            estimated_savings: 25000,
-            carbon_reduction: 50,
-            action_required: true,
-            priority: 'medium'
-          },
-          {
-            id: '3',
-            type: 'match',
-            title: 'Material Exchange Opportunity',
-            description: 'Construction company needs your excess steel scrap',
-            impact: 'high',
-            estimated_savings: 120000,
-            carbon_reduction: 300,
-            action_required: true,
-            priority: 'urgent'
-          }
-        ]
-      };
-      
-      return res.json(mockInsights);
+      return res.status(400).json({ error: 'Company ID is required' });
     }
 
     // Query database for real insights
@@ -1533,71 +1567,123 @@ app.get('/api/ai-insights', async (req, res) => {
 });
 
 // Portfolio data endpoint
-app.get('/api/portfolio', (req, res) => {
-  const mockPortfolio = {
-    portfolio: {
-      company_overview: {
-        size_category: 'Medium Enterprise',
-        industry_position: 'Innovation Leader',
-        sustainability_rating: 'A+',
-        growth_potential: 'High'
-      },
-      achievements: {
-        total_savings: 450000,
-        carbon_reduced: 1250,
-        partnerships_formed: 8,
-        waste_diverted: 850
-      },
-      recommendations: [
-        {
-          category: 'Waste Management',
-          suggestions: [
-            'Implement zero-waste program',
-            'Partner with local recycling facilities',
-            'Optimize packaging materials'
-          ],
-          priority: 'high'
-        },
-        {
-          category: 'Energy Efficiency',
-          suggestions: [
-            'Install solar panels',
-            'Upgrade HVAC systems',
-            'Implement smart building controls'
-          ],
-          priority: 'medium'
-        },
-        {
-          category: 'Supply Chain',
-          suggestions: [
-            'Source local suppliers',
-            'Use recycled materials',
-            'Implement circular procurement'
-          ],
-          priority: 'high'
-        }
-      ],
-      recent_activity: [
-        {
-          date: '2024-01-15',
-          action: 'Completed waste audit',
-          impact: 'Identified 30% reduction opportunity'
-        },
-        {
-          date: '2024-01-10',
-          action: 'Formed partnership with GreenTech',
-          impact: 'Annual savings of $75,000'
-        },
-        {
-          date: '2024-01-05',
-          action: 'Implemented energy monitoring',
-          impact: '15% reduction in energy costs'
-        }
-      ]
+app.get('/api/portfolio', async (req, res) => {
+  try {
+    // Get the authenticated user from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
-  };
-  
-  res.json(mockPortfolio);
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify the token with Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Get company data
+    const { data: company, error: companyError } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (companyError || !company) {
+      return res.status(404).json({ error: 'Company profile not found' });
+    }
+
+    // Get real portfolio data from database
+    const { data: exchanges, error: exchangesError } = await supabase
+      .from('exchanges')
+      .select('*')
+      .eq('company_id', company.id);
+
+    const { data: matches, error: matchesError } = await supabase
+      .from('matches')
+      .select('*')
+      .eq('company_id', company.id);
+
+    const { data: materials, error: materialsError } = await supabase
+      .from('materials')
+      .select('*')
+      .eq('company_id', company.id);
+
+    // Calculate real metrics
+    const totalSavings = exchanges?.reduce((sum, exchange) => sum + (exchange.cost_savings || 0), 0) || 0;
+    const totalCarbonReduction = exchanges?.reduce((sum, exchange) => sum + (exchange.carbon_reduction || 0), 0) || 0;
+    const partnershipsFormed = matches?.length || 0;
+    const wasteDiverted = materials?.filter(m => m.type === 'waste').length || 0;
+
+    // Determine company size category based on employee count
+    let sizeCategory = 'Small Enterprise';
+    if (company.employee_count > 1000) sizeCategory = 'Large Enterprise';
+    else if (company.employee_count > 250) sizeCategory = 'Medium Enterprise';
+
+    // Calculate sustainability rating based on actual data
+    let sustainabilityRating = 'C';
+    if (company.sustainability_score >= 90) sustainabilityRating = 'A+';
+    else if (company.sustainability_score >= 80) sustainabilityRating = 'A';
+    else if (company.sustainability_score >= 70) sustainabilityRating = 'B';
+    else if (company.sustainability_score >= 60) sustainabilityRating = 'C';
+
+    const portfolio = {
+      portfolio: {
+        company_overview: {
+          size_category: sizeCategory,
+          industry_position: company.industry || 'Not specified',
+          sustainability_rating: sustainabilityRating,
+          growth_potential: totalSavings > 100000 ? 'High' : totalSavings > 50000 ? 'Medium' : 'Low'
+        },
+        achievements: {
+          total_savings: totalSavings,
+          carbon_reduced: totalCarbonReduction,
+          partnerships_formed: partnershipsFormed,
+          waste_diverted: wasteDiverted
+        },
+        recommendations: [
+          {
+            category: 'Waste Management',
+            suggestions: [
+              'Implement waste segregation program',
+              'Partner with local recycling facilities',
+              'Optimize packaging materials'
+            ],
+            priority: 'high'
+          },
+          {
+            category: 'Energy Efficiency',
+            suggestions: [
+              'Install energy monitoring systems',
+              'Upgrade to energy-efficient equipment',
+              'Implement smart building controls'
+            ],
+            priority: 'medium'
+          },
+          {
+            category: 'Supply Chain',
+            suggestions: [
+              'Source local suppliers',
+              'Use recycled materials',
+              'Implement circular procurement'
+            ],
+            priority: 'high'
+          }
+        ],
+        recent_activity: exchanges?.slice(0, 5).map(exchange => ({
+          date: exchange.created_at?.split('T')[0] || 'Unknown',
+          action: `Completed ${exchange.exchange_type || 'exchange'}`,
+          impact: `Savings of $${exchange.cost_savings || 0}`
+        })) || []
+      }
+    };
+    
+    res.json(portfolio);
+  } catch (error) {
+    console.error('Portfolio endpoint error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // AI Onboarding API endpoints
@@ -1911,8 +1997,16 @@ app.post('/api/ai-onboarding/complete', async (req, res) => {
   try {
     const { companyProfile, onboardingData } = req.body;
     
-    // Get the authenticated user's email from the session/token
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get the authenticated user from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify the token with Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
@@ -4588,6 +4682,146 @@ app.post('/api/logistics-preview', async (req, res) => {
     };
     
     res.json(fallbackPreview);
+  }
+});
+
+// Simple AI Onboarding Fallback Endpoint (No External Dependencies)
+app.post('/api/ai-onboarding/fallback', async (req, res) => {
+  try {
+    const { companyProfile } = req.body;
+    
+    // Get the authenticated user from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+    // Verify the token with Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Create a simple company profile
+    const enrichedCompanyProfile = {
+      ...companyProfile,
+      email: user.email,
+      onboarding_completed: true,
+      updated_at: new Date().toISOString()
+    };
+
+    // Save to database
+    const { data: savedCompany, error: saveError } = await supabase
+      .from('companies')
+      .upsert([{
+        id: user.id,
+        ...enrichedCompanyProfile
+      }], {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
+
+    if (saveError) {
+      console.error('Error saving company profile:', saveError);
+      return res.status(500).json({ error: 'Failed to save company profile' });
+    }
+
+    // Generate simple analysis without external APIs
+    const simpleAnalysis = {
+      waste_streams: [
+        {
+          name: "General production waste",
+          quantity: "Based on production volume",
+          value: "Variable",
+          potential_uses: ["Recycling", "Energy recovery", "Material recovery"]
+        }
+      ],
+      resource_needs: [
+        {
+          name: "Raw materials",
+          current_cost: "Market dependent",
+          potential_sources: ["Local suppliers", "Recycled materials", "Waste exchanges"]
+        }
+      ],
+      opportunities: [
+        {
+          title: "Waste Exchange Program",
+          description: "Connect with local companies to exchange waste materials",
+          estimated_savings: "$10K-50K annually",
+          carbon_reduction: "5-20 tons CO2",
+          implementation_time: "3-6 months",
+          difficulty: "medium"
+        }
+      ],
+      potential_partners: [
+        {
+          company_type: "Local manufacturing companies",
+          location: companyProfile.location || "Your region",
+          waste_they_can_use: ["Production waste", "Packaging materials"],
+          resources_they_can_provide: ["Raw materials", "Technical expertise"],
+          estimated_partnership_value: "$25K annually"
+        }
+      ],
+      material_listings: [
+        {
+          material: "General waste",
+          current_status: "waste",
+          quantity: "Variable",
+          value: "Low to medium",
+          potential_exchanges: ["Recycling", "Reuse"]
+        }
+      ],
+      estimated_savings: "$10K-50K annually",
+      environmental_impact: "5-20 tons CO2 reduction",
+      roadmap: [
+        {
+          phase: "Setup",
+          timeline: "1-2 months",
+          actions: ["Contact local businesses", "Assess waste streams", "Identify opportunities"],
+          expected_outcomes: ["Initial partnerships", "Waste audit", "Opportunity assessment"]
+        },
+        {
+          phase: "Implementation",
+          timeline: "3-6 months",
+          actions: ["Establish partnerships", "Set up waste exchange", "Monitor results"],
+          expected_outcomes: ["Active partnerships", "Waste reduction", "Cost savings"]
+        }
+      ]
+    };
+
+    // Save basic AI insights
+    const { error: insightsError } = await supabase
+      .from('ai_insights')
+      .insert({
+        company_id: user.id,
+        symbiosis_score: '75%',
+        estimated_savings: '$25K-50K annually',
+        carbon_reduction: '10-20 tons CO2',
+        top_opportunities: ['Waste exchange', 'Material recovery', 'Energy efficiency'],
+        recommended_partners: ['Local manufacturers', 'Recycling facilities'],
+        implementation_roadmap: ['Initial assessment', 'Partner identification', 'Pilot projects']
+      });
+
+    if (insightsError) {
+      console.error('Error saving AI insights:', insightsError);
+    }
+
+    console.log('Fallback onboarding completed successfully for company:', savedCompany.name);
+
+    res.json({ 
+      success: true, 
+      analysis: simpleAnalysis,
+      companyProfile: enrichedCompanyProfile,
+      message: 'Onboarding completed successfully using fallback mode.'
+    });
+    
+  } catch (error) {
+    console.error('Error in fallback onboarding:', error);
+    res.status(500).json({ error: 'Failed to complete fallback onboarding' });
   }
 });
 

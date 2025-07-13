@@ -39,17 +39,17 @@ interface HeightProjectTrackerProps {
   projectId?: string;
   exchangeId?: string;
   companyId?: string;
-  projectType: 'material_exchange' | 'sustainability' | 'implementation';
+  projectType?: 'material_exchange' | 'sustainability' | 'implementation';
   onProjectCreated?: (project: HeightProject) => void;
 }
 
-const HeightProjectTracker: React.FC<HeightProjectTrackerProps> = ({
-  projectId,
-  exchangeId,
-  companyId,
-  projectType,
-  onProjectCreated
-}) => {
+export default function HeightProjectTracker({ 
+  projectId, 
+  exchangeId, 
+  companyId, 
+  projectType = 'material_exchange', 
+  onProjectCreated 
+}: HeightProjectTrackerProps) {
   const [project, setProject] = useState<HeightProject | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -282,7 +282,7 @@ const HeightProjectTracker: React.FC<HeightProjectTrackerProps> = ({
         </CardHeader>
         <CardContent>
           <p className="text-gray-600 mb-4">
-            No project tracking found. Create a new Height project to track this {projectType.replace('_', ' ')}.
+            No project tracking found. Create a new Height project to track this {projectType?.replace('_', ' ')} or provide a projectType.
           </p>
           <Button 
             onClick={() => {
@@ -356,7 +356,7 @@ const HeightProjectTracker: React.FC<HeightProjectTrackerProps> = ({
                 <div className="flex items-center space-x-2 mb-3">
                   <Tag className="w-4 h-4 text-gray-400" />
                   {task.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
+                    <Badge key={index} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
@@ -423,6 +423,4 @@ const HeightProjectTracker: React.FC<HeightProjectTrackerProps> = ({
       </CardContent>
     </Card>
   );
-};
-
-export default HeightProjectTracker; 
+}; 

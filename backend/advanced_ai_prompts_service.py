@@ -8,9 +8,11 @@ import sys
 import traceback
 
 # DeepSeek API Configuration
-DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
+if not DEEPSEEK_API_KEY:
+    raise ValueError("❌ DEEPSEEK_API_KEY environment variable is required for real AI analysis")
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
-DEEPSEEK_MODEL = 'deepseek-coder'  # Can be changed to deepseek-r1 for advanced reasoning
+DEEPSEEK_MODEL = 'deepseek-reasoner'  # Use DeepSeek Reasoner
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -166,7 +168,7 @@ Generate a comprehensive strategic analysis following the exact JSON structure p
         except Exception as e:
             logger.error(f"Error in strategic_material_analysis: {str(e)}")
             logger.error(traceback.format_exc())
-            return self._get_fallback_strategic_analysis(company_profile)
+            raise Exception("❌ Real AI strategic material analysis required. API failure detected.")
 
     def precision_ai_matchmaking(self, material_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -256,7 +258,7 @@ Find the top 3 most viable symbiotic partner companies with detailed business ca
         except Exception as e:
             logger.error(f"Error in precision_ai_matchmaking: {str(e)}")
             logger.error(traceback.format_exc())
-            return self._get_fallback_matchmaking(material_data)
+            raise Exception("❌ Real AI precision matchmaking required. API failure detected.")
 
     def conversational_intent_analysis(self, user_input: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -346,7 +348,7 @@ Analyze the user's intent, extract entities, and determine the next action."""
         except Exception as e:
             logger.error(f"Error in conversational_intent_analysis: {str(e)}")
             logger.error(traceback.format_exc())
-            return self._get_fallback_intent_analysis(user_input)
+            raise Exception("❌ Real AI conversational intent analysis required. API failure detected.")
 
     def strategic_company_transformation(self, company_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -455,7 +457,7 @@ Generate a comprehensive strategic analysis following the exact JSON structure p
         except Exception as e:
             logger.error(f"Error in strategic_company_transformation: {str(e)}")
             logger.error(traceback.format_exc())
-            return self._get_fallback_transformation(company_data)
+            raise Exception("❌ Real AI strategic company transformation required. API failure detected.")
 
     def _call_deepseek_api(self, prompt_data: Dict[str, Any]) -> Dict[str, Any]:
         """Call the DeepSeek API with the provided prompt structure."""
@@ -477,14 +479,18 @@ Generate a comprehensive strategic analysis following the exact JSON structure p
             if response.status_code == 200:
                 result = response.json()
                 logger.info("DeepSeek API call successful")
-                return result
+                message = result['choices'][0]['message']
+                return {
+                    'reasoning_content': message.get('reasoning_content'),
+                    'content': message.get('content')
+                }
             else:
-                logger.error(f"DeepSeek API error: {response.status_code} - {response.text}")
-                raise Exception(f"DeepSeek API returned status {response.status_code}")
+                logger.error(f"DeepSeek Reasoner API error: {response.status_code} - {response.text}")
+                raise Exception(f"DeepSeek Reasoner API returned status {response.status_code}")
                 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Request error calling DeepSeek API: {str(e)}")
-            raise Exception(f"Failed to call DeepSeek API: {str(e)}")
+            logger.error(f"Request error calling DeepSeek Reasoner: {str(e)}")
+            raise Exception(f"Failed to call DeepSeek Reasoner: {str(e)}")
 
     def _call_deepseek_api_directly(self, prompt: str) -> Optional[Dict[str, Any]]:
         """
@@ -612,86 +618,6 @@ Generate a comprehensive strategic analysis following the exact JSON structure p
         except Exception as e:
             logger.error(f"Error parsing transformation response: {str(e)}")
             raise
-
-    # Fallback methods for error handling
-    def _get_fallback_strategic_analysis(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback response for strategic material analysis."""
-        return {
-            "executive_summary": {
-                "key_findings": "Analysis temporarily unavailable. Please try again.",
-                "primary_opportunities": "Multiple symbiosis opportunities identified.",
-                "estimated_total_impact": "Significant cost savings and environmental benefits possible."
-            },
-            "predicted_outputs": [],
-            "predicted_inputs": [],
-            "strategic_recommendations": {
-                "company_partnerships": [],
-                "green_initiatives": []
-            }
-        }
-
-    def _get_fallback_matchmaking(self, material_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback response for precision matchmaking."""
-        return {
-            "symbiotic_matches": [
-                {
-                    "rank": 1,
-                    "company_type": "Local Manufacturers",
-                    "match_strength": 75,
-                    "match_rationale": {
-                        "specific_application": "General industrial applications",
-                        "synergy_value": "Mutual benefit through waste exchange",
-                        "potential_challenges": "Requires quality assessment and logistics planning",
-                        "integration_steps": "Contact local business associations for introductions"
-                    }
-                }
-            ]
-        }
-
-    def _get_fallback_intent_analysis(self, user_input: str) -> Dict[str, Any]:
-        """Fallback response for conversational intent analysis."""
-        return {
-            "analysis": {
-                "intent": {
-                    "type": "help_request",
-                    "confidence": 0.5,
-                    "reasoning": "Unable to determine specific intent"
-                },
-                "entities": [],
-                "user_persona": {
-                    "inferred_role": "Unknown",
-                    "confidence": 0.0,
-                    "reasoning": "Insufficient information to determine role"
-                }
-            },
-            "next_action": {
-                "clarification_question": "Could you please provide more details about what you're looking for?",
-                "suggested_system_action": None
-            }
-        }
-
-    def _get_fallback_transformation(self, company_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback response for strategic transformation analysis."""
-        return {
-            "executive_summary": {
-                "current_state_assessment": "Analysis temporarily unavailable",
-                "core_recommendation": "Begin with waste stream assessment",
-                "summary_of_potential_gains": "Significant opportunities for cost savings and sustainability improvements"
-            },
-            "strategic_roadmap": {
-                "phase_1_quick_wins": "Start with waste audit and identify immediate opportunities",
-                "phase_2_strategic_integration": "Develop partnerships and implement process improvements",
-                "phase_3_market_leadership": "Establish circular economy leadership position"
-            },
-            "detailed_analysis": {
-                "waste_stream_valorization": [],
-                "resource_efficiency_opportunities": [],
-                "symbiotic_partnership_targets": [],
-                "risk_factors": [],
-                "innovation_opportunities": [],
-                "key_regulatory_considerations": []
-            }
-        }
 
 # Convenience functions for easy integration
 def analyze_company_strategically(company_profile: Dict[str, Any]) -> Dict[str, Any]:

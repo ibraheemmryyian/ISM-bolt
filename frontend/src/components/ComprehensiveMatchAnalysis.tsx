@@ -23,7 +23,8 @@ import {
   Zap,
   Shield,
   Eye,
-  EyeOff
+  EyeOff,
+  X
 } from 'lucide-react';
 
 interface ComprehensiveAnalysis {
@@ -51,18 +52,18 @@ interface ComprehensiveAnalysis {
 }
 
 interface ComprehensiveMatchAnalysisProps {
-  buyerData: any;
-  sellerData: any;
-  matchData: any;
+  buyerData?: any;
+  sellerData?: any;
+  matchData?: any;
   onClose?: () => void;
 }
 
-const ComprehensiveMatchAnalysis: React.FC<ComprehensiveMatchAnalysisProps> = ({
-  buyerData,
-  sellerData,
-  matchData,
-  onClose
-}) => {
+export default function ComprehensiveMatchAnalysis({ 
+  buyerData = {}, 
+  sellerData = {}, 
+  matchData = {}, 
+  onClose 
+}: ComprehensiveMatchAnalysisProps) {
   const [analysis, setAnalysis] = useState<ComprehensiveAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -742,6 +743,4 @@ const ComprehensiveMatchAnalysis: React.FC<ComprehensiveMatchAnalysisProps> = ({
       </div>
     </div>
   );
-};
-
-export default ComprehensiveMatchAnalysis; 
+} 

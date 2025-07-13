@@ -8,9 +8,11 @@ import sys
 import traceback
 
 # Use the provided DeepSeek API key
-DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
+if not DEEPSEEK_API_KEY:
+    raise ValueError("❌ DEEPSEEK_API_KEY environment variable is required for real AI analysis")
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
-DEEPSEEK_MODEL = 'deepseek-coder'
+DEEPSEEK_MODEL = 'deepseek-reasoner'
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -112,14 +114,18 @@ class AIMatchmakingService:
             if response.status_code == 200:
                 result = response.json()
                 logger.info("DeepSeek API call successful")
-                return result
+                message = result['choices'][0]['message']
+                return {
+                    'reasoning_content': message.get('reasoning_content'),
+                    'content': message.get('content')
+                }
             else:
-                logger.error(f"DeepSeek API error: {response.status_code} - {response.text}")
-                raise Exception(f"DeepSeek API returned status {response.status_code}")
+                logger.error(f"DeepSeek Reasoner API error: {response.status_code} - {response.text}")
+                raise Exception(f"DeepSeek Reasoner API returned status {response.status_code}")
                 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Request error calling DeepSeek API: {str(e)}")
-            raise Exception(f"Failed to call DeepSeek API: {str(e)}")
+            logger.error(f"Request error calling DeepSeek Reasoner: {str(e)}")
+            raise Exception(f"Failed to call DeepSeek Reasoner: {str(e)}")
     
     def _parse_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
         """Parse and validate the DeepSeek API response."""

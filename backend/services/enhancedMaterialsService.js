@@ -6,7 +6,7 @@ const FreightosLogisticsService = require('./freightosLogisticsService');
 class EnhancedMaterialsService {
   constructor() {
     this.apiKey = process.env.NEXT_GEN_MATERIALS_API_KEY;
-    this.baseUrl = 'https://api.next-gen-materials.com/v1';
+    this.baseUrl = 'https://api.nextgenmaterials.com/v1';
     this.monitoring = ProductionMonitoring.getInstance();
     this.cache = new Map();
     this.cacheTimeout = 3600000; // 1 hour
@@ -21,6 +21,12 @@ class EnhancedMaterialsService {
     };
 
     this.freightosService = new FreightosLogisticsService();
+    
+    if (!this.apiKey) {
+      throw new Error('❌ NextGen Materials API key not found. Real materials analysis is required.');
+    } else {
+      console.log('✅ NextGen Materials API credentials found. Real materials analysis enabled.');
+    }
   }
 
   /**
@@ -110,9 +116,16 @@ class EnhancedMaterialsService {
       };
 
     } catch (error) {
-      console.error('Logistics analysis error:', error);
-      return this.getFallbackLogisticsAnalysis(context);
+      console.error('❌ Logistics analysis error:', error);
+      throw new Error(`Real logistics analysis failed: ${error.message}`);
     }
+  }
+
+  /**
+   * Real logistics analysis required - no fallbacks allowed
+   */
+  getFallbackLogisticsAnalysis(context) {
+    throw new Error('❌ Real logistics analysis required. Freightos API must be available.');
   }
 
   /**
@@ -412,51 +425,6 @@ class EnhancedMaterialsService {
   }
 
   /**
-   * Get fallback logistics analysis when Freightos is unavailable
-   */
-  getFallbackLogisticsAnalysis(context) {
-    const { quantity, unit, industry } = context;
-    const weightInKg = this.convertToKg(quantity, unit);
-    
-    // Estimate costs based on industry averages
-    const costPerKg = {
-      'chemical': 0.8,
-      'food_beverage': 1.2,
-      'manufacturing': 0.6,
-      'electronics': 2.5,
-      'automotive': 0.7,
-      'pharmaceutical': 3.0,
-      'textiles': 0.5,
-      'construction': 0.4,
-      'mining': 0.3,
-      'energy': 0.9
-    };
-
-    const estimatedCost = weightInKg * (costPerKg[industry] || 0.8);
-    const estimatedEmissions = weightInKg * 0.1; // Rough estimate
-
-    return {
-      estimate: {
-        total_cost: { total_cost: estimatedCost },
-        carbon_footprint: estimatedEmissions,
-        sustainability_score: 60
-      },
-      metrics: {
-        cost_per_kg: costPerKg[industry] || 0.8,
-        carbon_intensity: 0.1,
-        sustainability_score: 60
-      },
-      optimization_opportunities: [{
-        type: 'api_unavailable',
-        priority: 'low',
-        title: 'Using Estimated Rates',
-        description: 'Freightos API unavailable. Enable for real-time rates.',
-        implementation: 'Contact support to enable Freightos integration'
-      }]
-    };
-  }
-
-  /**
    * Get comprehensive material analysis with chemical composition
    */
   async getComprehensiveMaterialAnalysis(materialName, companyContext = {}) {
@@ -556,34 +524,34 @@ class EnhancedMaterialsService {
       const response = await this.makeAPICall('GET', `/materials/${materialId}/chemical-composition`);
       
       const composition = {
-        elements: response.data.elements || [],
-        compounds: response.data.compounds || [],
-        molecular_formula: response.data.molecular_formula,
-        molecular_weight: response.data.molecular_weight,
-        purity_percentage: response.data.purity_percentage,
-        impurities: response.data.impurities || [],
+        elements: response.elements || [],
+        compounds: response.compounds || [],
+        molecular_formula: response.molecular_formula,
+        molecular_weight: response.molecular_weight,
+        purity_percentage: response.purity_percentage,
+        impurities: response.impurities || [],
         physical_properties: {
-          density: response.data.density_kg_per_m3,
-          melting_point: response.data.melting_point_celsius,
-          boiling_point: response.data.boiling_point_celsius,
-          solubility: response.data.solubility,
-          viscosity: response.data.viscosity,
-          thermal_conductivity: response.data.thermal_conductivity,
-          electrical_conductivity: response.data.electrical_conductivity
+          density: response.density_kg_per_m3,
+          melting_point: response.melting_point_celsius,
+          boiling_point: response.boiling_point_celsius,
+          solubility: response.solubility,
+          viscosity: response.viscosity,
+          thermal_conductivity: response.thermal_conductivity,
+          electrical_conductivity: response.electrical_conductivity
         },
         mechanical_properties: {
-          tensile_strength: response.data.tensile_strength_mpa,
-          compressive_strength: response.data.compressive_strength_mpa,
-          flexural_strength: response.data.flexural_strength_mpa,
-          hardness: response.data.hardness,
-          elasticity_modulus: response.data.elasticity_modulus_gpa
+          tensile_strength: response.tensile_strength_mpa,
+          compressive_strength: response.compressive_strength_mpa,
+          flexural_strength: response.flexural_strength_mpa,
+          hardness: response.hardness,
+          elasticity_modulus: response.elasticity_modulus_gpa
         },
         chemical_properties: {
-          ph_value: response.data.ph_value,
-          oxidation_state: response.data.oxidation_state,
-          reactivity: response.data.reactivity,
-          stability: response.data.stability,
-          toxicity_level: response.data.toxicity_level
+          ph_value: response.ph_value,
+          oxidation_state: response.oxidation_state,
+          reactivity: response.reactivity,
+          stability: response.stability,
+          toxicity_level: response.toxicity_level
         }
       };
 
@@ -605,15 +573,15 @@ class EnhancedMaterialsService {
       const response = await this.makeAPICall('GET', `/materials/${materialId}/sustainability`);
       
       const metrics = {
-        carbon_footprint: response.data.carbon_footprint_kg_co2e_per_kg,
-        water_footprint: response.data.water_footprint_liters_per_kg,
-        energy_intensity: response.data.energy_intensity_mj_per_kg,
-        renewable_content: response.data.renewable_content_percentage,
-        recyclability_score: response.data.recyclability_score_0_to_100,
-        biodegradability_score: response.data.biodegradability_score_0_to_100,
-        circular_economy_potential: response.data.circular_economy_potential_0_to_100,
-        lifecycle_assessment: response.data.lifecycle_assessment || {},
-        environmental_impact_categories: response.data.environmental_impact_categories || []
+        carbon_footprint: response.carbon_footprint_kg_co2e_per_kg,
+        water_footprint: response.water_footprint_liters_per_kg,
+        energy_intensity: response.energy_intensity_mj_per_kg,
+        renewable_content: response.renewable_content_percentage,
+        recyclability_score: response.recyclability_score_0_to_100,
+        biodegradability_score: response.biodegradability_score_0_to_100,
+        circular_economy_potential: response.circular_economy_potential_0_to_100,
+        lifecycle_assessment: response.lifecycle_assessment || {},
+        environmental_impact_categories: response.environmental_impact_categories || []
       };
 
       tracking.success();
@@ -634,12 +602,12 @@ class EnhancedMaterialsService {
       const response = await this.makeAPICall('GET', `/materials/${materialId}/circular-economy`);
       
       const opportunities = {
-        reuse_potential: response.data.reuse_potential || [],
-        recycling_pathways: response.data.recycling_pathways || [],
-        upcycling_opportunities: response.data.upcycling_opportunities || [],
-        waste_reduction_strategies: response.data.waste_reduction_strategies || [],
-        closed_loop_systems: response.data.closed_loop_systems || [],
-        industrial_symbiosis_opportunities: response.data.industrial_symbiosis_opportunities || []
+        reuse_potential: response.reuse_potential || [],
+        recycling_pathways: response.recycling_pathways || [],
+        upcycling_opportunities: response.upcycling_opportunities || [],
+        waste_reduction_strategies: response.waste_reduction_strategies || [],
+        closed_loop_systems: response.closed_loop_systems || [],
+        industrial_symbiosis_opportunities: response.industrial_symbiosis_opportunities || []
       };
 
       tracking.success();
@@ -664,15 +632,15 @@ class EnhancedMaterialsService {
       });
       
       const compliance = {
-        global_regulations: response.data.global_regulations || [],
-        regional_regulations: response.data.regional_regulations || [],
-        industry_specific_regulations: response.data.industry_specific_regulations || [],
-        safety_requirements: response.data.safety_requirements || [],
-        handling_requirements: response.data.handling_requirements || [],
-        disposal_requirements: response.data.disposal_requirements || [],
-        certification_requirements: response.data.certification_requirements || [],
-        compliance_score: response.data.compliance_score_0_to_100,
-        risk_assessment: response.data.risk_assessment || {}
+        global_regulations: response.global_regulations || [],
+        regional_regulations: response.regional_regulations || [],
+        industry_specific_regulations: response.industry_specific_regulations || [],
+        safety_requirements: response.safety_requirements || [],
+        handling_requirements: response.handling_requirements || [],
+        disposal_requirements: response.disposal_requirements || [],
+        certification_requirements: response.certification_requirements || [],
+        compliance_score: response.compliance_score_0_to_100,
+        risk_assessment: response.risk_assessment || {}
       };
 
       tracking.success();
@@ -692,7 +660,7 @@ class EnhancedMaterialsService {
     try {
       const response = await this.makeAPICall('GET', `/materials/${materialId}/alternatives`);
       
-      const alternatives = response.data.alternatives.map(alt => ({
+      const alternatives = response.alternatives.map(alt => ({
         material_id: alt.material_id,
         name: alt.name,
         similarity_score: alt.similarity_score,
@@ -723,15 +691,15 @@ class EnhancedMaterialsService {
       const response = await this.makeAPICall('GET', `/materials/${materialId}/processing`);
       
       const processing = {
-        equipment_requirements: response.data.equipment_requirements || [],
-        temperature_requirements: response.data.temperature_requirements,
-        pressure_requirements: response.data.pressure_requirements,
-        time_requirements: response.data.time_requirements,
-        safety_requirements: response.data.safety_requirements || [],
-        quality_control_requirements: response.data.quality_control_requirements || [],
-        waste_management_requirements: response.data.waste_management_requirements || [],
-        energy_requirements: response.data.energy_requirements,
-        water_requirements: response.data.water_requirements
+        equipment_requirements: response.equipment_requirements || [],
+        temperature_requirements: response.temperature_requirements,
+        pressure_requirements: response.pressure_requirements,
+        time_requirements: response.time_requirements,
+        safety_requirements: response.safety_requirements || [],
+        quality_control_requirements: response.quality_control_requirements || [],
+        waste_management_requirements: response.waste_management_requirements || [],
+        energy_requirements: response.energy_requirements,
+        water_requirements: response.water_requirements
       };
 
       tracking.success();
@@ -840,32 +808,42 @@ class EnhancedMaterialsService {
   }
 
   /**
-   * Make API call with rate limiting
+   * Make API call to NextGen Materials API
    */
   async makeAPICall(method, endpoint, data = null) {
-    // Check rate limits
-    this.checkRateLimits();
-    
-    const config = {
-      method,
-      url: `${this.baseUrl}${endpoint}`,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      timeout: 30000
-    };
-
-    if (data) {
-      config.data = data;
+    if (!this.apiKey) {
+      throw new Error('❌ NextGen Materials API key required for real materials analysis.');
     }
 
-    const response = await axios(config);
-    
-    // Update rate limit counters
-    this.updateRateLimitCounters();
-    
-    return response;
+    if (!this.checkRateLimits()) {
+      throw new Error('❌ API rate limit exceeded. Please wait before making another request.');
+    }
+
+    try {
+      const config = {
+        method,
+        url: `${this.baseUrl}${endpoint}`,
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'ISM-AI-Platform/1.0'
+        },
+        timeout: 30000 // 30 second timeout
+      };
+
+      if (data) {
+        config.data = data;
+      }
+
+      const response = await axios(config);
+      this.updateRateLimitCounters();
+      
+      return response.data;
+
+    } catch (error) {
+      console.error(`❌ NextGen Materials API error (${method} ${endpoint}):`, error.message);
+      throw new Error(`Real materials analysis failed: ${error.message}`);
+    }
   }
 
   /**
@@ -885,11 +863,12 @@ class EnhancedMaterialsService {
     
     // Check limits
     if (this.rateLimits.currentMinute >= this.rateLimits.requestsPerMinute) {
-      throw new Error('Rate limit exceeded: too many requests per minute');
+      return false; // Indicate rate limit exceeded
     }
     if (this.rateLimits.currentHour >= this.rateLimits.requestsPerHour) {
-      throw new Error('Rate limit exceeded: too many requests per hour');
+      return false; // Indicate rate limit exceeded
     }
+    return true; // Indicate rate limit not exceeded
   }
 
   /**
@@ -962,7 +941,7 @@ class EnhancedMaterialsService {
       });
       
       tracking.success();
-      return response.data;
+      return response;
     } catch (error) {
       tracking.error('api_error');
       throw error;

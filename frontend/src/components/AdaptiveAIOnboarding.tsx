@@ -50,11 +50,11 @@ interface UserResponse {
 }
 
 interface AdaptiveAIOnboardingProps {
-  onClose: () => void;
-  onComplete: (analysis: any) => void;
+  onClose?: () => void;
+  onComplete?: (analysis: any) => void;
 }
 
-export function AdaptiveAIOnboarding({ onClose, onComplete }: AdaptiveAIOnboardingProps) {
+export function AdaptiveAIOnboarding({ onClose = () => {}, onComplete = () => {} }: AdaptiveAIOnboardingProps) {
   const [session, setSession] = useState<OnboardingSession | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [responses, setResponses] = useState<UserResponse[]>([]);
@@ -293,7 +293,7 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AdaptiveAIOnboardi
       const result = await response.json();
       
       // Call onComplete with the analysis
-      onComplete(result.analysis);
+      onComplete?.(result.analysis);
       
     } catch (err: any) {
       setError(err.message || 'Failed to complete onboarding');
@@ -437,7 +437,7 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AdaptiveAIOnboardi
   const handleClose = () => {
     // Navigate to dashboard instead of home
     navigate('/dashboard');
-    onClose();
+    onClose?.();
   };
 
   if (isLoading && !session) {

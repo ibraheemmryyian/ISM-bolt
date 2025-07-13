@@ -4,6 +4,7 @@ const { createLogger, format, transports } = winston;
 const { combine, timestamp, label, printf, colorize } = format;
 const os = require('os');
 const axios = require('axios');
+const { supabase } = require('../supabase');
 
 // Singleton instance
 let instance = null;
@@ -231,10 +232,31 @@ class ProductionMonitoring {
    */
   async collectBusinessMetrics() {
     try {
-      // This would typically query your database for real metrics
-      // For now, we'll simulate some metrics
-      this.matchingSuccessRate.set({ algorithm: 'gnn' }, Math.random() * 0.3 + 0.7); // 70-100%
-      this.symbiosisOpportunities.set({ region: 'global', industry: 'manufacturing' }, Math.floor(Math.random() * 50) + 10);
+      // Query database for real business metrics
+      const { data: matchingData, error: matchingError } = await supabase
+        .from('matching_success_rates')
+        .select('success_rate')
+        .eq('algorithm', 'gnn')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!matchingError && matchingData) {
+        this.matchingSuccessRate.set({ algorithm: 'gnn' }, matchingData.success_rate || 0.7);
+      }
+
+      const { data: opportunitiesData, error: opportunitiesError } = await supabase
+        .from('symbiosis_opportunities')
+        .select('opportunity_count')
+        .eq('region', 'global')
+        .eq('industry', 'manufacturing')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!opportunitiesError && opportunitiesData) {
+        this.symbiosisOpportunities.set({ region: 'global', industry: 'manufacturing' }, opportunitiesData.opportunity_count || 0);
+      }
     } catch (error) {
       this.logger.error('Error collecting business metrics', { error: error.message });
     }
