@@ -4592,3 +4592,138 @@ app.post('/api/logistics-preview', async (req, res) => {
 });
 
 module.exports = app;
+
+// AI Onboarding endpoints
+app.post('/api/ai-onboarding/assess-knowledge', async (req, res) => {
+  try {
+    const { companyProfile } = req.body;
+
+    if (!companyProfile) {
+      return res.status(400).json({ error: 'Company profile is required' });
+    }
+
+    // Call the enhanced AI onboarding questions generator
+    const options = {
+      mode: 'json',
+      pythonPath: 'python3',
+      pythonOptions: ['-u'],
+      scriptPath: './',
+      args: ['assess-knowledge', JSON.stringify(companyProfile)]
+    };
+
+    const result = await new Promise((resolve, reject) => {
+      PythonShell.run('ai_onboarding_questions_generator.py', options, (err, results) => {
+        if (err) {
+          console.error('Python script error:', err);
+          reject(err);
+        } else {
+          try {
+            const data = JSON.parse(results[0]);
+            resolve(data);
+          } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            reject(parseError);
+          }
+        }
+      });
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error assessing knowledge:', error);
+    res.status(500).json({ 
+      error: 'Failed to assess knowledge gaps',
+      details: error.message 
+    });
+  }
+});
+
+app.post('/api/ai-onboarding/generate-questions', async (req, res) => {
+  try {
+    const { companyProfile, knowledgeAssessment } = req.body;
+
+    if (!companyProfile) {
+      return res.status(400).json({ error: 'Company profile is required' });
+    }
+
+    // Call the AI onboarding questions generator
+    const options = {
+      mode: 'json',
+      pythonPath: 'python3',
+      pythonOptions: ['-u'],
+      scriptPath: './',
+      args: ['generate-questions', JSON.stringify({ companyProfile, knowledgeAssessment })]
+    };
+
+    const result = await new Promise((resolve, reject) => {
+      PythonShell.run('ai_onboarding_questions_generator.py', options, (err, results) => {
+        if (err) {
+          console.error('Python script error:', err);
+          reject(err);
+        } else {
+          try {
+            const data = JSON.parse(results[0]);
+            resolve(data);
+          } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            reject(parseError);
+          }
+        }
+      });
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error generating questions:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate questions',
+      details: error.message 
+    });
+  }
+});
+
+app.post('/api/ai-onboarding/generate-listings', async (req, res) => {
+  try {
+    const { companyProfile, answers } = req.body;
+
+    if (!companyProfile || !answers) {
+      return res.status(400).json({ error: 'Company profile and answers are required' });
+    }
+
+    // Call the AI onboarding questions generator to generate material listings
+    const options = {
+      mode: 'json',
+      pythonPath: 'python3',
+      pythonOptions: ['-u'],
+      scriptPath: './',
+      args: ['generate-listings', JSON.stringify({ companyProfile, answers })]
+    };
+
+    const result = await new Promise((resolve, reject) => {
+      PythonShell.run('ai_onboarding_questions_generator.py', options, (err, results) => {
+        if (err) {
+          console.error('Python script error:', err);
+          reject(err);
+        } else {
+          try {
+            const data = JSON.parse(results[0]);
+            resolve(data);
+          } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            reject(parseError);
+          }
+        }
+      });
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error generating listings:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate material listings',
+      details: error.message 
+    });
+  }
+});
+
+module.exports = app;

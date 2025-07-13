@@ -12,6 +12,10 @@ DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
 DEEPSEEK_MODEL = 'deepseek-coder'  # Can be changed to deepseek-r1 for advanced reasoning
 
+# MaterialsBERT Configuration
+MATERIALSBERT_ENDPOINT = os.environ.get('MATERIALSBERT_ENDPOINT', 'http://localhost:8001')
+MATERIALSBERT_ENABLED = os.environ.get('MATERIALSBERT_ENABLED', 'true').lower() == 'true'
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,6 +27,8 @@ class AdvancedAIPromptsService:
     2. Precision AI Matchmaking
     3. Advanced Conversational AI & Intent Analysis
     4. Strategic Company Transformation Analysis
+    
+    Enhanced with MaterialsBERT integration for advanced materials understanding.
     """
     
     def __init__(self):
@@ -30,14 +36,22 @@ class AdvancedAIPromptsService:
         self.deepseek_base_url = DEEPSEEK_BASE_URL
         self.deepseek_model = DEEPSEEK_MODEL
         
+        # MaterialsBERT integration
+        self.materialsbert_endpoint = MATERIALSBERT_ENDPOINT
+        self.materialsbert_enabled = MATERIALSBERT_ENABLED
+        
     def strategic_material_analysis(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
         """
         Prompt 1: Strategic Material & Synergy Analysis
-        Use this for: Analyzing a company to generate a complete, strategic report on its potential 
-        waste outputs, resource inputs, and detailed circular economy opportunities.
+        Enhanced with MaterialsBERT for deeper materials understanding.
         """
         try:
-            logger.info(f"Starting Strategic Material Analysis for company: {company_profile.get('name', 'Unknown')}")
+            logger.info(f"Starting Enhanced Strategic Material Analysis for company: {company_profile.get('name', 'Unknown')}")
+            
+            # Get MaterialsBERT analysis for company materials
+            materialsbert_insights = {}
+            if self.materialsbert_enabled and company_profile.get('main_materials'):
+                materialsbert_insights = self.get_materialsbert_company_analysis(company_profile)
             
             system_prompt = """You are a world-renowned authority on industrial symbiosis and circular economy transformation, with 20 years of experience consulting for Fortune 500 companies. Your task is to conduct a forensic analysis of a given company's operations to map its complete resource lifecycle. Based on the company profile provided, you will generate a highly detailed, realistic, and actionable synergy report. Your analysis must be deeply rooted in the company's specific industry, scale of operations, and geographic context.
 
@@ -56,6 +70,7 @@ CRITICAL INSTRUCTIONS:
 5. **MANDATORY SPECIFIC REQUIREMENT NAMES:** For inputs/requirements, use specific names like "Raw cotton", "Chemical dyes", "Process water", "Energy", "Packaging materials", "Fresh ingredients", "Medical supplies"
 6. **VALIDATE QUANTITIES:** Ensure all quantities are realistic for the company size and industry. Use reasonable units like kg, liters, units, pieces, tons.
 7. **QUALITY CONTROL:** Every material and requirement must have a specific, descriptive name that clearly identifies what it is.
+8. **MATERIALSBERT INTEGRATION:** If MaterialsBERT insights are provided, incorporate them into your analysis for enhanced accuracy and scientific validation.
 
 Provide the final response as a single, valid JSON object following this exact structure:"""
 
@@ -63,7 +78,8 @@ Provide the final response as a single, valid JSON object following this exact s
                 "executive_summary": {
                     "key_findings": "A concise summary of the most significant waste streams and resource needs.",
                     "primary_opportunities": "A high-level overview of the top 2-3 symbiosis and sustainability opportunities.",
-                    "estimated_total_impact": "An aggregate estimate of potential annual cost savings and revenue."
+                    "estimated_total_impact": "An aggregate estimate of potential annual cost savings and revenue.",
+                    "ai_enhanced_insights": "Key insights from MaterialsBERT analysis if available."
                 },
                 "predicted_outputs": [
                     {
@@ -85,7 +101,8 @@ Provide the final response as a single, valid JSON object following this exact s
                                 "use_case": "A specific application for this material in that industry."
                             }
                         ],
-                        "sustainability_impact": "Environmental benefits, such as CO2 reduction, water saved, or landfill diversion."
+                        "sustainability_impact": "Environmental benefits, such as CO2 reduction, water saved, or landfill diversion.",
+                        "materialsbert_validation": "Scientific validation from MaterialsBERT if available."
                     }
                 ],
                 "predicted_inputs": [
@@ -106,7 +123,8 @@ Provide the final response as a single, valid JSON object following this exact s
                                 "source_industry_type": "The industry that produces this as a byproduct.",
                                 "synergy_description": "How sourcing this byproduct could reduce costs and improve sustainability."
                             }
-                        ]
+                        ],
+                        "materialsbert_optimization": "AI-suggested optimization opportunities if available."
                     }
                 ],
                 "strategic_recommendations": {
@@ -115,7 +133,8 @@ Provide the final response as a single, valid JSON object following this exact s
                             "partner_name_or_type": "Specific company name or type of business.",
                             "collaboration_rationale": "A compelling, data-driven reason for the partnership.",
                             "action_plan": "A 3-step plan to initiate and develop the partnership.",
-                            "estimated_value_creation": "Quantified potential financial and environmental benefits."
+                            "estimated_value_creation": "Quantified potential financial and environmental benefits.",
+                            "ai_enhanced_insights": "Additional insights from MaterialsBERT analysis."
                         }
                     ],
                     "green_initiatives": [
@@ -124,9 +143,15 @@ Provide the final response as a single, valid JSON object following this exact s
                             "description": "A detailed explanation of the initiative and its operational impact.",
                             "implementation_plan": "Key steps for implementation, including required technology and personnel.",
                             "estimated_roi": "Return on Investment projection over a 1-3 year period.",
-                            "sustainability_kpis": "Key Performance Indicators to track success (e.g., % water reduction, CO2 offset)."
+                            "sustainability_kpis": "Key Performance Indicators to track success (e.g., % water reduction, CO2 offset).",
+                            "scientific_validation": "MaterialsBERT scientific validation if available."
                         }
                     ]
+                },
+                "ai_enhanced_analysis": {
+                    "materialsbert_insights": materialsbert_insights,
+                    "cross_validation": "Validation between AI systems",
+                    "confidence_scores": "Confidence scores for different aspects of the analysis"
                 }
             }
 
@@ -140,6 +165,8 @@ Location: {company_profile.get('location', 'Unknown')}
 Employees: {company_profile.get('employee_count', 0)}
 Main Materials: {company_profile.get('main_materials', 'Unknown')}
 Production Volume: {company_profile.get('production_volume', 'Unknown')}
+
+MaterialsBERT Analysis: {json.dumps(materialsbert_insights) if materialsbert_insights else 'Not available'}
 
 Generate a comprehensive strategic analysis following the exact JSON structure provided."""
 
@@ -168,18 +195,74 @@ Generate a comprehensive strategic analysis following the exact JSON structure p
             logger.error(traceback.format_exc())
             return self._get_fallback_strategic_analysis(company_profile)
 
+    def get_materialsbert_company_analysis(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
+        """Get MaterialsBERT analysis for company materials"""
+        try:
+            if not self.materialsbert_enabled:
+                return {}
+            
+            materials = company_profile.get('main_materials', '')
+            if not materials:
+                return {}
+            
+            # Prepare text for MaterialsBERT analysis
+            analysis_text = f"""
+            Company: {company_profile.get('name', 'Unknown')}
+            Industry: {company_profile.get('industry', 'Unknown')}
+            Products: {company_profile.get('products', 'Unknown')}
+            Process Description: {company_profile.get('process_description', '')}
+            Main Materials: {materials}
+            Production Volume: {company_profile.get('production_volume', 'Unknown')}
+            Location: {company_profile.get('location', 'Unknown')}
+            """
+            
+            # Call MaterialsBERT service
+            response = requests.post(
+                f"{self.materialsbert_endpoint}/analyze",
+                json={
+                    'text': analysis_text,
+                    'material_name': materials,
+                    'context': {
+                        'industry': company_profile.get('industry'),
+                        'location': company_profile.get('location'),
+                        'company_size': company_profile.get('employee_count', 0)
+                    }
+                },
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.warning(f"MaterialsBERT service returned status {response.status_code}")
+                return {}
+                
+        except Exception as e:
+            logger.error(f"Error getting MaterialsBERT analysis: {str(e)}")
+            return {}
+
     def precision_ai_matchmaking(self, material_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Prompt 2: Precision AI Matchmaking
-        Use this for: Taking a single industrial material and finding the top 3 most viable 
-        symbiotic company partners, complete with a detailed business case for each match.
+        Enhanced with MaterialsBERT for deeper material understanding and better matching.
         """
         try:
-            logger.info(f"Starting Precision AI Matchmaking for material: {material_data.get('name', 'Unknown')}")
+            logger.info(f"Starting Enhanced Precision AI Matchmaking for material: {material_data.get('name', 'Unknown')}")
+            
+            # Get MaterialsBERT analysis for the material
+            materialsbert_analysis = {}
+            if self.materialsbert_enabled:
+                materialsbert_analysis = self.get_materialsbert_material_analysis(material_data)
             
             system_prompt = """You are a highly specialized AI-powered industrial matchmaking expert. Your core function is to analyze a specific industrial byproduct or waste stream and identify the most valuable and viable symbiotic partnerships. Your analysis must be practical, insightful, and financially grounded.
 
 TASK: For the provided industrial material, identify the top 3 most promising types of symbiotic partner companies. For each recommendation, provide a detailed business case.
+
+ENHANCED INSTRUCTIONS:
+- Incorporate MaterialsBERT scientific insights when available
+- Consider material properties and applications from AI analysis
+- Factor in sustainability metrics and scientific validation
+- Use cross-validation between different AI systems for higher confidence
 
 Provide the response as a single, valid JSON object with a single key: 'symbiotic_matches'."""
 
@@ -193,32 +276,17 @@ Provide the response as a single, valid JSON object with a single key: 'symbioti
                             "specific_application": "How exactly the target company would use the material. e.g., 'As a supplementary cementitious material (SCM) to replace a percentage of clinker in concrete production.'",
                             "synergy_value": "A description of the mutual benefits. e.g., 'The cement plant reduces its energy consumption, CO2 emissions, and raw material costs. The source company eliminates disposal fees and creates a new revenue stream.'",
                             "potential_challenges": "Realistic obstacles to consider. e.g., 'Requires consistent quality control of the material. May require investment in drying or grinding equipment.'",
-                            "integration_steps": "A brief, actionable plan. e.g., '1. Lab testing of material. 2. Pilot batch production. 3. Long-term supply agreement.'"
-                        }
-                    },
-                    {
-                        "rank": 2,
-                        "company_type": "e.g., Asphalt Producer",
-                        "match_strength": 80,
-                        "match_rationale": {
-                            "specific_application": "e.g., 'Used as a mineral filler in hot mix asphalt, improving the mechanical properties of the pavement.'",
-                            "synergy_value": "e.g., 'Reduces the need for virgin mineral fillers for the asphalt producer, lowering costs. Creates value from a waste stream for the source company.'",
-                            "potential_challenges": "e.g., 'Potential for airborne particulates during mixing requires specialized handling equipment.'",
-                            "integration_steps": "e.g., '1. Material characterization. 2. Mix design testing. 3. Regulatory approval for road construction.'"
-                        }
-                    },
-                    {
-                        "rank": 3,
-                        "company_type": "e.g., Agricultural Soil Amendment Supplier",
-                        "match_strength": 65,
-                        "match_rationale": {
-                            "specific_application": "e.g., 'As a soil conditioner to improve pH balance and provide essential micronutrients, if chemical composition is appropriate.'",
-                            "synergy_value": "e.g., 'Offers a low-cost, sustainable alternative to traditional lime or fertilizers. Provides an environmentally friendly disposal route for the source company.'",
-                            "potential_challenges": "e.g., 'Risk of heavy metal contamination must be rigorously tested and managed. Requires regional and seasonal market alignment.'",
-                            "integration_steps": "e.g., '1. Full chemical analysis for agricultural safety. 2. Field trials to prove efficacy. 3. Certification from agricultural bodies.'"
-                        }
+                            "integration_steps": "A brief, actionable plan. e.g., '1. Lab testing of material. 2. Pilot batch production. 3. Long-term supply agreement.'",
+                            "scientific_validation": "MaterialsBERT scientific insights if available."
+                        },
+                        "ai_enhanced_confidence": "Confidence score enhanced by AI analysis."
                     }
-                ]
+                ],
+                "ai_enhanced_insights": {
+                    "materialsbert_analysis": materialsbert_analysis,
+                    "cross_validation": "Validation between AI systems",
+                    "recommended_optimizations": "AI-suggested optimizations"
+                }
             }
 
             user_content = f"""Analyze this industrial material for symbiotic partnership opportunities:
@@ -230,6 +298,8 @@ Quantity: {material_data.get('quantity', 'Unknown')}
 Frequency: {material_data.get('frequency', 'Unknown')}
 Quality Grade: {material_data.get('quality_grade', 'Unknown')}
 Current Status: {material_data.get('type', 'Unknown')}  # waste or requirement
+
+MaterialsBERT Analysis: {json.dumps(materialsbert_analysis) if materialsbert_analysis else 'Not available'}
 
 Find the top 3 most viable symbiotic partner companies with detailed business cases."""
 
@@ -257,6 +327,52 @@ Find the top 3 most viable symbiotic partner companies with detailed business ca
             logger.error(f"Error in precision_ai_matchmaking: {str(e)}")
             logger.error(traceback.format_exc())
             return self._get_fallback_matchmaking(material_data)
+
+    def get_materialsbert_material_analysis(self, material_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Get MaterialsBERT analysis for specific material"""
+        try:
+            if not self.materialsbert_enabled:
+                return {}
+            
+            material_name = material_data.get('name', '')
+            if not material_name:
+                return {}
+            
+            # Prepare text for analysis
+            analysis_text = f"""
+            Material: {material_name}
+            Category: {material_data.get('category', 'Unknown')}
+            Description: {material_data.get('description', '')}
+            Quantity: {material_data.get('quantity', 'Unknown')}
+            Frequency: {material_data.get('frequency', 'Unknown')}
+            Quality Grade: {material_data.get('quality_grade', 'Unknown')}
+            Type: {material_data.get('type', 'Unknown')}
+            """
+            
+            # Call MaterialsBERT service
+            response = requests.post(
+                f"{self.materialsbert_endpoint}/analyze",
+                json={
+                    'text': analysis_text,
+                    'material_name': material_name,
+                    'context': {
+                        'category': material_data.get('category'),
+                        'type': material_data.get('type'),
+                        'quality_grade': material_data.get('quality_grade')
+                    }
+                },
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.warning(f"MaterialsBERT service returned status {response.status_code}")
+                return {}
+                
+        except Exception as e:
+            logger.error(f"Error getting MaterialsBERT material analysis: {str(e)}")
+            return {}
 
     def conversational_intent_analysis(self, user_input: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """

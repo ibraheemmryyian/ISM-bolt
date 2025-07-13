@@ -3,70 +3,68 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { NotificationProvider } from './lib/notificationContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import AuthModal from './components/AuthModal';
-import AuthCallback from './components/AuthCallback';
+import { AuthModal } from './components/AuthModal';
+import { AuthCallback } from './components/AuthCallback';
 import AuthenticatedLayout from './components/AuthenticatedLayout';
 import Dashboard from './components/Dashboard';
 import DemoDashboard from './components/DemoDashboard';
 import DemoLandingPage from './components/DemoLandingPage';
 import DemoAIMatching from './components/DemoAIMatching';
 import AIInferenceMatching from './components/AIInferenceMatching';
-import Marketplace from './components/Marketplace';
+import { Marketplace } from './components/Marketplace';
 import AIOnboardingWizard from './components/AIOnboardingWizard';
-import AdaptiveAIOnboarding from './components/AdaptiveAIOnboarding';
-import AIAdvancedDashboard from './components/AIAdvancedDashboard';
-import GnnPlayground from './components/GnnPlayground';
-import GnnMatchesPanel from './components/GnnMatchesPanel';
+import { AdaptiveAIOnboarding } from './components/AdaptiveAIOnboarding';
+import { AIAdvancedDashboard } from './components/AIAdvancedDashboard';
+import { GnnMatchesPanel } from './components/GnnMatchesPanel';
 import GnnSymbiosisPanel from './components/GnnSymbiosisPanel';
 import MultiHopSymbiosisPanel from './components/MultiHopSymbiosisPanel';
 import ProactiveOpportunitiesPanel from './components/ProactiveOpportunitiesPanel';
 import GlobalImpactPanel from './components/GlobalImpactPanel';
 import FinancialAnalysisPanel from './components/FinancialAnalysisPanel';
-import LogisticsPanel from './components/LogisticsPanel';
+import { LogisticsPanel } from './components/LogisticsPanel';
 import ComprehensiveMatchAnalysis from './components/ComprehensiveMatchAnalysis';
-import RevolutionaryAIMatching from './components/RevolutionaryAIMatching';
+import { RevolutionaryAIMatching } from './components/RevolutionaryAIMatching';
 import PersonalPortfolio from './components/PersonalPortfolio';
-import AdminHub from './components/AdminHub';
-import AdminAccessPage from './components/AdminAccessPage';
+import { AdminHub } from './components/AdminHub';
+import { AdminAccessPage } from './components/AdminAccessPage';
 import RequestAccess from './components/RequestAccess';
-import ResetPassword from './components/ResetPassword';
+import { ResetPassword } from './components/ResetPassword';
 import SubscriptionManager from './components/SubscriptionManager';
 import PaymentProcessor from './components/PaymentProcessor';
-import TransactionPage from './components/TransactionPage';
+import { TransactionPage } from './components/TransactionPage';
 import HeightProjectTracker from './components/HeightProjectTracker';
 import GreenInitiatives from './components/GreenInitiatives';
-import FuturePlans from './components/FuturePlans';
-import GlobalMap from './components/GlobalMap';
-import ChatInterface from './components/ChatInterface';
-import NotificationToast from './components/NotificationToast';
-import UserFeedbackModal from './components/UserFeedbackModal';
-import AIExplanationModal from './components/AIExplanationModal';
-import AIComprehensiveOnboarding from './components/AIComprehensiveOnboarding';
+import { FuturePlans } from './components/FuturePlans';
+import { GlobalMap } from './components/GlobalMap';
+import { ChatInterface } from './components/ChatInterface';
+import { NotificationToast } from './components/NotificationToast';
+import { UserFeedbackModal } from './components/UserFeedbackModal';
+import { AIExplanationModal } from './components/AIExplanationModal';
+import { AIComprehensiveOnboarding } from './components/AIComprehensiveOnboarding';
 import AIPreviewDashboard from './components/AIPreviewDashboard';
-import AIBackendInterface from './components/AIBackendInterface';
-import ReviewAIListings from './components/ReviewAIListings';
-import DebugAdmin from './components/DebugAdmin';
+import { AIService as AIBackendInterface } from './components/AIBackendInterface';
+import { ReviewAIListings } from './components/ReviewAIListings';
+import { DebugAdmin } from './components/DebugAdmin';
 import PluginManager from './components/PluginManager';
-import SubscriptionUpgradeModal from './components/SubscriptionUpgradeModal';
+import { SubscriptionUpgradeModal } from './components/SubscriptionUpgradeModal';
 import DetailedCostBreakdown from './components/DetailedCostBreakdown';
 import EnhancedMatchingInterface from './components/EnhancedMatchingInterface';
 import EnhancedPortfolioReview from './components/EnhancedPortfolioReview';
 import ScientificMaterialCard from './components/ScientificMaterialCard';
-import SearchAndFilter from './components/SearchAndFilter';
+import { SearchAndFilter } from './components/SearchAndFilter';
 import ShippingCalculator from './components/ShippingCalculator';
-import SymbiosisNetworkGraph from './components/SymbiosisNetworkGraph';
-import NotificationsPanel from './components/NotificationsPanel';
-import ChatsPanel from './components/ChatsPanel';
-import MaterialForm from './components/MaterialForm';
-import OnboardingForm from './components/OnboardingForm';
-import OnboardingWizard from './components/OnboardingWizard';
-import ProgressIndicator from './components/ProgressIndicator';
-import FormValidation from './components/FormValidation';
-import LoadingSkeleton from './components/LoadingSkeleton';
-import Tooltip from './components/Tooltip';
-import Breadcrumbs from './components/Breadcrumbs';
-import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
-import RoleInfo from './components/RoleInfo';
+import { SymbiosisNetworkGraph } from './components/SymbiosisNetworkGraph';
+import { NotificationsPanel } from './components/NotificationsPanel';
+import { ChatsPanel } from './components/ChatsPanel';
+import { MaterialForm } from './components/MaterialForm';
+import { OnboardingForm } from './components/OnboardingForm';
+import { OnboardingWizard } from './components/OnboardingWizard';
+import { ProgressIndicator } from './components/ProgressIndicator';
+import { FormValidation } from './components/FormValidation';
+import { Tooltip } from './components/Tooltip';
+import { Breadcrumbs } from './components/Breadcrumbs';
+import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
+import { RoleInfo } from './components/RoleInfo';
 
 function App() {
   return (
@@ -120,7 +118,6 @@ function App() {
               <Route path="/onboarding" element={<AIOnboardingWizard />} />
               <Route path="/adaptive-onboarding" element={<AdaptiveAIOnboarding />} />
               <Route path="/ai-advanced" element={<AIAdvancedDashboard />} />
-              <Route path="/gnn-playground" element={<GnnPlayground />} />
               <Route path="/gnn-matches" element={<GnnMatchesPanel />} />
               <Route path="/gnn-symbiosis" element={<GnnSymbiosisPanel />} />
               <Route path="/multi-hop-symbiosis" element={<MultiHopSymbiosisPanel />} />

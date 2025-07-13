@@ -194,4 +194,9 @@ export function ProfileSkeleton() {
       </div>
     </div>
   );
+}
+
+// Default export for backward compatibility
+export default function LoadingSkeleton() {
+  return <DashboardSkeleton />;
 } 

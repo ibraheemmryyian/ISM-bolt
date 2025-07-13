@@ -1,0 +1,22 @@
+# Core dependencies for MaterialsBERT service
+flask==3.0.0
+requests==2.31.0
+numpy==1.24.3
+scikit-learn==1.3.0
+
+# Simplified embeddings and NLP (no heavy models)
+sentence-transformers==2.2.2
+transformers==4.35.0
+
+# Use latest compatible PyTorch version
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Additional utilities
+pandas==2.0.3
+scipy==1.11.1
+python-dotenv==1.0.0
+
+# Ensure setuptools is properly installed
+setuptools>=65.0.0
+wheel>=0.38.0 

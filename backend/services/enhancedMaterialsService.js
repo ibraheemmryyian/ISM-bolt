@@ -21,17 +21,27 @@ class EnhancedMaterialsService {
     };
 
     this.freightosService = new FreightosLogisticsService();
+    
+    // MaterialsBERT integration
+    this.materialsBertEndpoint = process.env.MATERIALSBERT_ENDPOINT || 'http://localhost:8001';
+    this.materialsBertEnabled = process.env.MATERIALSBERT_ENABLED === 'true';
   }
 
   /**
-   * Get comprehensive material analysis with real logistics costs
+   * Enhanced comprehensive material analysis with Next Gen Materials API + MaterialsBERT
    */
   async getComprehensiveMaterialAnalysis(materialName, context) {
     const tracking = this.monitoring.trackAIRequest('enhanced-materials', 'comprehensive-analysis');
     
     try {
-      // Get basic material analysis
-      const materialAnalysis = await this.getMaterialAnalysis(materialName, context);
+      // Get Next Gen Materials API analysis
+      const nextGenAnalysis = await this.getNextGenMaterialsAnalysis(materialName, context);
+      
+      // Get MaterialsBERT semantic analysis if enabled
+      let materialsBertAnalysis = null;
+      if (this.materialsBertEnabled) {
+        materialsBertAnalysis = await this.getMaterialsBertAnalysis(materialName, context);
+      }
       
       // Get logistics analysis if location is provided
       let logisticsAnalysis = null;
@@ -45,15 +55,17 @@ class EnhancedMaterialsService {
       // Get market analysis
       const marketAnalysis = await this.getMarketAnalysis(materialName, context);
 
-      // Combine all analyses
+      // Combine all analyses with enhanced insights
       const comprehensiveAnalysis = {
-        material: materialAnalysis,
+        material: nextGenAnalysis,
+        materials_bert_insights: materialsBertAnalysis,
         logistics: logisticsAnalysis,
         compliance: complianceAnalysis,
         market: marketAnalysis,
-        sustainability_score: this.calculateOverallSustainabilityScore(materialAnalysis, logisticsAnalysis),
-        business_opportunity_score: this.calculateBusinessOpportunityScore(materialAnalysis, logisticsAnalysis, marketAnalysis),
-        recommendations: this.generateComprehensiveRecommendations(materialAnalysis, logisticsAnalysis, complianceAnalysis, marketAnalysis),
+        sustainability_score: this.calculateOverallSustainabilityScore(nextGenAnalysis, logisticsAnalysis, materialsBertAnalysis),
+        business_opportunity_score: this.calculateBusinessOpportunityScore(nextGenAnalysis, logisticsAnalysis, marketAnalysis, materialsBertAnalysis),
+        recommendations: this.generateComprehensiveRecommendations(nextGenAnalysis, logisticsAnalysis, complianceAnalysis, marketAnalysis, materialsBertAnalysis),
+        ai_enhanced_insights: this.generateAIEnhancedInsights(nextGenAnalysis, materialsBertAnalysis, context),
         timestamp: new Date().toISOString()
       };
 
@@ -65,6 +77,451 @@ class EnhancedMaterialsService {
       console.error('Comprehensive material analysis error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Get advanced analysis from Next Gen Materials API
+   */
+  async getNextGenMaterialsAnalysis(materialName, context) {
+    try {
+      const cacheKey = `nextgen_${materialName}_${JSON.stringify(context)}`;
+      const cached = this.getFromCache(cacheKey);
+      if (cached) return cached;
+
+      // Get comprehensive material data
+      const materialData = await this.makeAPICall('GET', `/materials/${encodeURIComponent(materialName)}`);
+      
+      // Get advanced properties
+      const properties = await this.makeAPICall('GET', `/materials/${encodeURIComponent(materialName)}/properties`);
+      
+      // Get sustainability metrics
+      const sustainability = await this.makeAPICall('GET', `/materials/${encodeURIComponent(materialName)}/sustainability`);
+      
+      // Get circular economy opportunities
+      const circularEconomy = await this.makeAPICall('GET', `/materials/${encodeURIComponent(materialName)}/circular-economy`);
+      
+      // Get processing requirements
+      const processing = await this.makeAPICall('GET', `/materials/${encodeURIComponent(materialName)}/processing`);
+      
+      // Get alternative materials
+      const alternatives = await this.makeAPICall('GET', `/materials/${encodeURIComponent(materialName)}/alternatives`);
+
+      const analysis = {
+        basic_info: materialData,
+        properties: properties,
+        sustainability: sustainability,
+        circular_economy: circularEconomy,
+        processing: processing,
+        alternatives: alternatives,
+        next_gen_score: this.calculateNextGenScore(materialData, properties, sustainability),
+        innovation_potential: this.assessInnovationPotential(materialData, properties, context),
+        market_disruption_potential: this.assessMarketDisruptionPotential(materialData, properties, sustainability)
+      };
+
+      this.setCache(cacheKey, analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('Next Gen Materials API error:', error);
+      return this.getFallbackNextGenAnalysis(materialName, context);
+    }
+  }
+
+  /**
+   * Get MaterialsBERT semantic analysis
+   */
+  async getMaterialsBertAnalysis(materialName, context) {
+    try {
+      const cacheKey = `materialsbert_${materialName}_${JSON.stringify(context)}`;
+      const cached = this.getFromCache(cacheKey);
+      if (cached) return cached;
+
+      // Prepare text for MaterialsBERT analysis
+      const analysisText = this.prepareMaterialsBertText(materialName, context);
+      
+      // Call MaterialsBERT service
+      const response = await axios.post(`${this.materialsBertEndpoint}/analyze`, {
+        text: analysisText,
+        material_name: materialName,
+        context: context
+      }, {
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const bertAnalysis = {
+        semantic_understanding: response.data.semantic_understanding,
+        material_classification: response.data.material_classification,
+        property_predictions: response.data.property_predictions,
+        application_suggestions: response.data.application_suggestions,
+        research_insights: response.data.research_insights,
+        confidence_scores: response.data.confidence_scores,
+        related_materials: response.data.related_materials,
+        scientific_context: response.data.scientific_context
+      };
+
+      this.setCache(cacheKey, bertAnalysis);
+      return bertAnalysis;
+
+    } catch (error) {
+      console.error('MaterialsBERT analysis error:', error);
+      return this.getFallbackMaterialsBertAnalysis(materialName, context);
+    }
+  }
+
+  /**
+   * Prepare text for MaterialsBERT analysis
+   */
+  prepareMaterialsBertText(materialName, context) {
+    const textParts = [
+      `Material: ${materialName}`,
+      `Industry: ${context.industry || 'General'}`,
+      `Application: ${context.intended_use || 'General purpose'}`,
+      `Location: ${context.location || 'Global'}`,
+      `Quantity: ${context.quantity || 'Unknown'} ${context.unit || 'units'}`,
+      `Quality Requirements: ${context.quality_requirements || 'Standard'}`,
+      `Sustainability Focus: ${context.sustainability_focus || 'Standard'}`,
+      `Cost Sensitivity: ${context.cost_sensitivity || 'Medium'}`,
+      `Technical Specifications: ${context.technical_specs || 'Standard'}`,
+      `Regulatory Requirements: ${context.regulatory_requirements || 'Standard'}`
+    ];
+
+    return textParts.join('. ');
+  }
+
+  /**
+   * Calculate Next Gen Materials score
+   */
+  calculateNextGenScore(materialData, properties, sustainability) {
+    let score = 0;
+    let maxScore = 0;
+
+    // Innovation score (0-25 points)
+    if (materialData.innovation_level) {
+      const innovationScore = Math.min(25, materialData.innovation_level * 5);
+      score += innovationScore;
+    }
+    maxScore += 25;
+
+    // Sustainability score (0-25 points)
+    if (sustainability.environmental_impact) {
+      const envScore = Math.max(0, 25 - (sustainability.environmental_impact * 5));
+      score += envScore;
+    }
+    maxScore += 25;
+
+    // Performance score (0-25 points)
+    if (properties.performance_metrics) {
+      const perfScore = Math.min(25, properties.performance_metrics.overall_score * 0.25);
+      score += perfScore;
+    }
+    maxScore += 25;
+
+    // Market readiness score (0-25 points)
+    if (materialData.market_readiness) {
+      const readinessScore = Math.min(25, materialData.market_readiness * 5);
+      score += readinessScore;
+    }
+    maxScore += 25;
+
+    return {
+      overall_score: Math.round((score / maxScore) * 100),
+      breakdown: {
+        innovation: materialData.innovation_level ? Math.min(25, materialData.innovation_level * 5) : 0,
+        sustainability: sustainability.environmental_impact ? Math.max(0, 25 - (sustainability.environmental_impact * 5)) : 0,
+        performance: properties.performance_metrics ? Math.min(25, properties.performance_metrics.overall_score * 0.25) : 0,
+        market_readiness: materialData.market_readiness ? Math.min(25, materialData.market_readiness * 5) : 0
+      }
+    };
+  }
+
+  /**
+   * Assess innovation potential
+   */
+  assessInnovationPotential(materialData, properties, context) {
+    const factors = {
+      novelty: materialData.innovation_level || 0,
+      performance_advantage: properties.performance_metrics?.advantage_over_traditional || 0,
+      market_gap: materialData.market_need_alignment || 0,
+      scalability: materialData.scalability_potential || 0,
+      cost_competitiveness: materialData.cost_advantage || 0
+    };
+
+    const totalScore = Object.values(factors).reduce((sum, score) => sum + score, 0);
+    const averageScore = totalScore / Object.keys(factors).length;
+
+    return {
+      overall_potential: Math.round(averageScore * 20), // Convert to percentage
+      factors: factors,
+      recommendation: this.getInnovationRecommendation(averageScore),
+      time_to_market: this.estimateTimeToMarket(averageScore, materialData.market_readiness)
+    };
+  }
+
+  /**
+   * Assess market disruption potential
+   */
+  assessMarketDisruptionPotential(materialData, properties, sustainability) {
+    const disruptionFactors = {
+      performance_superiority: properties.performance_metrics?.superiority_score || 0,
+      cost_advantage: materialData.cost_advantage || 0,
+      sustainability_advantage: sustainability.environmental_benefit || 0,
+      regulatory_advantage: materialData.regulatory_compliance_advantage || 0,
+      supply_chain_advantage: materialData.supply_chain_efficiency || 0
+    };
+
+    const totalDisruptionScore = Object.values(disruptionFactors).reduce((sum, score) => sum + score, 0);
+    const averageDisruptionScore = totalDisruptionScore / Object.keys(disruptionFactors).length;
+
+    return {
+      disruption_potential: Math.round(averageDisruptionScore * 20),
+      factors: disruptionFactors,
+      market_impact: this.assessMarketImpact(averageDisruptionScore),
+      competitive_threat: this.assessCompetitiveThreat(averageDisruptionScore),
+      adoption_barriers: this.identifyAdoptionBarriers(materialData, properties)
+    };
+  }
+
+  /**
+   * Generate AI-enhanced insights combining Next Gen API and MaterialsBERT
+   */
+  generateAIEnhancedInsights(nextGenAnalysis, materialsBertAnalysis, context) {
+    const insights = {
+      cross_validation: this.crossValidateInsights(nextGenAnalysis, materialsBertAnalysis),
+      enhanced_recommendations: this.generateEnhancedRecommendations(nextGenAnalysis, materialsBertAnalysis, context),
+      risk_assessment: this.assessAIEnhancedRisks(nextGenAnalysis, materialsBertAnalysis),
+      opportunity_identification: this.identifyAIEnhancedOpportunities(nextGenAnalysis, materialsBertAnalysis, context),
+      competitive_intelligence: this.generateCompetitiveIntelligence(nextGenAnalysis, materialsBertAnalysis),
+      future_trends: this.predictFutureTrends(nextGenAnalysis, materialsBertAnalysis)
+    };
+
+    return insights;
+  }
+
+  /**
+   * Cross-validate insights between Next Gen API and MaterialsBERT
+   */
+  crossValidateInsights(nextGenAnalysis, materialsBertAnalysis) {
+    if (!materialsBertAnalysis) {
+      return { validation_level: 'nextgen_only', confidence: 0.8 };
+    }
+
+    const validations = {
+      material_classification: this.validateClassification(nextGenAnalysis, materialsBertAnalysis),
+      property_consistency: this.validateProperties(nextGenAnalysis, materialsBertAnalysis),
+      application_alignment: this.validateApplications(nextGenAnalysis, materialsBertAnalysis),
+      sustainability_consistency: this.validateSustainability(nextGenAnalysis, materialsBertAnalysis)
+    };
+
+    const overallConfidence = Object.values(validations).reduce((sum, v) => sum + v.confidence, 0) / Object.keys(validations).length;
+
+    return {
+      validation_level: 'cross_validated',
+      confidence: Math.round(overallConfidence * 100) / 100,
+      details: validations
+    };
+  }
+
+  /**
+   * Generate enhanced recommendations using both AI systems
+   */
+  generateEnhancedRecommendations(nextGenAnalysis, materialsBertAnalysis, context) {
+    const recommendations = [];
+
+    // Next Gen API recommendations
+    if (nextGenAnalysis.circular_economy?.opportunities) {
+      recommendations.push(...nextGenAnalysis.circular_economy.opportunities.map(opp => ({
+        source: 'nextgen_api',
+        type: 'circular_economy',
+        recommendation: opp.description,
+        confidence: opp.confidence || 0.8,
+        implementation_steps: opp.implementation_steps || []
+      })));
+    }
+
+    // MaterialsBERT recommendations
+    if (materialsBertAnalysis?.application_suggestions) {
+      recommendations.push(...materialsBertAnalysis.application_suggestions.map(suggestion => ({
+        source: 'materialsbert',
+        type: 'application_optimization',
+        recommendation: suggestion.description,
+        confidence: suggestion.confidence || 0.7,
+        scientific_basis: suggestion.scientific_basis || 'MaterialsBERT analysis'
+      })));
+    }
+
+    // Combined insights
+    if (nextGenAnalysis && materialsBertAnalysis) {
+      const combinedInsights = this.generateCombinedInsights(nextGenAnalysis, materialsBertAnalysis, context);
+      recommendations.push(...combinedInsights);
+    }
+
+    return recommendations.sort((a, b) => b.confidence - a.confidence);
+  }
+
+  /**
+   * Generate combined insights from both AI systems
+   */
+  generateCombinedInsights(nextGenAnalysis, materialsBertAnalysis, context) {
+    const combined = [];
+
+    // Innovation opportunities
+    if (nextGenAnalysis.innovation_potential?.overall_potential > 70 && 
+        materialsBertAnalysis?.research_insights?.novel_applications) {
+      combined.push({
+        source: 'combined_ai',
+        type: 'innovation_opportunity',
+        recommendation: `High innovation potential (${nextGenAnalysis.innovation_potential.overall_potential}%) with ${materialsBertAnalysis.research_insights.novel_applications.length} novel applications identified`,
+        confidence: 0.9,
+        implementation_steps: [
+          'Conduct feasibility study',
+          'Prototype development',
+          'Market validation',
+          'IP protection strategy'
+        ]
+      });
+    }
+
+    // Sustainability optimization
+    if (nextGenAnalysis.sustainability?.environmental_impact < 0.3 && 
+        materialsBertAnalysis?.scientific_context?.sustainability_metrics) {
+      combined.push({
+        source: 'combined_ai',
+        type: 'sustainability_optimization',
+        recommendation: 'Excellent sustainability profile with scientific validation',
+        confidence: 0.85,
+        implementation_steps: [
+          'Sustainability certification',
+          'Green marketing strategy',
+          'Supply chain optimization',
+          'Carbon credit opportunities'
+        ]
+      });
+    }
+
+    return combined;
+  }
+
+  /**
+   * Calculate enhanced sustainability score
+   */
+  calculateOverallSustainabilityScore(materialAnalysis, logisticsAnalysis, materialsBertAnalysis) {
+    let score = 0;
+    let maxScore = 0;
+
+    // Next Gen Materials sustainability (0-40 points)
+    if (materialAnalysis.sustainability) {
+      const envScore = Math.max(0, 40 - (materialAnalysis.sustainability.environmental_impact * 40));
+      score += envScore;
+    }
+    maxScore += 40;
+
+    // Logistics sustainability (0-30 points)
+    if (logisticsAnalysis?.metrics?.sustainability_score) {
+      score += logisticsAnalysis.metrics.sustainability_score * 30;
+    }
+    maxScore += 30;
+
+    // MaterialsBERT sustainability validation (0-30 points)
+    if (materialsBertAnalysis?.scientific_context?.sustainability_metrics) {
+      const bertScore = materialsBertAnalysis.scientific_context.sustainability_metrics.overall_score * 30;
+      score += bertScore;
+    }
+    maxScore += 30;
+
+    return {
+      overall_score: Math.round((score / maxScore) * 100),
+      breakdown: {
+        material_sustainability: materialAnalysis.sustainability ? Math.max(0, 40 - (materialAnalysis.sustainability.environmental_impact * 40)) : 0,
+        logistics_sustainability: logisticsAnalysis?.metrics?.sustainability_score ? logisticsAnalysis.metrics.sustainability_score * 30 : 0,
+        scientific_validation: materialsBertAnalysis?.scientific_context?.sustainability_metrics ? materialsBertAnalysis.scientific_context.sustainability_metrics.overall_score * 30 : 0
+      }
+    };
+  }
+
+  /**
+   * Calculate enhanced business opportunity score
+   */
+  calculateBusinessOpportunityScore(materialAnalysis, logisticsAnalysis, marketAnalysis, materialsBertAnalysis) {
+    let score = 0;
+    let maxScore = 0;
+
+    // Next Gen Materials innovation potential (0-30 points)
+    if (materialAnalysis.innovation_potential) {
+      score += materialAnalysis.innovation_potential.overall_potential * 0.3;
+    }
+    maxScore += 30;
+
+    // Market analysis (0-25 points)
+    if (marketAnalysis?.market_potential) {
+      score += marketAnalysis.market_potential * 25;
+    }
+    maxScore += 25;
+
+    // Logistics efficiency (0-20 points)
+    if (logisticsAnalysis?.metrics?.cost_percentage_of_material_value) {
+      const logisticsScore = Math.max(0, 20 - (logisticsAnalysis.metrics.cost_percentage_of_material_value * 0.2));
+      score += logisticsScore;
+    }
+    maxScore += 20;
+
+    // MaterialsBERT market insights (0-25 points)
+    if (materialsBertAnalysis?.research_insights?.market_trends) {
+      const bertMarketScore = materialsBertAnalysis.research_insights.market_trends.growth_potential * 25;
+      score += bertMarketScore;
+    }
+    maxScore += 25;
+
+    return {
+      overall_score: Math.round((score / maxScore) * 100),
+      breakdown: {
+        innovation_potential: materialAnalysis.innovation_potential ? materialAnalysis.innovation_potential.overall_potential * 0.3 : 0,
+        market_potential: marketAnalysis?.market_potential ? marketAnalysis.market_potential * 25 : 0,
+        logistics_efficiency: logisticsAnalysis?.metrics?.cost_percentage_of_material_value ? Math.max(0, 20 - (logisticsAnalysis.metrics.cost_percentage_of_material_value * 0.2)) : 0,
+        ai_market_insights: materialsBertAnalysis?.research_insights?.market_trends ? materialsBertAnalysis.research_insights.market_trends.growth_potential * 25 : 0
+      }
+    };
+  }
+
+  /**
+   * Generate comprehensive recommendations with AI enhancement
+   */
+  generateComprehensiveRecommendations(materialAnalysis, logisticsAnalysis, complianceAnalysis, marketAnalysis, materialsBertAnalysis) {
+    const recommendations = [];
+
+    // Next Gen Materials recommendations
+    if (materialAnalysis.circular_economy?.opportunities) {
+      recommendations.push(...materialAnalysis.circular_economy.opportunities);
+    }
+
+    // MaterialsBERT recommendations
+    if (materialsBertAnalysis?.application_suggestions) {
+      recommendations.push(...materialsBertAnalysis.application_suggestions.map(suggestion => ({
+        type: 'ai_optimization',
+        description: suggestion.description,
+        confidence: suggestion.confidence,
+        implementation_steps: ['AI-validated optimization']
+      })));
+    }
+
+    // Logistics optimization
+    if (logisticsAnalysis?.optimization_opportunities) {
+      recommendations.push(...logisticsAnalysis.optimization_opportunities);
+    }
+
+    // Market opportunities
+    if (marketAnalysis?.opportunities) {
+      recommendations.push(...marketAnalysis.opportunities);
+    }
+
+    // Compliance recommendations
+    if (complianceAnalysis?.recommendations) {
+      recommendations.push(...complianceAnalysis.recommendations);
+    }
+
+    return recommendations.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
   }
 
   /**

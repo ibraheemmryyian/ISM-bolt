@@ -6,16 +6,17 @@ import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { 
+  ArrowLeft, 
+  ArrowRight, 
   CheckCircle, 
-  ArrowRight,
-  ArrowLeft,
   Loader2,
-  Sparkles,
-  Workflow,
   Home,
   Target,
   Lightbulb,
-  Brain
+  Brain,
+  AlertCircle,
+  Info,
+  TrendingUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from './ui/alert';
@@ -23,13 +24,14 @@ import { supabase } from '../lib/supabase';
 
 interface OnboardingField {
   id: string;
-  type: 'text' | 'select' | 'textarea' | 'number' | 'multiselect';
+  type: 'text' | 'select' | 'textarea' | 'number' | 'multiselect' | 'boolean';
   label: string;
   placeholder?: string;
   options?: string[];
   required: boolean;
   value: any;
   reasoning?: string;
+  importance?: 'high' | 'medium' | 'low';
 }
 
 interface OnboardingStep {
@@ -38,6 +40,7 @@ interface OnboardingStep {
   description: string;
   fields: OnboardingField[];
   isAI: boolean;
+  category?: string;
 }
 
 interface CompanyProfile {
@@ -45,15 +48,12 @@ interface CompanyProfile {
   industry: string;
   location: string;
   employee_count: number;
-  products: string;
-  main_materials: string;
-  production_volume: string;
-  process_description: string;
-  annual_revenue?: number;
-  sustainability_goals?: string[];
-  waste_streams?: string[];
-  resource_needs?: string[];
-  [key: string]: any;
+  products?: string;
+  main_materials?: string;
+  production_volume?: string;
+  process_description?: string;
+  waste_streams?: string;
+  sustainability_goals?: string;
 }
 
 interface OnboardingQuestion {
@@ -61,16 +61,26 @@ interface OnboardingQuestion {
   category: string;
   question: string;
   importance: 'high' | 'medium' | 'low';
-  expected_answer_type: 'text' | 'numeric' | 'boolean';
+  expected_answer_type: 'text' | 'numeric' | 'boolean' | 'multiselect';
   follow_up_question?: string;
+  options?: string[];
+  reasoning?: string;
 }
 
 interface OnboardingData {
   questions: OnboardingQuestion[];
   estimated_completion_time: string;
   key_insights_expected: string[];
-  generated_at: string;
+  material_listings_focus: string[];
   ai_model: string;
+}
+
+interface KnowledgeAssessment {
+  confidence_score: number;
+  existing_data: Record<string, boolean>;
+  critical_gaps: string[];
+  knowledge_areas: string[];
+  data_completeness: string;
 }
 
 interface OnboardingWizardProps {
@@ -78,10 +88,9 @@ interface OnboardingWizardProps {
     name: string;
     industry: string;
     location: string;
-    products?: string;
-    employee_count?: number;
+    employee_count: number;
   };
-  onComplete: (enrichedProfile: any) => void;
+  onComplete: (profile: any) => void;
   onCancel: () => void;
 }
 
@@ -90,26 +99,26 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
   onComplete,
   onCancel
 }) => {
-  const [currentStep, setCurrentStep] = useState<'loading' | 'questions' | 'processing' | 'complete'>('loading');
+  const [currentStep, setCurrentStep] = useState<'loading' | 'assessment' | 'questions' | 'processing' | 'complete'>('loading');
   const [questionsData, setQuestionsData] = useState<OnboardingData | null>(null);
+  const [knowledgeAssessment, setKnowledgeAssessment] = useState<KnowledgeAssessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [processingResult, setProcessingResult] = useState<any>(null);
-  const [onboardingSteps, setOnboardingSteps] = useState<OnboardingStep[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [processingResult, setProcessingResult] = useState<any>(null);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [industryCategory, setIndustryCategory] = useState<string>('');
   const navigate = useNavigate();
   const [onboardingComplete, setOnboardingComplete] = useState(false);
 
-  // Initial basic questions
-  const initialSteps: OnboardingStep[] = [
+  const [onboardingSteps, setOnboardingSteps] = useState<OnboardingStep[]>([
     {
       id: 'basic-info',
       title: 'Basic Company Information',
-      description: 'Let\'s start with the fundamentals about your company.',
+      description: 'Let\'s start with some basic information about your company',
       isAI: false,
       fields: [
         {
@@ -118,15 +127,17 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           label: 'Company Name',
           placeholder: 'Enter your company name',
           required: true,
-          value: ''
+          value: '',
+          importance: 'high'
         },
         {
           id: 'industry',
           type: 'text',
           label: 'Industry',
-          placeholder: 'e.g., Automotive Manufacturing, Food Processing, Chemical Production...',
+          placeholder: 'e.g., Chemical Manufacturing, Food Processing, Steel Production...',
           required: true,
-          value: ''
+          value: '',
+          importance: 'high'
         },
         {
           id: 'location',
@@ -134,7 +145,8 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           label: 'Location',
           placeholder: 'City, Country',
           required: true,
-          value: ''
+          value: '',
+          importance: 'high'
         },
         {
           id: 'employee_count',
@@ -143,52 +155,20 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           required: true,
           value: '',
           options: [
-            '1-10',
-            '11-50',
+            '1-50',
             '51-200',
             '201-500',
             '501-1000',
             '1000+'
-          ]
-        }
-      ]
-    },
-    {
-      id: 'production-info',
-      title: 'Production Information',
-      description: 'Tell us about your production processes and materials.',
-      isAI: false,
-      fields: [
-        {
-          id: 'products',
-          type: 'textarea',
-          label: 'What products or services do you produce?',
-          placeholder: 'Describe your main products or services in detail...',
-          required: true,
-          value: ''
-        },
-        {
-          id: 'main_materials',
-          type: 'textarea',
-          label: 'What are your main raw materials?',
-          placeholder: 'List the primary materials, chemicals, or resources you use...',
-          required: true,
-          value: ''
-        },
-        {
-          id: 'production_volume',
-          type: 'text',
-          label: 'Production Volume',
-          placeholder: 'e.g., 1000 tons/month, 5000 units/day',
-          required: true,
-          value: ''
+          ],
+          importance: 'medium'
         }
       ]
     }
-  ];
+  ]);
 
   useEffect(() => {
-    loadInitialAIQuestions();
+    startKnowledgeAssessment();
     // Pre-fill company name from authenticated user
     if (companyProfile?.name) {
       setOnboardingSteps(prev => prev.map(step => ({
@@ -202,23 +182,24 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
     }
   }, [companyProfile]);
 
-  const loadInitialAIQuestions = async () => {
+  const startKnowledgeAssessment = async () => {
     try {
       setIsLoading(true);
-      
-      // Fetch initial AI-generated questions from the backend
-      const response = await fetch('/api/ai-onboarding/initial-questions', {
+      setCurrentStep('loading');
+
+      // Call the enhanced AI onboarding assessment
+      const response = await fetch('/api/ai-onboarding/assess-knowledge', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           companyProfile: {
-            name: '',
-            industry: '',
-            location: '',
-            employee_count: 0,
-            products: '',
+            name: companyProfile?.name || '',
+            industry: companyProfile?.industry || '',
+            location: companyProfile?.location || '',
+            employee_count: companyProfile?.employee_count || 0,
+            products: (companyProfile as any)?.products || '',
             main_materials: '',
             production_volume: '',
             process_description: ''
@@ -228,298 +209,118 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
       if (response.ok) {
         const data = await response.json();
-        if (data.questions && data.questions.length > 0) {
-          // Replace initial steps with AI-generated questions
-          const aiSteps = data.questions.map((questionSet: any, index: number) => ({
-            id: `ai-step-${index}`,
-            title: questionSet.title || `AI-Powered Questions ${index + 1}`,
-            description: questionSet.description || 'Our AI has identified key areas to explore for optimal symbiosis opportunities.',
-            isAI: true,
-            fields: questionSet.fields.map((field: any) => ({
-              id: field.id,
-              type: field.type || 'text',
-              label: field.label,
-              placeholder: field.placeholder,
-              options: field.options,
-              required: field.required || false,
-              value: field.type === 'multiselect' ? [] : '',
-              reasoning: field.reasoning
-            }))
-          }));
-          
-          setOnboardingSteps(aiSteps);
-        } else {
-          // Fallback to initial steps if no AI questions
-          setOnboardingSteps(initialSteps);
+
+        if (data.knowledge_assessment) {
+          setKnowledgeAssessment(data.knowledge_assessment);
+          setIndustryCategory(data.industry_category || '');
+
+          // If confidence is low, show assessment screen
+          if (data.knowledge_assessment.confidence_score < 0.5) {
+            setCurrentStep('assessment');
+          } else {
+            // If confidence is high, proceed to questions
+            if (data.questions_data) {
+              setQuestionsData(data.questions_data);
+              setCurrentStep('questions');
+            }
+          }
         }
       } else {
-        // Fallback to initial steps if API fails
-        setOnboardingSteps(initialSteps);
+        throw new Error('Failed to assess knowledge gaps');
       }
     } catch (error) {
-      console.error('Error loading AI questions:', error);
-      // Fallback to initial steps
-      setOnboardingSteps(initialSteps);
+      console.error('Error starting knowledge assessment:', error);
+      setError('Failed to start knowledge assessment. Please try again.');
+      setCurrentStep('questions'); // Fallback to basic questions
     } finally {
       setIsLoading(false);
-      updateProgress();
     }
-  };
-
-  const updateProgress = () => {
-    const totalSteps = onboardingSteps.length;
-    const completedSteps = currentStep === 'questions' ? currentQuestionIndex : 0;
-    setProgress((completedSteps / totalSteps) * 100);
-  };
-
-  useEffect(() => {
-    updateProgress();
-  }, [currentStep, currentQuestionIndex, onboardingSteps]);
-
-  const handleFieldChange = (stepIndex: number, fieldId: string, value: any) => {
-    const updatedSteps = [...onboardingSteps];
-    const field = updatedSteps[stepIndex].fields.find(f => f.id === fieldId);
-    if (field) {
-      field.value = value;
-    }
-    setOnboardingSteps(updatedSteps);
-  };
-
-  const isStepComplete = (step: OnboardingStep | undefined) => {
-    if (!step || !step.fields) return false;
-    return step.fields.every(field => {
-      if (!field.required) return true;
-      if (field.type === 'multiselect') {
-        return Array.isArray(field.value) && field.value.length > 0;
-      }
-      return field.value && field.value.toString().trim() !== '';
-    });
   };
 
   const generateAIQuestions = async () => {
-    setIsGeneratingQuestions(true);
     try {
-      const response = await fetch('/api/ai-onboarding/questions', {
+      setIsGeneratingQuestions(true);
+
+      // Get current form data
+      const formData = getCurrentFormData();
+
+      // Call AI to generate targeted questions
+      const response = await fetch('/api/ai-onboarding/generate-questions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          companyProfile,
-          currentStep: currentStep,
-          existingData: companyProfile
+          companyProfile: formData,
+          knowledgeAssessment: knowledgeAssessment
         })
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data.questions && data.questions.length > 0) {
-          const aiStep: OnboardingStep = {
-            id: `ai-step-${Date.now()}`,
-            title: 'AI-Powered Questions',
-            description: 'Based on your answers, our AI has identified key areas to explore for optimal symbiosis opportunities.',
-            isAI: true,
-            fields: data.questions.map((q: any) => ({
-              id: q.id,
-              type: q.type || 'text',
-              label: q.label,
-              placeholder: q.placeholder,
-              options: q.options,
-              required: q.required || false,
-              value: q.type === 'multiselect' ? [] : '',
-              reasoning: q.reasoning
-            }))
-          };
-          
-          setOnboardingSteps(prev => [...prev, aiStep]);
-          setCurrentStep(prev => prev === 'questions' ? 'questions' : 'processing');
+          setQuestionsData(data);
+          setCurrentStep('questions');
         } else {
-          // No more questions needed, complete onboarding
-          await completeOnboarding();
+          throw new Error('No questions generated');
         }
       } else {
-        throw new Error('Failed to generate AI questions');
+        throw new Error('Failed to generate questions');
       }
     } catch (error) {
       console.error('Error generating AI questions:', error);
-      // Fallback: complete onboarding
-      await completeOnboarding();
+      setError('Failed to generate AI questions. Using standard questions.');
+      // Fallback to standard questions
+      setCurrentStep('questions');
     } finally {
       setIsGeneratingQuestions(false);
     }
   };
 
-  const completeOnboarding = async () => {
-    setIsLoading(true);
-    try {
-      // Ensure company name is set and not empty
-      if (!companyProfile.name || companyProfile.name.trim() === '') {
-        throw new Error('Company name is required');
-      }
-
-      // Store company profile in localStorage for dashboard access
-      console.log('Storing company profile in localStorage:', companyProfile);
-      console.log('Company name being stored:', companyProfile.name);
-      localStorage.setItem('symbioflows-company-profile', JSON.stringify(companyProfile));
-      
-      // Verify storage
-      const stored = localStorage.getItem('symbioflows-company-profile');
-      console.log('Verified stored data:', stored);
-      
-      const response = await fetch('/api/ai-onboarding/complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          companyProfile,
-          onboardingData: onboardingSteps
-        })
+  const getCurrentFormData = () => {
+    const formData: any = {};
+    onboardingSteps.forEach(step => {
+      step.fields.forEach(field => {
+        formData[field.id] = field.value;
       });
+    });
+    return formData;
+  };
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Onboarding completed:', data);
-        
-        // Store the AI-generated portfolio and suggestions
-        if (data.analysis) {
-          localStorage.setItem('symbioflows-portfolio', JSON.stringify(data.analysis));
-        } else {
-          // Create a placeholder portfolio if backend doesn't return analysis
-          const placeholderPortfolio = {
-            waste_streams: [
-              {
-                name: "General waste from production",
-                quantity: "Varies by production volume",
-                value: "Potential for recycling",
-                potential_uses: ["Recycling", "Energy recovery", "Material recovery"]
-              }
-            ],
-            resource_needs: [
-              {
-                name: "Raw materials",
-                current_cost: "Based on market rates",
-                potential_sources: ["Local suppliers", "Recycled materials", "Waste exchanges"]
-              }
-            ],
-            opportunities: [
-              {
-                title: "Waste Exchange Program",
-                description: "Connect with local companies to exchange waste materials",
-                estimated_savings: "$10K-50K annually",
-                carbon_reduction: "5-20 tons CO2",
-                implementation_time: "3-6 months",
-                difficulty: "medium"
-              }
-            ],
-            potential_partners: [
-              {
-                company_type: "Local manufacturing companies",
-                location: companyProfile.location || "Your region",
-                waste_they_can_use: ["Production waste", "Packaging materials"],
-                resources_they_can_provide: ["Raw materials", "Technical expertise"],
-                estimated_partnership_value: "$25K annually"
-              }
-            ],
-            material_listings: [
-              {
-                material: "Production waste",
-                current_status: "waste",
-                quantity: "Based on production volume",
-                value: "Variable",
-                potential_exchanges: ["Recycling", "Material recovery", "Energy generation"]
-              }
-            ],
-            estimated_savings: "$15K-75K annually",
-            environmental_impact: "10-40 tons CO2 reduction",
-            roadmap: [
-              {
-                phase: "Initial Assessment",
-                timeline: "1-2 months",
-                actions: ["Audit current waste streams", "Identify potential partners", "Assess market opportunities"],
-                expected_outcomes: ["Waste inventory", "Partner list", "Opportunity assessment"]
-              }
-            ]
-          };
-          localStorage.setItem('symbioflows-portfolio', JSON.stringify(placeholderPortfolio));
+  const updateProgress = () => {
+    const totalSteps = onboardingSteps.length;
+    const completedSteps = onboardingSteps.filter(step => isStepComplete(step)).length;
+    const progressPercentage = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
+    setProgress(progressPercentage);
+  };
+
+  const handleFieldChange = (stepIndex: number, fieldId: string, value: any) => {
+    setOnboardingSteps(prev => prev.map((step, index) => 
+      index === stepIndex 
+        ? {
+            ...step,
+            fields: step.fields.map(field => 
+              field.id === fieldId 
+                ? { ...field, value }
+                : field
+            )
+          }
+        : step
+    ));
+    updateProgress();
+  };
+
+  const isStepComplete = (step: OnboardingStep | undefined): boolean => {
+    if (!step) return false;
+    return step.fields.every((field: OnboardingField) => {
+      if (field.required) {
+        if (field.type === 'multiselect') {
+          return Array.isArray(field.value) && field.value.length > 0;
         }
-        if (data.recommendations) {
-          localStorage.setItem('symbioflows-recommendations', JSON.stringify(data.recommendations));
-        }
-        if (data.next_steps) {
-          localStorage.setItem('symbioflows-next-steps', JSON.stringify(data.next_steps));
-        }
-        
-        setIsCompleted(true);
-      } else {
-        throw new Error('Failed to complete onboarding');
+        return field.value !== '' && field.value !== null && field.value !== undefined;
       }
-    } catch (error) {
-      console.error('Error completing onboarding:', error);
-      // Even if API fails, store the company profile locally and create placeholder portfolio
-      localStorage.setItem('symbioflows-company-profile', JSON.stringify(companyProfile));
-      
-      // Create a basic placeholder portfolio for offline functionality
-      const basicPortfolio = {
-        waste_streams: [
-          {
-            name: "Production waste",
-            quantity: "Based on your production volume",
-            value: "Variable",
-            potential_uses: ["Recycling", "Material recovery"]
-          }
-        ],
-        resource_needs: [
-          {
-            name: "Raw materials",
-            current_cost: "Market dependent",
-            potential_sources: ["Local suppliers", "Recycled sources"]
-          }
-        ],
-        opportunities: [
-          {
-            title: "Basic Waste Exchange",
-            description: "Start with simple waste exchange opportunities",
-            estimated_savings: "$5K-25K annually",
-            carbon_reduction: "2-10 tons CO2",
-            implementation_time: "1-3 months",
-            difficulty: "easy"
-          }
-        ],
-        potential_partners: [
-          {
-            company_type: "Local businesses",
-            location: companyProfile.location || "Your area",
-            waste_they_can_use: ["General waste"],
-            resources_they_can_provide: ["Materials", "Services"],
-            estimated_partnership_value: "$10K annually"
-          }
-        ],
-        material_listings: [
-          {
-            material: "General waste",
-            current_status: "waste",
-            quantity: "Variable",
-            value: "Low to medium",
-            potential_exchanges: ["Recycling", "Reuse"]
-          }
-        ],
-        estimated_savings: "$5K-25K annually",
-        environmental_impact: "2-10 tons CO2 reduction",
-        roadmap: [
-          {
-            phase: "Setup",
-            timeline: "1 month",
-            actions: ["Contact local businesses", "Assess waste streams"],
-            expected_outcomes: ["Initial partnerships", "Waste audit"]
-          }
-        ]
-      };
-      localStorage.setItem('symbioflows-portfolio', JSON.stringify(basicPortfolio));
-      setIsCompleted(true);
-    } finally {
-      setIsLoading(false);
-    }
+      return true;
+    });
   };
 
   const handleAnswerChange = (questionId: string, value: string) => {
@@ -530,82 +331,114 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
   };
 
   const handleNext = () => {
-    if (currentStep === 'questions') {
-      if (currentQuestionIndex < (questionsData?.questions.length || 0) - 1) {
+    if (currentStep === 'assessment') {
+      generateAIQuestions();
+    } else if (currentStep === 'questions') {
+      if (currentQuestionIndex < (questionsData?.questions?.length || 0) - 1) {
         setCurrentQuestionIndex(prev => prev + 1);
       } else {
         processAnswers();
       }
-    } else if (currentStep === 'processing') {
-      processAnswers();
-    } else if (currentStep === 'complete' && processingResult) {
-      onComplete(processingResult);
     }
   };
 
   const handlePrevious = () => {
-    if (currentStep === 'questions') {
-      if (currentQuestionIndex > 0) {
-        setCurrentQuestionIndex(prev => prev - 1);
-      }
+    if (currentStep === 'questions' && currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
     }
   };
 
   const processAnswers = async () => {
     try {
       setCurrentStep('processing');
-      setError(null);
 
-      const response = await fetch('/api/ai/process-onboarding-answers', {
+      // Get all form data
+      const formData = getCurrentFormData();
+      const allAnswers = { ...formData, ...answers };
+
+      // Generate material listings from answers
+      const response = await fetch('/api/ai-onboarding/generate-listings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          questions: questionsData?.questions,
-          answers
-        }),
+          companyProfile: formData,
+          answers: allAnswers
+        })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to process answers');
-      }
+      if (response.ok) {
+        const result = await response.json();
+        setProcessingResult(result);
+        setCurrentStep('complete');
+        setIsCompleted(true);
 
-      const result = await response.json();
-      setProcessingResult(result);
-      setCurrentStep('complete');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process answers');
-      setCurrentStep('questions');
+        // Call onComplete with enriched profile
+        const enrichedProfile = {
+          ...formData,
+          ...allAnswers,
+          material_listings: result.material_listings,
+          waste_requirements: result.waste_requirements,
+          ai_generated: true,
+          confidence_score: result.confidence_score
+        };
+
+        onComplete(enrichedProfile);
+      } else {
+        throw new Error('Failed to generate material listings');
+      }
+    } catch (error) {
+      console.error('Error processing answers:', error);
+      setError('Failed to process answers. Please try again.');
     }
   };
 
   const getProgressPercentage = () => {
-    if (!questionsData?.questions) return 0;
-    return ((currentQuestionIndex + 1) / questionsData.questions.length) * 100;
+    if (currentStep === 'loading') return 0;
+    if (currentStep === 'assessment') return 20;
+    if (currentStep === 'questions') return 40 + (currentQuestionIndex / (questionsData?.questions?.length || 1)) * 40;
+    if (currentStep === 'processing') return 80;
+    if (currentStep === 'complete') return 100;
+    return 0;
   };
 
   const getImportanceColor = (importance: string) => {
     switch (importance) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high': return 'text-red-600 bg-red-50';
+      case 'medium': return 'text-yellow-600 bg-yellow-50';
+      case 'low': return 'text-green-600 bg-green-50';
+      default: return 'text-gray-600 bg-gray-50';
     }
   };
 
   const renderQuestionInput = (question: OnboardingQuestion) => {
+    const value = answers[question.id] || '';
+
     switch (question.expected_answer_type) {
-      case 'numeric':
+      case 'multiselect':
         return (
-          <Input
-            type="number"
-            placeholder="Enter a number"
-            value={answers[question.id] || ''}
-            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-            className="w-full"
-          />
+          <div className="space-y-2">
+            {question.options?.map((option, index) => (
+              <label key={index} className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={Array.isArray(value) ? value.includes(option) : false}
+                  onChange={(e) => {
+                    const currentValues = Array.isArray(value) ? value : [];
+                    const newValues = e.target.checked
+                      ? [...currentValues, option]
+                      : currentValues.filter(v => v !== option);
+                    handleAnswerChange(question.id, JSON.stringify(newValues));
+                  }}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm">{option}</span>
+              </label>
+            ))}
+          </div>
         );
+
       case 'boolean':
         return (
           <div className="space-y-2">
@@ -613,49 +446,171 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
               <input
                 type="radio"
                 name={question.id}
-                value="yes"
-                checked={answers[question.id] === 'yes'}
+                value="true"
+                checked={value === 'true'}
                 onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                className="rounded border-gray-300"
               />
-              <span>Yes</span>
+              <span className="text-sm">Yes</span>
             </label>
             <label className="flex items-center space-x-2">
               <input
                 type="radio"
                 name={question.id}
-                value="no"
-                checked={answers[question.id] === 'no'}
+                value="false"
+                checked={value === 'false'}
                 onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                className="rounded border-gray-300"
               />
-              <span>No</span>
+              <span className="text-sm">No</span>
             </label>
           </div>
         );
+
+      case 'numeric':
+        return (
+          <Input
+            type="number"
+            value={value}
+            onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+            placeholder="Enter a number"
+            className="w-full"
+          />
+        );
+
       default:
         return (
           <Textarea
-            placeholder="Enter your answer..."
-            value={answers[question.id] || ''}
+            value={value}
             onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-            className="w-full"
-            rows={3}
+            placeholder="Enter your answer..."
+            className="w-full min-h-[100px]"
           />
         );
     }
   };
+
+  const renderAssessmentScreen = () => (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Brain className="h-6 w-6 text-blue-600" />
+            <span>AI Knowledge Assessment</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {knowledgeAssessment && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Data Completeness</span>
+                    <Badge variant={knowledgeAssessment.confidence_score > 0.7 ? 'default' : 'outline'}>
+                      {knowledgeAssessment.data_completeness}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Confidence Score</span>
+                      <span className="text-sm font-medium">
+                        {Math.round(knowledgeAssessment.confidence_score * 100)}%
+                      </span>
+                    </div>
+                    <Progress value={knowledgeAssessment.confidence_score * 100} className="w-full" />
+                  </div>
+
+                  {industryCategory && (
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <Info className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium">Industry Category</span>
+                      </div>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {industryCategory.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Critical Knowledge Gaps</h4>
+                    <div className="space-y-1">
+                      {knowledgeAssessment.critical_gaps.map((gap, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <AlertCircle className="h-4 w-4 text-red-500" />
+                          <span className="text-sm text-red-700">
+                            {gap.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Knowledge Areas</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {knowledgeAssessment.knowledge_areas.map((area, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {area.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Alert>
+                <Lightbulb className="h-4 w-4" />
+                <AlertDescription>
+                  Our AI has identified areas where we need more information to provide you with the best industrial symbiosis opportunities. 
+                  We'll ask targeted questions to fill these knowledge gaps and generate personalized material listings.
+                </AlertDescription>
+              </Alert>
+            </>
+          )}
+
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleNext} disabled={isGeneratingQuestions}>
+              {isGeneratingQuestions ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating Questions...
+                </>
+              ) : (
+                <>
+                  Generate AI Questions
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   if (currentStep === 'loading') {
     return (
       <Card className="w-full max-w-2xl mx-auto">
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">AI is generating personalized questions...</h3>
+          <h3 className="text-lg font-semibold mb-2">AI Assessment in Progress</h3>
           <p className="text-gray-600 text-center">
-            Our AI is analyzing your company profile to create the most relevant questions for accurate industrial symbiosis matching.
+            Our AI is analyzing your company profile to identify knowledge gaps and generate personalized questions...
           </p>
         </CardContent>
       </Card>
     );
+  }
+
+  if (currentStep === 'assessment') {
+    return renderAssessmentScreen();
   }
 
   if (currentStep === 'questions' && questionsData) {
