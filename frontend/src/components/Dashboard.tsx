@@ -1,127 +1,120 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
-import { 
-  Users, 
-  Package, 
-  Target, 
-  Leaf, 
-  DollarSign, 
-  Recycle, 
-  TrendingUp, 
-  Activity, 
-  Zap, 
-  Plus, 
-  RefreshCw, 
-  Lightbulb,
+  BarChart3, 
+  Bell, 
   Brain, 
+  Building2, 
+  Calendar, 
+  Crown, 
   Factory, 
-  Bell,
   Globe,
+  Home, 
+  MessageSquare, 
+  Plus, 
+  Recycle, 
+  Settings, 
   ShoppingCart,
-  AlertTriangle,
-  User,
-  Award,
   Star,
-  Calendar,
-  MapPin,
-  ArrowRight,
+  TrendingUp, 
+  Users, 
+  Workflow,
+  Zap,
+  Eye,
   CheckCircle,
+  AlertCircle,
+  Clock,
+  X,
+  Info,
+  Lightbulb,
+  Target,
+  ArrowRight,
   Sparkles,
-  Loader2,
-  Store
+  Moon,
+  Sun,
+  RotateCcw
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useNotifications } from '../lib/notificationContext';
-import { activityService } from '../lib/activityService';
+import { useNavigate } from 'react-router-dom';
+import { AISuggestionsService, AISuggestion } from '../lib/aiSuggestionsService';
+import { FederatedLearningService } from '../lib/federatedLearningService';
+import { AISuggestionFeedback } from './AISuggestionFeedback';
+import { useTheme } from '../contexts/ThemeContext';
 
-interface CompanyProfile {
+interface UserProfile {
   id: string;
   name: string;
-  industry: string;
+  email: string;
+  role: string;
+  level: number;
+  xp: number;
+  streak_days: number;
+  subscription?: {
+    tier: string;
+    status: string;
+    expires_at?: string;
+  };
+  company_profile?: {
+    role: string;
   location: string;
-  employee_count: number;
-    size_category: string;
-    industry_position: string;
-    sustainability_rating: string;
-    growth_potential: string;
-  joined_date: string;
+    organization_type: string;
+    materials_of_interest: string;
+    sustainability_goals: string;
+  };
 }
 
-interface Achievements {
-    total_savings: number;
-    carbon_reduced: number;
-    partnerships_formed: number;
-    waste_diverted: number;
-  matches_completed: number;
-  sustainability_score: number;
-  efficiency_improvement: number;
-}
-
-interface PersonalizedRecommendation {
+interface AIRecommendation {
   id: string;
-    category: string;
+  type: 'connection' | 'material' | 'opportunity';
   title: string;
   description: string;
-  potential_impact: {
-    savings: number;
-    carbon_reduction: number;
-    efficiency_gain: number;
-  };
-  implementation_difficulty: 'easy' | 'medium' | 'hard';
-  time_to_implement: string;
-  priority: 'high' | 'medium' | 'low';
-  ai_reasoning: string;
+  confidence: number;
+  action_url?: string;
+  status: string;
+  created_at: string;
 }
 
-interface RecentActivity {
+interface Activity {
   id: string;
-    date: string;
-    action: string;
-    impact: string;
-  category: 'match' | 'savings' | 'partnership' | 'sustainability';
+  type: 'match' | 'message' | 'listing' | 'connection';
+  title: string;
+  description: string;
+  timestamp: string;
+  status: 'pending' | 'completed' | 'active';
 }
 
-interface PortfolioData {
-  company: CompanyProfile;
-  achievements: Achievements;
-  recommendations: PersonalizedRecommendation[];
-  recent_activity: RecentActivity[];
-  next_milestones: string[];
-  industry_comparison: {
-    rank: number;
-    total_companies: number;
-    average_savings: number;
-    your_savings: number;
-  };
-}
-
-interface MaterialListing {
+interface MaterialMatch {
+  id: string;
   material_name: string;
+  company_name: string;
+  match_score: number;
+  distance: string;
   type: 'waste' | 'requirement';
-  quantity: string;
+  quantity: number;
   unit: string;
   description: string;
-  category?: string;
-  match_score?: string;
 }
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const { showNotification } = useNotifications();
+  const { theme, toggleTheme, isDark } = useTheme();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [materialMatches, setMaterialMatches] = useState<MaterialMatch[]>([]);
+  const [stats, setStats] = useState({
+    connections: 0,
+    materials_listed: 0,
+    matches_found: 0,
+    sustainability_score: 0,
+    xp: 0,
+    streak_days: 0
+  });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
-  const [materialListings, setMaterialListings] = useState<MaterialListing[]>([]);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [feedbackMetrics, setFeedbackMetrics] = useState<any>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadDashboardData();
@@ -130,816 +123,680 @@ const Dashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      setError(null);
+      setLoadError(null);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/login');
+        // Create demo data for unauthenticated users
+        setUserProfile({
+          id: 'demo-user',
+          name: 'Demo User',
+          email: 'demo@example.com',
+          role: 'user',
+          level: 5,
+          xp: 1250,
+          streak_days: 7,
+          subscription: {
+            tier: 'free',
+            status: 'active'
+          },
+          company_profile: {
+            role: 'Manufacturing Manager',
+            location: 'Dubai, UAE',
+            organization_type: 'Manufacturing',
+            materials_of_interest: 'Steel, Plastic, Electronics',
+            sustainability_goals: 'Reduce waste by 30%'
+          }
+        });
+
+        setStats({
+          connections: 12,
+          materials_listed: 8,
+          matches_found: 15,
+          sustainability_score: 85.5,
+          xp: 1250,
+          streak_days: 7
+        });
+
+        setRecentActivity([
+          {
+            id: 'act-1',
+            type: 'match',
+            title: 'New AI Match',
+            description: 'Found 95% match with Emirates Steel',
+            timestamp: new Date().toISOString(),
+            status: 'active'
+          }
+        ]);
+
+        setLoading(false);
         return;
       }
 
-      // Fetch real company data from database
-      const { data: company, error: companyError } = await supabase
+      // Load real user data
+      const { data: profile, error: profileError } = await supabase
         .from('companies')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (companyError) {
-        console.error('Error fetching company data:', companyError);
-        throw new Error('Failed to load company data');
+      if (profileError) {
+        console.error('Error loading profile:', profileError);
+        setLoadError('Failed to load user profile');
+        setLoading(false);
+        return;
       }
 
-      // Fetch real user activities
-      const activities = await activityService.getUserActivities(user.id, 10);
-      
-      // Fetch AI insights if available
-      const { data: aiInsights, error: aiInsightsError } = await supabase
-        .from('ai_insights')
-        .select('impact, description, metadata, confidence_score, created_at')
-        .eq('company_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (aiInsightsError) {
-        console.error('Error fetching AI insights:', aiInsightsError);
-        throw new Error('Failed to load AI insights');
-      }
-
-      // Create portfolio data from real database information
-      const portfolio: PortfolioData = {
-        company: {
-          id: company.id,
-          name: company.name || 'Your Company',
-          industry: company.industry || 'Unknown',
-          location: company.location || 'Unknown',
-          employee_count: company.employee_count || 0,
-          size_category: (company.employee_count || 0) > 1000 ? 'Large' : 
-                       (company.employee_count || 0) > 200 ? 'Medium' : 'Small',
-          industry_position: company.onboarding_completed ? 'Active' : 'Pending',
-          sustainability_rating: aiInsights[0]?.confidence_score ? 'High' : 'Developing',
-          growth_potential: 'High',
-          joined_date: company.created_at || new Date().toISOString()
-        },
-        achievements: {
-          total_savings: parseInt(aiInsights[0]?.metadata?.estimated_savings?.replace(/[^0-9]/g, '') || '0'),
-          carbon_reduced: parseInt(aiInsights[0]?.metadata?.carbon_reduction?.replace(/[^0-9]/g, '') || '0'),
-          partnerships_formed: activities.filter(a => a.activity_type === 'connection_accepted').length,
-          waste_diverted: activities.filter(a => a.activity_type === 'material_listed').length,
-          matches_completed: activities.filter(a => a.activity_type === 'match_found').length,
-          sustainability_score: parseInt(aiInsights[0]?.confidence_score?.replace(/[^0-9]/g, '') || '65'),
-          efficiency_improvement: 15
-        },
-        recommendations: generateAIRecommendations(company, aiInsights[0]),
-        recent_activity: activities.map(activity => ({
-          id: activity.id,
-          date: new Date(activity.created_at).toLocaleDateString(),
-          action: activity.title,
-          impact: activity.impact_level === 'high' ? 'High Impact' : 
-                  activity.impact_level === 'medium' ? 'Medium Impact' : 'Low Impact',
-          category: activity.activity_type === 'match_found' ? 'match' :
-                   activity.activity_type === 'connection_accepted' ? 'partnership' :
-                   activity.activity_type === 'material_listed' ? 'savings' : 'sustainability'
-        })),
-        next_milestones: company.onboarding_completed ? [
-          'Complete your first material exchange',
-          'Connect with 3 potential partners',
-          'Implement your first waste reduction initiative'
-        ] : [
-          'Complete AI onboarding process',
-          'Set up your company profile',
-          'List your first materials'
-        ],
-        industry_comparison: {
-          rank: Math.floor(Math.random() * 50) + 1,
-          total_companies: 150,
-          average_savings: 25000,
-          your_savings: parseInt(aiInsights[0]?.metadata?.estimated_savings?.replace(/[^0-9]/g, '') || '15000')
+      setUserProfile({
+        id: user.id,
+        name: profile.name || user.email || 'Unknown User',
+        email: user.email || 'unknown@example.com',
+        role: profile.role || 'user',
+        level: 1,
+        xp: 0,
+        streak_days: 0,
+        company_profile: {
+          role: profile.industry || 'Unknown',
+          location: profile.location || 'Unknown',
+          organization_type: profile.industry || 'Unknown',
+          materials_of_interest: profile.process_description || 'Not specified',
+          sustainability_goals: profile.sustainability_goals || 'Not specified'
         }
-      };
+      });
 
-      setPortfolioData(portfolio);
-      setHasCompletedOnboarding(!!company.onboarding_completed);
+      // Load AI suggestions
+      await loadAISuggestions(user.id);
 
-      // Load AI-generated materials
-      const { data: materials, error: materialsError } = await supabase
-              .from('materials')
-              .select('*')
-        .eq('company_id', user.id)
-        .eq('ai_generated', true);
+      // Load stats and other data
+      await loadStats(user.id);
+      await loadRecentActivity(user.id);
+      await loadFeedbackMetrics(user.id);
 
-      if (materials && !materialsError) {
-        setMaterialListings(materials.map(m => ({
-          material_name: m.name,
-          type: m.type as 'waste' | 'requirement',
-          quantity: m.quantity,
-          unit: m.unit,
-          description: m.description,
-          category: m.category,
-          match_score: m.match_score?.toString()
-        })));
-      }
-
-    } catch (err) {
-      console.error('Error loading dashboard data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
-    } finally {
+      setLoading(false);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      setLoadError('Failed to load dashboard data');
       setLoading(false);
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-600 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-600 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-600 border-green-200';
-      default: return 'bg-gray-100 text-gray-600 border-gray-200';
+  const loadAISuggestions = async (userId: string) => {
+    try {
+      setSuggestionsLoading(true);
+      
+      // First try to get stored suggestions
+      let suggestions = await AISuggestionsService.getStoredSuggestions(userId);
+      
+      // If no stored suggestions, generate new ones
+      if (suggestions.length === 0) {
+        suggestions = await AISuggestionsService.generateSuggestions(userId);
+      }
+      
+      setAiSuggestions(suggestions);
+    } catch (error) {
+      console.error('Error loading AI suggestions:', error);
+      // Don't set any fallback suggestions - let the UI show the onboarding prompt
+      setAiSuggestions([]);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  const loadStats = async (userId: string) => {
+    try {
+      // Load materials count
+      const { data: materials, error: materialsError } = await supabase
+        .from('materials')
+        .select('id')
+        .eq('company_id', userId);
+
+      // Load connections count (placeholder)
+      const connections = 0;
+
+      // Load matches count (placeholder)
+      const matches = 0;
+
+      // Calculate sustainability score based on AI insights
+      const { data: aiInsights } = await supabase
+        .from('ai_insights')
+        .select('sustainability_score, symbiosis_score')
+        .eq('company_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      const sustainabilityScore = aiInsights?.sustainability_score || 
+                                 aiInsights?.symbiosis_score || 
+                                 65;
+
+      setStats({
+        connections,
+        materials_listed: materials?.length || 0,
+        matches_found: matches,
+        sustainability_score: typeof sustainabilityScore === 'string' ? 
+          parseInt(sustainabilityScore.replace(/[^0-9]/g, '')) : sustainabilityScore,
+        xp: 0,
+        streak_days: 0
+      });
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  const loadRecentActivity = async (userId: string) => {
+    try {
+      // Load recent materials
+      const { data: materials } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('company_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const activities: Activity[] = [];
+      
+      if (materials && materials.length > 0) {
+        materials.forEach(material => {
+          activities.push({
+            id: `material-${material.id}`,
+            type: 'listing',
+            title: 'Material Listed',
+            description: `Added ${material.name} to marketplace`,
+            timestamp: material.created_at,
+            status: 'completed'
+          });
+        });
+      }
+
+      setRecentActivity(activities);
+    } catch (error) {
+      console.error('Error loading recent activity:', error);
+    }
+  };
+
+  const loadFeedbackMetrics = async (userId: string) => {
+    try {
+      const metrics = await FederatedLearningService.getFeedbackMetrics(userId);
+      setFeedbackMetrics(metrics);
+    } catch (error) {
+      console.error('Error loading feedback metrics:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const handleNotifications = () => {
+    // Handle notifications
+  };
+
+  const handleChats = () => {
+    navigate('/chats');
+  };
+
+  const handleOnboarding = () => {
+    navigate('/ai-onboarding');
+  };
+
+  const handleMarketplace = () => {
+    navigate('/marketplace');
+  };
+
+  const handleSuggestionFeedback = async () => {
+    // Refresh suggestions after feedback
+    if (userProfile?.id) {
+      await loadAISuggestions(userProfile.id);
+      await loadFeedbackMetrics(userProfile.id);
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'energy':
+        return <Zap className="h-4 w-4" />;
+      case 'efficiency':
+        return <TrendingUp className="h-4 w-4" />;
+      case 'partnership':
+        return <Users className="h-4 w-4" />;
+      case 'waste':
+        return <Recycle className="h-4 w-4" />;
+      case 'materials':
+        return <Factory className="h-4 w-4" />;
+      case 'technology':
+        return <Brain className="h-4 w-4" />;
+      default:
+        return <Lightbulb className="h-4 w-4" />;
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    if (isDark) {
+      switch (category) {
+        case 'energy':
+          return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50';
+        case 'efficiency':
+          return 'bg-blue-900/30 text-blue-300 border-blue-700/50';
+        case 'partnership':
+          return 'bg-purple-900/30 text-purple-300 border-purple-700/50';
+        case 'waste':
+          return 'bg-green-900/30 text-green-300 border-green-700/50';
+        case 'materials':
+          return 'bg-orange-900/30 text-orange-300 border-orange-700/50';
+        case 'technology':
+          return 'bg-indigo-900/30 text-indigo-300 border-indigo-700/50';
+        default:
+          return 'bg-gray-900/30 text-gray-300 border-gray-700/50';
+      }
+    } else {
+      switch (category) {
+        case 'energy':
+          return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        case 'efficiency':
+          return 'bg-blue-100 text-blue-800 border-blue-200';
+        case 'partnership':
+          return 'bg-purple-100 text-purple-800 border-purple-200';
+        case 'waste':
+          return 'bg-green-100 text-green-800 border-green-200';
+        case 'materials':
+          return 'bg-orange-100 text-orange-800 border-orange-200';
+        case 'technology':
+          return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+        default:
+          return 'bg-gray-100 text-gray-800 border-gray-200';
+      }
     }
   };
 
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'easy': return 'bg-green-100 text-green-600 border-green-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-600 border-yellow-200';
-      case 'hard': return 'bg-red-100 text-red-600 border-red-200';
-      default: return 'bg-gray-100 text-gray-600 border-gray-200';
+    if (isDark) {
+      switch (difficulty) {
+        case 'easy':
+          return 'bg-green-900/30 text-green-300';
+        case 'medium':
+          return 'bg-yellow-900/30 text-yellow-300';
+        case 'hard':
+          return 'bg-red-900/30 text-red-300';
+        default:
+          return 'bg-gray-900/30 text-gray-300';
+      }
+    } else {
+      switch (difficulty) {
+        case 'easy':
+          return 'bg-green-100 text-green-800';
+        case 'medium':
+          return 'bg-yellow-100 text-yellow-800';
+        case 'hard':
+          return 'bg-red-100 text-red-800';
+        default:
+          return 'bg-gray-100 text-gray-800';
+      }
     }
   };
 
-  const getActivityIcon = (category: string) => {
-    switch (category) {
-      case 'match': return <Users className="w-4 h-4" />;
-      case 'savings': return <DollarSign className="w-4 h-4" />;
-      case 'partnership': return <Target className="w-4 h-4" />;
-      case 'sustainability': return <Leaf className="w-4 h-4" />;
-      default: return <Activity className="w-4 h-4" />;
+  const getPriorityColor = (priority: string) => {
+    if (isDark) {
+      switch (priority) {
+        case 'high':
+          return 'bg-red-900/30 text-red-300';
+        case 'medium':
+          return 'bg-yellow-900/30 text-yellow-300';
+        case 'low':
+          return 'bg-green-900/30 text-green-300';
+        default:
+          return 'bg-gray-900/30 text-gray-300';
+      }
+    } else {
+      switch (priority) {
+        case 'high':
+          return 'bg-red-100 text-red-800';
+        case 'medium':
+          return 'bg-yellow-100 text-yellow-800';
+        case 'low':
+          return 'bg-green-100 text-green-800';
+        default:
+          return 'bg-gray-100 text-gray-800';
+      }
     }
   };
 
-  const getActivityColor = (category: string) => {
-    switch (category) {
-      case 'match': return 'bg-blue-100 text-blue-600';
-      case 'savings': return 'bg-green-100 text-green-600';
-      case 'partnership': return 'bg-purple-100 text-purple-600';
-      case 'sustainability': return 'bg-emerald-100 text-emerald-600';
-      default: return 'bg-gray-100 text-gray-600';
-    }
-  };
-
-  // Generate genuine AI-powered recommendations based on company profile
-  const generateAIRecommendations = (company: any, aiInsights: any): PersonalizedRecommendation[] => {
-    const recommendations: PersonalizedRecommendation[] = [];
-
-    // If onboarding not completed, that's the top priority
-    if (!company.onboarding_completed) {
-      recommendations.push({
-        id: 'rec-onboarding',
-        category: 'onboarding',
-        title: 'Complete AI Onboarding',
-        description: 'Finish the AI onboarding process to unlock personalized symbiosis opportunities and get tailored recommendations.',
-        potential_impact: {
-          savings: 25000,
-          carbon_reduction: 35,
-          efficiency_gain: 25
-        },
-        implementation_difficulty: 'easy',
-        time_to_implement: '30 minutes',
-        priority: 'high',
-        ai_reasoning: 'Required to unlock personalized symbiosis opportunities and access advanced AI matching'
-      });
-    }
-
-    // Generate industry-specific recommendations
-    const industry = company.industry?.toLowerCase() || '';
-    const location = company.location?.toLowerCase() || '';
-    const employeeCount = company.employee_count || 0;
-
-    // Manufacturing industry recommendations
-    if (industry.includes('manufacturing') || industry.includes('factory') || industry.includes('production')) {
-      recommendations.push({
-        id: 'rec-waste-heat',
-        category: 'energy',
-        title: 'Waste Heat Recovery System',
-        description: 'Implement waste heat recovery to capture and reuse thermal energy from your manufacturing processes.',
-        potential_impact: {
-          savings: 45000,
-          carbon_reduction: 60,
-          efficiency_gain: 30
-        },
-        implementation_difficulty: 'medium',
-        time_to_implement: '2-3 months',
-        priority: 'high',
-        ai_reasoning: `Based on your ${company.industry} industry - manufacturing typically generates significant waste heat that can be captured and reused`
-      });
-
-      recommendations.push({
-        id: 'rec-material-optimization',
-        category: 'materials',
-        title: 'Material Waste Optimization',
-        description: 'Analyze and optimize material usage patterns to reduce waste and improve resource efficiency.',
-        potential_impact: {
-          savings: 30000,
-          carbon_reduction: 40,
-          efficiency_gain: 20
-        },
-        implementation_difficulty: 'easy',
-        time_to_implement: '1-2 months',
-        priority: 'medium',
-        ai_reasoning: `Your ${company.industry} operations likely have material waste opportunities that can be optimized`
-      });
-    }
-
-    // Food & Beverage industry recommendations
-    if (industry.includes('food') || industry.includes('beverage') || industry.includes('agriculture')) {
-      recommendations.push({
-        id: 'rec-organic-waste',
-        category: 'waste',
-        title: 'Organic Waste to Biogas',
-        description: 'Convert organic waste streams into biogas for energy production or partner with local biogas facilities.',
-        potential_impact: {
-          savings: 35000,
-          carbon_reduction: 50,
-          efficiency_gain: 25
-        },
-        implementation_difficulty: 'medium',
-        time_to_implement: '3-4 months',
-        priority: 'high',
-        ai_reasoning: `Food and beverage industries generate significant organic waste that can be converted to renewable energy`
-      });
-    }
-
-    // Chemical industry recommendations
-    if (industry.includes('chemical') || industry.includes('pharmaceutical')) {
-      recommendations.push({
-        id: 'rec-solvent-recovery',
-        category: 'chemicals',
-        title: 'Solvent Recovery System',
-        description: 'Implement solvent recovery and recycling systems to reduce chemical waste and costs.',
-        potential_impact: {
-          savings: 55000,
-          carbon_reduction: 45,
-          efficiency_gain: 35
-        },
-        implementation_difficulty: 'hard',
-        time_to_implement: '4-6 months',
-        priority: 'high',
-        ai_reasoning: `Chemical industries use significant amounts of solvents that can be recovered and reused`
-      });
-    }
-
-    // Textile industry recommendations
-    if (industry.includes('textile') || industry.includes('fashion') || industry.includes('clothing')) {
-      recommendations.push({
-        id: 'rec-fabric-recycling',
-        category: 'materials',
-        title: 'Fabric Waste Recycling Program',
-        description: 'Establish a fabric waste recycling program to reduce textile waste and create new materials.',
-        potential_impact: {
-          savings: 25000,
-          carbon_reduction: 35,
-          efficiency_gain: 20
-        },
-        implementation_difficulty: 'medium',
-        time_to_implement: '2-3 months',
-        priority: 'medium',
-        ai_reasoning: `Textile industries generate significant fabric waste that can be recycled into new materials`
-      });
-    }
-
-    // Location-based recommendations
-    if (location.includes('california') || location.includes('ca')) {
-      recommendations.push({
-        id: 'rec-solar-energy',
-        category: 'energy',
-        title: 'Solar Energy Integration',
-        description: 'Leverage California\'s solar incentives to install solar panels and reduce energy costs.',
-        potential_impact: {
-          savings: 40000,
-          carbon_reduction: 55,
-          efficiency_gain: 15
-        },
-        implementation_difficulty: 'medium',
-        time_to_implement: '3-4 months',
-        priority: 'medium',
-        ai_reasoning: `California offers excellent solar incentives and has high energy costs, making solar very cost-effective`
-      });
-    }
-
-    if (location.includes('texas') || location.includes('tx')) {
-      recommendations.push({
-        id: 'rec-wind-energy',
-        category: 'energy',
-        title: 'Wind Energy Partnership',
-        description: 'Partner with local wind energy providers to source renewable energy at competitive rates.',
-        potential_impact: {
-          savings: 30000,
-          carbon_reduction: 40,
-          efficiency_gain: 10
-        },
-        implementation_difficulty: 'easy',
-        time_to_implement: '1-2 months',
-        priority: 'medium',
-        ai_reasoning: `Texas leads in wind energy production, offering competitive renewable energy options`
-      });
-    }
-
-    // Size-based recommendations
-    if (employeeCount > 500) {
-      recommendations.push({
-        id: 'rec-energy-audit',
-        category: 'energy',
-        title: 'Comprehensive Energy Audit',
-        description: 'Conduct a comprehensive energy audit to identify efficiency opportunities across all operations.',
-        potential_impact: {
-          savings: 60000,
-          carbon_reduction: 70,
-          efficiency_gain: 25
-        },
-        implementation_difficulty: 'medium',
-        time_to_implement: '2-3 months',
-        priority: 'high',
-        ai_reasoning: `Large companies like yours typically have significant energy optimization opportunities`
-      });
-    }
-
-    if (employeeCount < 100) {
-      recommendations.push({
-        id: 'rec-simple-efficiency',
-        category: 'efficiency',
-        title: 'Simple Efficiency Measures',
-        description: 'Implement simple efficiency measures like LED lighting, smart thermostats, and energy monitoring.',
-        potential_impact: {
-          savings: 15000,
-          carbon_reduction: 20,
-          efficiency_gain: 15
-        },
-        implementation_difficulty: 'easy',
-        time_to_implement: '2-4 weeks',
-        priority: 'medium',
-        ai_reasoning: `Smaller companies can achieve quick wins with simple, low-cost efficiency measures`
-      });
-    }
-
-    // Add AI insights if available
-    if (aiInsights?.top_opportunities?.length > 0) {
-      aiInsights.top_opportunities.forEach((opportunity: string, index: number) => {
-        recommendations.push({
-          id: `rec-ai-${index}`,
-          category: 'ai-insight',
-          title: opportunity,
-          description: `AI-identified opportunity based on your specific company profile and market analysis.`,
-          potential_impact: {
-            savings: 20000 + (index * 10000),
-            carbon_reduction: 30 + (index * 10),
-            efficiency_gain: 20 + (index * 5)
-          },
-          implementation_difficulty: index === 0 ? 'easy' : index === 1 ? 'medium' : 'hard',
-          time_to_implement: index === 0 ? '1-2 weeks' : index === 1 ? '1-2 months' : '3-6 months',
-          priority: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
-          ai_reasoning: `AI analysis of your ${company.industry} industry, ${company.location} location, and company size identified this opportunity`
-        });
-      });
-    }
-
-    // If no specific recommendations, add general ones
-    if (recommendations.length === 0 || (recommendations.length === 1 && recommendations[0].category === 'onboarding')) {
-      recommendations.push({
-        id: 'rec-general-efficiency',
-        category: 'efficiency',
-        title: 'Energy Efficiency Assessment',
-        description: 'Conduct an energy efficiency assessment to identify cost-saving opportunities.',
-        potential_impact: {
-          savings: 25000,
-          carbon_reduction: 30,
-          efficiency_gain: 20
-        },
-        implementation_difficulty: 'easy',
-        time_to_implement: '1-2 months',
-        priority: 'medium',
-        ai_reasoning: `Most companies can achieve 10-30% energy savings through efficiency measures`
-      });
-
-      recommendations.push({
-        id: 'rec-waste-audit',
-        category: 'waste',
-        title: 'Waste Stream Analysis',
-        description: 'Analyze your waste streams to identify recycling and reuse opportunities.',
-        potential_impact: {
-          savings: 20000,
-          carbon_reduction: 25,
-          efficiency_gain: 15
-        },
-        implementation_difficulty: 'easy',
-        time_to_implement: '1-2 months',
-        priority: 'medium',
-        ai_reasoning: `Waste analysis typically reveals 20-40% of materials that can be recycled or reused`
-      });
-    }
-
-    return recommendations.slice(0, 6); // Limit to 6 recommendations
-  };
+  const isProOrAdmin = userProfile?.subscription?.tier === 'pro' || userProfile?.role === 'admin';
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-500"></div>
+      <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'}`}>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
+            <p className={`text-slate-300`}>Loading your dashboard...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  if (loadError) {
     return (
-      <div className="text-center space-y-4">
-        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
-        <h3 className="text-lg font-semibold text-white">Error Loading Dashboard</h3>
-        <p className="text-gray-300">{error}</p>
-              <Button 
-                onClick={() => {
-                  setError(null);
-                  loadDashboardData();
-                }}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
-      </div>
-    );
-  }
-
-  if (!portfolioData) {
-  return (
-      <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
-        <CardContent className="p-6 text-center">
-          <p className="text-gray-300">No portfolio data available. Complete AI onboarding to generate your personalized portfolio.</p>
-          <Button 
-            onClick={() => navigate('/ai-onboarding')}
-            className="mt-4 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white"
+      <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'} flex items-center justify-center`}>
+        <div className={`${isDark ? 'bg-slate-800/80' : 'bg-white/80'} backdrop-blur-sm rounded-xl shadow-lg p-8 max-w-md text-center border ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className={`text-lg font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'} mb-2`}>Error Loading Dashboard</h3>
+          <p className={`${isDark ? 'text-slate-300' : 'text-slate-600'} mb-4`}>{loadError}</p>
+          <button
+            onClick={loadDashboardData}
+            className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition"
           >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Start AI Onboarding
-          </Button>
-        </CardContent>
-      </Card>
+            Try Again
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Company Profile Header - Beautiful Purple Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
+    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'}`}>
+      {/* Navigation */}
+      <nav className={`${isDark ? 'bg-slate-800/80' : 'bg-white/80'} backdrop-blur-sm shadow-sm border-b ${isDark ? 'border-slate-700' : 'border-slate-200'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <div className="flex items-center space-x-2">
+                <Workflow className="h-8 w-8 text-emerald-500" />
+                <span className={`text-2xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>SymbioFlow</span>
+              </div>
+              <div className="hidden md:ml-10 md:flex md:space-x-8">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className="text-emerald-600 border-b-2 border-emerald-600 px-1 pt-1 pb-4 text-sm font-medium"
+                >
+                  Dashboard
+                </button>
+                <button
+                  onClick={handleMarketplace}
+                  className={`${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-slate-500 hover:text-slate-700'} px-1 pt-1 pb-4 text-sm font-medium`}
+                >
+                  Marketplace
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className={`${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-slate-500 hover:text-slate-700'} px-1 pt-1 pb-4 text-sm font-medium`}
+                >
+                  Home
+                </button>
+              </div>
+            </div>
             <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-            <User className="w-8 h-8" />
+              <button
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'} transition`}
+              >
+                {isDark ? <Sun className="h-5 w-5 text-yellow-400" /> : <Moon className="h-5 w-5 text-slate-600" />}
+              </button>
+              <button
+                onClick={handleMarketplace}
+                className={`${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900'} transition`}
+              >
+                Marketplace
+              </button>
+              <button
+                onClick={handleNotifications}
+                className={`${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900'} transition relative`}
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={handleChats}
+                className={`${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900'} transition`}
+              >
+                <MessageSquare className="h-5 w-5" />
+              </button>
+              <button
+                onClick={handleSignOut}
+                className={`${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-slate-600 hover:text-slate-900'} transition`}
+              >
+                Sign Out
+              </button>
             </div>
-          <div>
-            <h1 className="text-3xl font-bold">{portfolioData.company.name}</h1>
-            <p className="text-blue-100 flex items-center space-x-2">
-              <MapPin className="w-4 h-4" />
-              <span>{portfolioData.company.location}</span>
-              <span>•</span>
-              <span>{portfolioData.company.industry}</span>
-              <span>•</span>
-              <span>{portfolioData.company.employee_count} employees</span>
-            </p>
-            <p className="text-blue-100 mt-1">
-              Member since {new Date(portfolioData.company.joined_date).toLocaleDateString()}
-            </p>
           </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className={`text-3xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                Welcome back, {userProfile?.name || ''}
+              </h1>
+              <p className={`${isDark ? 'text-slate-300' : 'text-slate-600'} mt-1`}>
+                Level {userProfile?.level || 1} • {userProfile?.xp || 0} XP • {userProfile?.streak_days || 0} day streak
+              </p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Crown className={`h-5 w-5 ${isProOrAdmin ? 'text-yellow-500' : isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                <span className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {userProfile?.subscription?.tier?.toUpperCase() || 'FREE'} Plan
+                </span>
+              </div>
+              {!isProOrAdmin && (
+                <button
+                  className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition text-sm font-medium"
+                >
+                  Upgrade to Pro
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="w-8 h-8 text-green-600" />
-                <div>
-                <p className="text-sm text-gray-600">Total Savings</p>
-                <p className="text-2xl font-bold">${portfolioData.achievements.total_savings.toLocaleString()}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Leaf className="w-8 h-8 text-green-600" />
-                <div>
-                <p className="text-sm text-gray-600">Carbon Reduced</p>
-                <p className="text-2xl font-bold">{portfolioData.achievements.carbon_reduced} tons</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Users className="w-8 h-8 text-blue-600" />
-                <div>
-                <p className="text-sm text-gray-600">Partnerships</p>
-                <p className="text-2xl font-bold">{portfolioData.achievements.partnerships_formed}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Award className="w-8 h-8 text-purple-600" />
-                <div>
-                <p className="text-sm text-gray-600">Sustainability Score</p>
-                <p className="text-2xl font-bold">{portfolioData.achievements.sustainability_score}%</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="mb-6">
+          <div className="flex space-x-2">
+            <button
+              onClick={handleOnboarding}
+              className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition font-medium"
+            >
+              Complete AI Onboarding
+            </button>
+            <button
+              onClick={handleMarketplace}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition font-medium"
+            >
+              Add New Material
+            </button>
+          </div>
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Company Overview */}
-        <Card>
-                <CardHeader>
-            <CardTitle>Company Profile</CardTitle>
-                </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-                    <div>
-                <p className="text-sm text-gray-600">Size Category</p>
-                <p className="font-semibold">{portfolioData.company.size_category}</p>
-                      </div>
-              <div>
-                <p className="text-sm text-gray-600">Industry Position</p>
-                <p className="font-semibold">{portfolioData.company.industry_position}</p>
-                    </div>
-                    <div>
-                <p className="text-sm text-gray-600">Sustainability Rating</p>
-                <Badge variant="outline" className="text-green-600">
-                  {portfolioData.company.sustainability_rating}
-                </Badge>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Growth Potential</p>
-                <Badge variant="outline" className="text-blue-600">
-                  {portfolioData.company.growth_potential}
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="border-t pt-4">
-              <p className="text-sm text-gray-600 mb-2">Efficiency Improvement</p>
-              <Progress value={portfolioData.achievements.efficiency_improvement} className="w-full" />
-              <p className="text-sm text-gray-600 mt-1">
-                {portfolioData.achievements.efficiency_improvement}% improvement in operational efficiency
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Industry Comparison */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Industry Standing</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center">
-              <p className="text-2xl font-bold text-blue-600">
-                #{portfolioData.industry_comparison.rank}
-              </p>
-              <p className="text-sm text-gray-600">
-                out of {portfolioData.industry_comparison.total_companies} companies
-                        </p>
-                      </div>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Your Savings</span>
-                <span className="font-semibold text-green-600">
-                  ${portfolioData.industry_comparison.your_savings.toLocaleString()}
-                </span>
-                    </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Industry Average</span>
-                <span className="font-semibold text-gray-600">
-                  ${portfolioData.industry_comparison.average_savings.toLocaleString()}
-                </span>
-              </div>
-            </div>
-            
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <p className="text-sm text-blue-800">
-                You're performing {portfolioData.industry_comparison.your_savings > portfolioData.industry_comparison.average_savings ? 'above' : 'below'} the industry average!
-              </p>
-                  </div>
-                </CardContent>
-              </Card>
-      </div>
-
-      {/* AI-Generated Materials */}
-            {materialListings.length > 0 && (
-        <Card>
-                <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-                    <Package className="w-5 h-5" />
-                    <span>Your AI-Generated Materials</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {materialListings.map((material, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-semibold text-gray-800">{material.material_name}</h4>
-                    <Badge className="bg-green-100 text-green-600 border-green-200">
-                            {material.type === 'waste' ? 'Available' : 'Needed'}
-                          </Badge>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                    <p className="text-gray-500">
-                            <span className="font-medium">Quantity:</span> {material.quantity} {material.unit}
-                          </p>
-                    <p className="text-gray-500">
-                            <span className="font-medium">Description:</span> {material.description}
-                          </p>
-                          {material.category && (
-                      <p className="text-gray-500">
-                              <span className="font-medium">Category:</span> {material.category}
-                            </p>
-                          )}
-                    <p className="text-green-600 font-medium">
-                            <span className="font-medium">Match Score:</span> {material.match_score || 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-      {/* AI-Powered Recommendations - The Amazing Feature You Love */}
-      <Card>
-                <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Lightbulb className="w-5 h-5" />
-            <span>AI-Powered Recommendations</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {portfolioData.recommendations.map((rec) => (
-              <Card key={rec.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg">{rec.title}</CardTitle>
-                    <Badge className={getPriorityColor(rec.priority)}>
-                      {rec.priority}
-                          </Badge>
-                        </div>
-                  <Badge className={getDifficultyColor(rec.implementation_difficulty)}>
-                    {rec.implementation_difficulty}
-                  </Badge>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-gray-600">{rec.description}</p>
-                  
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="text-center">
-                      <p className="text-gray-600">Savings</p>
-                      <p className="font-bold text-green-600">${rec.potential_impact.savings.toLocaleString()}</p>
-                            </div>
-                    <div className="text-center">
-                      <p className="text-gray-600">Carbon</p>
-                      <p className="font-bold text-green-600">{rec.potential_impact.carbon_reduction} tons</p>
-                            </div>
-                    <div className="text-center">
-                      <p className="text-gray-600">Efficiency</p>
-                      <p className="font-bold text-blue-600">+{rec.potential_impact.efficiency_gain}%</p>
-                        </div>
-                      </div>
-                  
-                  <div className="text-xs text-gray-500">
-                    <p><strong>AI Reasoning:</strong> {rec.ai_reasoning}</p>
-                    <p className="mt-1"><strong>Time to implement:</strong> {rec.time_to_implement}</p>
-                  </div>
-                  
-                <Button 
-                    className="w-full" 
-                    size="sm"
-                    onClick={() => {
-                      if (rec.category === 'onboarding') {
-                        navigate('/adaptive-onboarding');
-                      } else {
-                        // For other recommendations, show more details or navigate to relevant page
-                        showNotification({
-                          type: 'info',
-                          title: 'AI Recommendation',
-                          message: `Learn more about: ${rec.title}`
-                        });
-                      }
-                    }}
-                  >
-                    Learn More <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-                </CardContent>
-              </Card>
-            ))}
-              </div>
-            </CardContent>
-          </Card>
-
-      {/* Recent Activity */}
-      <Card>
-          <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-          <div className="space-y-3">
-            {portfolioData.recent_activity.map((activity) => (
-              <div key={activity.id} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg">
-                <div className={`p-2 rounded-full ${getActivityColor(activity.category)}`}>
-                  {getActivityIcon(activity.category)}
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{activity.action}</p>
-                  <p className="text-sm text-gray-600">{activity.impact}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">{new Date(activity.date).toLocaleDateString()}</p>
-                  <Badge className={getActivityColor(activity.category)}>
-                    {activity.category}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-            </div>
-          </CardContent>
-        </Card>
-
-      {/* Next Milestones */}
-      <Card>
-            <CardHeader>
-          <CardTitle>Next Milestones</CardTitle>
-            </CardHeader>
-            <CardContent>
-          <div className="space-y-3">
-            {portfolioData.next_milestones.map((milestone, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                <Target className="w-5 h-5 text-blue-600" />
-                <span className="font-medium">{milestone}</span>
-                        </div>
-            ))}
-                          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/marketplace')}>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className={`${isDark ? 'bg-slate-800/50' : 'bg-white/70'} backdrop-blur-sm rounded-xl shadow-sm border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+            <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
-                <Store className="h-5 w-5 text-blue-600" />
-                        </div>
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Connections</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{stats.connections || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`${isDark ? 'bg-slate-800/50' : 'bg-white/70'} backdrop-blur-sm rounded-xl shadow-sm border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Factory className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Materials Listed</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{stats.materials_listed || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`${isDark ? 'bg-slate-800/50' : 'bg-white/70'} backdrop-blur-sm rounded-xl shadow-sm border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Zap className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="ml-4">
+                <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>AI Matches</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{stats.matches_found || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div className={`${isDark ? 'bg-slate-800/50' : 'bg-white/70'} backdrop-blur-sm rounded-xl shadow-sm border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+            <div className="flex items-center">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-emerald-600" />
+              </div>
+              <div className="ml-4">
+                <p className={`text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Sustainability Score</p>
+                <p className={`text-2xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{stats.sustainability_score?.toFixed(2) || '0.00'}%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* AI-Powered Suggestions */}
+        <div className={`${isDark ? 'bg-slate-800/50' : 'bg-white/70'} backdrop-blur-sm rounded-xl shadow-sm border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6 mb-8`}>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <Sparkles className="h-6 w-6 text-emerald-600" />
+              </div>
               <div>
-                <h3 className="font-semibold">Browse Marketplace</h3>
-                <p className="text-sm text-gray-600">Find materials and partners</p>
+                <h2 className={`text-xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>AI-Powered Suggestions</h2>
+                <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} text-sm`}>Personalized recommendations based on your company profile</p>
+              </div>
+            </div>
+            <button
+              onClick={() => loadAISuggestions(userProfile?.id || '')}
+              disabled={suggestionsLoading}
+              className="bg-emerald-500 text-white px-3 py-2 rounded-lg hover:bg-emerald-600 transition text-sm font-medium disabled:opacity-50 flex items-center space-x-2"
+            >
+              <RotateCcw className={`h-4 w-4 ${suggestionsLoading ? 'animate-spin' : ''}`} />
+              <span>{suggestionsLoading ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
+          </div>
+          
+          {suggestionsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+              <span className={`ml-3 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Generating AI suggestions...</span>
+            </div>
+          ) : aiSuggestions.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {aiSuggestions.slice(0, 6).map((suggestion) => (
+                <div key={suggestion.id} className={`${isDark ? 'bg-slate-700/50' : 'bg-white/50'} backdrop-blur-sm rounded-lg border ${isDark ? 'border-slate-600' : 'border-slate-200'} p-6 hover:shadow-md transition-shadow`}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg border ${getCategoryColor(suggestion.category)}`}>
+                        {getCategoryIcon(suggestion.category)}
+                      </div>
+                      <div>
+                        <h3 className={`font-semibold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{suggestion.title}</h3>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(suggestion.priority)}`}>
+                            {suggestion.priority}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(suggestion.implementation_difficulty)}`}>
+                            {suggestion.implementation_difficulty}
+                          </span>
+                        </div>
                       </div>
                     </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/adaptive-onboarding')}>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Brain className="h-5 w-5 text-purple-600" />
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-emerald-600">
+                        ${suggestion.potential_savings.toLocaleString()}
+                      </div>
+                      <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Potential Savings</div>
+                    </div>
                   </div>
-              <div>
-                <h3 className="font-semibold">AI Onboarding</h3>
-                <p className="text-sm text-gray-600">Complete your profile with AI</p>
-              </div>
-              </div>
-            </CardContent>
-          </Card>
+                  
+                  <p className={`${isDark ? 'text-slate-300' : 'text-slate-600'} text-sm mb-4`}>{suggestion.description}</p>
+                  
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Implementation Time:</span>
+                      <span className="font-medium">{suggestion.implementation_time}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>Carbon Reduction:</span>
+                      <span className="font-medium">{suggestion.carbon_reduction} tons CO2</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>AI Confidence:</span>
+                      <span className="font-medium">{suggestion.confidence_score}%</span>
+                    </div>
+                  </div>
+                  
+                  <div className={`${isDark ? 'bg-slate-600/50' : 'bg-slate-50'} rounded-lg p-3 mb-4`}>
+                    <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                      <span className="font-medium">AI Reasoning:</span> {suggestion.ai_reasoning}
+                    </p>
+                  </div>
+                  
+                  {/* Federated Learning Feedback */}
+                  <AISuggestionFeedback
+                    suggestion={suggestion}
+                    onFeedbackSubmitted={handleSuggestionFeedback}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Lightbulb className={`h-12 w-12 ${isDark ? 'text-slate-500' : 'text-slate-400'} mx-auto mb-4`} />
+              <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} mb-4`}>No AI suggestions available yet.</p>
+              <button
+                onClick={handleOnboarding}
+                className="bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-600 transition"
+              >
+                Complete AI Onboarding
+              </button>
+            </div>
+          )}
+        </div>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/marketplace')}>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Package className="h-5 w-5 text-green-600" />
-                    </div>
-              <div>
-                <h3 className="font-semibold">Add Material</h3>
-                <p className="text-sm text-gray-600">List your materials</p>
-                    </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Recent Activity */}
+        <div className={`${isDark ? 'bg-slate-800/50' : 'bg-white/70'} backdrop-blur-sm rounded-xl shadow-sm border ${isDark ? 'border-slate-700' : 'border-slate-200'} p-6`}>
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Clock className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h2 className={`text-xl font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>Recent Activity</h2>
+              <p className={`${isDark ? 'text-slate-400' : 'text-slate-600'} text-sm`}>Your latest marketplace activity</p>
+            </div>
+          </div>
+          
+          {recentActivity.length > 0 ? (
+            <div className="space-y-4">
+              {recentActivity.map((activity) => (
+                <div key={activity.id} className={`flex items-center space-x-3 p-4 ${isDark ? 'bg-slate-700/50' : 'bg-white/50'} backdrop-blur-sm rounded-lg border ${isDark ? 'border-slate-600' : 'border-slate-200'}`}>
+                  <div className="p-2 bg-emerald-100 rounded-lg">
+                    <CheckCircle className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-medium ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{activity.title}</p>
+                    <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{activity.description}</p>
+                    <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{new Date(activity.timestamp).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Clock className={`h-12 w-12 ${isDark ? 'text-slate-500' : 'text-slate-400'} mx-auto mb-4`} />
+              <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>No recent activity.</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

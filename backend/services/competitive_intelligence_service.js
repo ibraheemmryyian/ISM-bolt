@@ -1,5 +1,6 @@
 const { EventEmitter } = require('events');
 const AdvancedNewsAPIService = require('./advanced_newsapi_service');
+const { supabase } = require('../supabase');
 
 class CompetitiveIntelligenceService extends EventEmitter {
   constructor() {
@@ -318,53 +319,121 @@ class CompetitiveIntelligenceService extends EventEmitter {
    * Track competitor social media
    */
   async trackCompetitorSocial(competitorName) {
-    // Simulate social media tracking
-    return {
-      followers: Math.floor(Math.random() * 100000) + 10000,
-      engagement_rate: Math.random() * 0.1 + 0.02,
-      recent_posts: Math.floor(Math.random() * 20) + 5,
-      sentiment: ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)],
-      trending_topics: ['sustainability', 'innovation', 'partnerships']
-    };
+    try {
+      // Query database for real social media data
+      const { data: socialData, error } = await supabase
+        .from('competitor_social_media')
+        .select('*')
+        .eq('competitor_name', competitorName)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !socialData) {
+        return { followers: 0, engagement_rate: 0, recent_posts: 0, sentiment: 'neutral', trending_topics: [] };
+      }
+
+      return {
+        followers: socialData.followers || 0,
+        engagement_rate: socialData.engagement_rate || 0,
+        recent_posts: socialData.recent_posts || 0,
+        sentiment: socialData.sentiment || 'neutral',
+        trending_topics: socialData.trending_topics || []
+      };
+    } catch (error) {
+      console.error('Error tracking competitor social media:', error);
+      return { followers: 0, engagement_rate: 0, recent_posts: 0, sentiment: 'neutral', trending_topics: [] };
+    }
   }
 
   /**
    * Track competitor patents
    */
   async trackCompetitorPatents(competitorName) {
-    // Simulate patent tracking
-    return {
-      recent_patents: Math.floor(Math.random() * 10) + 1,
-      patent_categories: ['AI', 'Materials', 'Processes'],
-      innovation_score: Math.random() * 0.5 + 0.5,
-      technology_focus: ['machine learning', 'circular economy', 'automation']
-    };
+    try {
+      // Query database for real patent data
+      const { data: patentData, error } = await supabase
+        .from('competitor_patents')
+        .select('*')
+        .eq('competitor_name', competitorName)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !patentData) {
+        return { recent_patents: 0, patent_categories: [], innovation_score: 0, technology_focus: [] };
+      }
+
+      return {
+        recent_patents: patentData.recent_patents || 0,
+        patent_categories: patentData.patent_categories || [],
+        innovation_score: patentData.innovation_score || 0,
+        technology_focus: patentData.technology_focus || []
+      };
+    } catch (error) {
+      console.error('Error tracking competitor patents:', error);
+      return { recent_patents: 0, patent_categories: [], innovation_score: 0, technology_focus: [] };
+    }
   }
 
   /**
    * Track competitor hiring
    */
   async trackCompetitorHiring(competitorName) {
-    // Simulate hiring tracking
-    return {
-      open_positions: Math.floor(Math.random() * 20) + 5,
-      skill_focus: ['AI/ML', 'Sustainability', 'Engineering'],
-      growth_indicator: Math.random() * 0.3 + 0.1,
-      strategic_roles: ['Data Scientist', 'Sustainability Manager', 'Product Manager']
-    };
+    try {
+      // Query database for real hiring data
+      const { data: hiringData, error } = await supabase
+        .from('competitor_hiring')
+        .select('*')
+        .eq('competitor_name', competitorName)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !hiringData) {
+        return { open_positions: 0, skill_focus: [], growth_indicator: 0, strategic_roles: [] };
+      }
+
+      return {
+        open_positions: hiringData.open_positions || 0,
+        skill_focus: hiringData.skill_focus || [],
+        growth_indicator: hiringData.growth_indicator || 0,
+        strategic_roles: hiringData.strategic_roles || []
+      };
+    } catch (error) {
+      console.error('Error tracking competitor hiring:', error);
+      return { open_positions: 0, skill_focus: [], growth_indicator: 0, strategic_roles: [] };
+    }
   }
 
   /**
    * Track competitor funding
    */
   async trackCompetitorFunding(competitorName) {
-    // Simulate funding tracking
-    return {
-      recent_funding: Math.floor(Math.random() * 50000000) + 1000000,
-      funding_round: ['Series A', 'Series B', 'Series C'][Math.floor(Math.random() * 3)],
-      investors: ['VC Firm A', 'VC Firm B', 'Corporate Investor'],
-      valuation: Math.floor(Math.random() * 500000000) + 50000000
-    };
+    try {
+      // Query database for real funding data
+      const { data: fundingData, error } = await supabase
+        .from('competitor_funding')
+        .select('*')
+        .eq('competitor_name', competitorName)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !fundingData) {
+        return { recent_funding: 0, funding_round: 'unknown', investors: [], valuation: 0 };
+      }
+
+      return {
+        recent_funding: fundingData.recent_funding || 0,
+        funding_round: fundingData.funding_round || 'unknown',
+        investors: fundingData.investors || [],
+        valuation: fundingData.valuation || 0
+      };
+    } catch (error) {
+      console.error('Error tracking competitor funding:', error);
+      return { recent_funding: 0, funding_round: 'unknown', investors: [], valuation: 0 };
+    }
   }
 
   /**

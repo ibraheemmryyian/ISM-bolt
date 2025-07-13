@@ -6,7 +6,7 @@ const FreightosLogisticsService = require('./freightosLogisticsService');
 class EnhancedMaterialsService {
   constructor() {
     this.apiKey = process.env.NEXT_GEN_MATERIALS_API_KEY;
-    this.baseUrl = 'https://api.next-gen-materials.com/v1';
+    this.baseUrl = 'https://api.nextgenmaterials.com/v1';
     this.monitoring = ProductionMonitoring.getInstance();
     this.cache = new Map();
     this.cacheTimeout = 3600000; // 1 hour

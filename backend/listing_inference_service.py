@@ -8,9 +8,11 @@ import sys
 import traceback
 
 # Use the provided DeepSeek API key
-DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
+if not DEEPSEEK_API_KEY:
+    raise ValueError("❌ DEEPSEEK_API_KEY environment variable is required for real AI analysis")
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
-DEEPSEEK_MODEL = 'deepseek-coder'
+DEEPSEEK_MODEL = 'deepseek-reasoner'
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -47,7 +49,7 @@ class ListingInferenceService:
         except Exception as e:
             logger.error(f"Error in generate_listings_from_profile: {str(e)}")
             logger.error(traceback.format_exc())
-            return self._get_enhanced_fallback_listings(company_profile)
+            raise Exception("❌ Real AI analysis required. API failure detected.")
     
     def _generate_comprehensive_analysis(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -190,68 +192,69 @@ Generate comprehensive material listings, requirements, company suggestions, and
             if response.status_code == 200:
                 result = response.json()
                 logger.info("DeepSeek API call successful")
-                return result
+                message = result['choices'][0]['message']
+                return {
+                    'reasoning_content': message.get('reasoning_content'),
+                    'content': message.get('content')
+                }
             else:
-                logger.error(f"DeepSeek API error: {response.status_code} - {response.text}")
-                raise Exception(f"DeepSeek API returned status {response.status_code}")
+                logger.error(f"DeepSeek Reasoner API error: {response.status_code} - {response.text}")
+                raise Exception(f"DeepSeek Reasoner API returned status {response.status_code}")
                 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Request error calling DeepSeek API: {str(e)}")
-            raise Exception(f"Failed to call DeepSeek API: {str(e)}")
+            logger.error(f"Request error calling DeepSeek Reasoner: {str(e)}")
+            raise Exception(f"Failed to call DeepSeek Reasoner: {str(e)}")
     
     def _parse_comprehensive_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
         """Parse and validate the comprehensive DeepSeek API response."""
         
         try:
             # Extract the content from the API response
-            if 'choices' in api_response and len(api_response['choices']) > 0:
-                content = api_response['choices'][0]['message']['content']
-                
-                # Parse the JSON content
-                if isinstance(content, str):
-                    parsed = json.loads(content)
-                else:
-                    parsed = content
-                
-                # Validate the structure
-                if not isinstance(parsed, dict):
-                    raise ValueError("Response is not a dictionary")
-                
-                # Ensure all required keys exist
-                required_keys = ['predicted_outputs', 'predicted_inputs', 'company_suggestions', 'green_initiatives']
-                for key in required_keys:
-                    if key not in parsed:
-                        parsed[key] = []
-                
-                # Validate and clean each section
-                parsed['predicted_outputs'] = [
-                    self._validate_and_clean_material_item(item, 'output') 
-                    for item in parsed['predicted_outputs'] 
-                    if self._validate_material_item(item)
-                ]
-                
-                parsed['predicted_inputs'] = [
-                    self._validate_and_clean_material_item(item, 'input') 
-                    for item in parsed['predicted_inputs'] 
-                    if self._validate_material_item(item)
-                ]
-                
-                parsed['company_suggestions'] = [
-                    self._validate_and_clean_company_suggestion(item)
-                    for item in parsed['company_suggestions']
-                    if self._validate_company_suggestion(item)
-                ]
-                
-                parsed['green_initiatives'] = [
-                    self._validate_and_clean_green_initiative(item)
-                    for item in parsed['green_initiatives']
-                    if self._validate_green_initiative(item)
-                ]
-                
-                return parsed
+            reasoning_content = api_response.get('reasoning_content')
+            content = api_response.get('content')
+
+            # Parse the JSON content
+            if isinstance(content, str):
+                parsed = json.loads(content)
             else:
-                raise ValueError("Invalid API response structure")
-                
+                parsed = content
+            
+            # Validate the structure
+            if not isinstance(parsed, dict):
+                raise ValueError("Response is not a dictionary")
+            
+            # Ensure all required keys exist
+            required_keys = ['predicted_outputs', 'predicted_inputs', 'company_suggestions', 'green_initiatives']
+            for key in required_keys:
+                if key not in parsed:
+                    parsed[key] = []
+            
+            # Validate and clean each section
+            parsed['predicted_outputs'] = [
+                self._validate_and_clean_material_item(item, 'output') 
+                for item in parsed['predicted_outputs'] 
+                if self._validate_material_item(item)
+            ]
+            
+            parsed['predicted_inputs'] = [
+                self._validate_and_clean_material_item(item, 'input') 
+                for item in parsed['predicted_inputs'] 
+                if self._validate_material_item(item)
+            ]
+            
+            parsed['company_suggestions'] = [
+                self._validate_and_clean_company_suggestion(item)
+                for item in parsed['company_suggestions']
+                if self._validate_company_suggestion(item)
+            ]
+            
+            parsed['green_initiatives'] = [
+                self._validate_and_clean_green_initiative(item)
+                for item in parsed['green_initiatives']
+                if self._validate_green_initiative(item)
+            ]
+            
+            return parsed
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error: {str(e)}")
             raise ValueError(f"Failed to parse JSON response: {str(e)}")

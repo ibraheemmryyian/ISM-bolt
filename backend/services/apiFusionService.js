@@ -11,9 +11,9 @@ class APIFusionService {
         timeout: 30000,
         retries: 3
       },
-      nextGenMaterials: {
-        baseUrl: 'https://api.nextgenmaterials.com',
-        apiKey: process.env.NEXTGEN_MATERIALS_API_KEY,
+          nextGenMaterials: {
+      baseUrl: 'https://api.nextgenmaterials.com',
+      apiKey: process.env.NEXT_GEN_MATERIALS_API_KEY,
         timeout: 15000,
         retries: 2
       },
@@ -327,21 +327,10 @@ class APIFusionService {
   }
 
   /**
-   * Get fallback shipping parameters when API calls fail
+   * Real API analysis required - no fallbacks allowed
    */
   getFallbackShippingParams(materialData) {
-    const { quantity, unit, state } = materialData;
-    const quantityInTons = this.convertToMetricTons(quantity, unit);
-    
-    return {
-      weight_kg: quantityInTons * 1000,
-      volume_cubic_meters: quantityInTons * 1.5, // Rough estimate
-      density_kg_per_m3: 1000,
-      hazard_class: 'NON_HAZARDOUS',
-      special_handling: [],
-      packaging_requirements: 'STANDARD_PACKAGING',
-      temperature_requirements: null
-    };
+    throw new Error(`❌ Real API analysis required for shipping parameters. API failure detected.`);
   }
 
   /**

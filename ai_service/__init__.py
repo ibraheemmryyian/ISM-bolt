@@ -18,14 +18,14 @@ class AIService:
     def __init__(self):
         self.api_key = os.getenv('DEEPSEEK_API_KEY')
         self.base_url = "https://api.deepseek.com/v1"
-        self.model = "deepseek-r1"
+        self.model = "deepseek-reasoner"
         
         if not self.api_key:
             raise ValueError("❌ DEEPSEEK_API_KEY environment variable is required for real AI analysis")
         
         logger.info("✅ DeepSeek R1 API initialized for real AI analysis")
     
-    def _call_deepseek_api_directly(self, prompt: str, temperature: float = 0.3, max_tokens: int = 2000) -> Optional[Dict[str, Any]]:
+    def _call_deepseek_api_directly(self, prompt: str, max_tokens: int = 2000) -> Optional[Dict[str, Any]]:
         """
         Make direct call to DeepSeek R1 API
         """
@@ -38,12 +38,8 @@ class AIService:
             payload = {
                 "model": self.model,
                 "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "user", "content": prompt}
                 ],
-                "temperature": temperature,
                 "max_tokens": max_tokens,
                 "stream": False
             }
@@ -57,20 +53,17 @@ class AIService:
             
             if response.status_code == 200:
                 result = response.json()
-                content = result['choices'][0]['message']['content']
-                
-                try:
-                    # Try to parse as JSON
-                    return json.loads(content)
-                except json.JSONDecodeError:
-                    # If not JSON, return as text
-                    return {"analysis": content, "raw_response": content}
+                message = result['choices'][0]['message']
+                return {
+                    "reasoning_content": message.get('reasoning_content'),
+                    "content": message.get('content')
+                }
             else:
-                logger.error(f"❌ DeepSeek R1 API error: {response.status_code} - {response.text}")
-                raise Exception(f"DeepSeek R1 API failed: {response.status_code}")
+                logger.error(f"❌ DeepSeek Reasoner API error: {response.status_code} - {response.text}")
+                raise Exception(f"DeepSeek Reasoner API failed: {response.status_code}")
                 
         except Exception as e:
-            logger.error(f"❌ DeepSeek R1 API call failed: {str(e)}")
+            logger.error(f"❌ DeepSeek Reasoner API call failed: {str(e)}")
             raise Exception(f"Real AI analysis failed: {str(e)}")
     
     def analyze_company_for_symbiosis(self, company_data: Dict) -> Dict[str, Any]:

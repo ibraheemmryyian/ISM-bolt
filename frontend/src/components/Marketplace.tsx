@@ -1,26 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Bell, 
-  Filter, 
-  Heart, 
-  MapPin, 
-  MessageSquare, 
-  Plus, 
   Search, 
-  Star, 
+  Filter, 
+  Plus, 
+  MapPin, 
+  Calendar, 
+  DollarSign, 
+  Users, 
+  Factory, 
+  Recycle, 
+  Zap, 
+  Leaf, 
+  Target,
   Workflow,
-  Factory,
-  Recycle,
-  Users,
-  Calendar,
-  TrendingUp,
   Eye,
+  MessageSquare,
+  Star,
+  TrendingUp,
+  CheckCircle,
+  AlertCircle,
+  Clock,
+  ArrowRight,
+  Filter as FilterIcon,
+  SortAsc,
+  SortDesc,
+  X,
+  Heart,
   Check
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { messagingService } from '../lib/messagingService';
 import { MaterialForm } from './MaterialForm';
+import { MaterialApproval } from './MaterialApproval';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface MarketplaceProps {
   onSignOut?: () => void;
@@ -35,6 +48,9 @@ interface Material {
   type: 'waste' | 'requirement';
   created_at: string;
   company_id: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  marketplace_posted?: boolean;
+  ai_confidence?: number;
   company?: {
     name: string;
     location?: string;
@@ -54,7 +70,8 @@ interface Company {
 }
 
 export function Marketplace({ onSignOut }: MarketplaceProps) {
-  const [activeTab, setActiveTab] = useState<'materials' | 'companies'>('materials');
+  const { isDark } = useTheme();
+  const [activeTab, setActiveTab] = useState<'materials' | 'companies' | 'pending'>('materials');
   const [materials, setMaterials] = useState<Material[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
@@ -73,6 +90,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
   const [locationFilter, setLocationFilter] = useState('');
   const [quantityFilter, setQuantityFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [pendingMaterials, setPendingMaterials] = useState<Material[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -92,36 +110,44 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
-        await Promise.all([
-          loadMarketplaceData(),
-          loadUserConnections(user.id),
-          loadUserFavorites(user.id)
-        ]);
-      } else {
-        await loadMarketplaceData();
+        await loadConnections(user.id);
+        await loadFavorites(user.id);
       }
+      await loadMarketplaceData();
+      setLoading(false);
     } catch (error) {
-      console.error('Error loading user and data:', error);
-    } finally {
+      console.error('Error loading user data:', error);
       setLoading(false);
     }
   }
 
-  async function loadUserConnections(userId: string) {
+  async function loadConnections(userId: string) {
     try {
-      const following = await messagingService.getFollowing(userId);
-      const connectionSet = new Set(following.map(conn => conn.following_id));
-      setConnections(connectionSet);
+      const { data: connectionsData } = await supabase
+        .from('connections')
+        .select('connected_company_id')
+        .eq('user_id', userId);
+
+      if (connectionsData) {
+        const connectionIds = new Set(connectionsData.map(c => c.connected_company_id));
+        setConnections(connectionIds);
+      }
     } catch (error) {
       console.error('Error loading connections:', error);
     }
   }
 
-  async function loadUserFavorites(userId: string) {
+  async function loadFavorites(userId: string) {
     try {
-      const userFavorites = await messagingService.getFavorites(userId);
-      const favoriteSet = new Set(userFavorites.map(fav => fav.material_id));
-      setFavorites(favoriteSet);
+      const { data: favoritesData } = await supabase
+        .from('favorites')
+        .select('material_id')
+        .eq('user_id', userId);
+
+      if (favoritesData) {
+        const favoriteIds = new Set(favoritesData.map(f => f.material_id));
+        setFavorites(favoriteIds);
+      }
     } catch (error) {
       console.error('Error loading favorites:', error);
     }
@@ -129,27 +155,47 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
   async function loadMarketplaceData() {
     try {
-      // Show ALL materials in the marketplace
+      // Load approved materials for marketplace
       const { data: materialsData, error: materialsError } = await supabase
         .from('materials')
-        .select('*');
+        .select('*')
+        .eq('status', 'approved')
+        .eq('marketplace_posted', true);
 
       if (materialsError) throw materialsError;
 
-      // Add mock data for demonstration
       const enhancedMaterials = materialsData?.map(material => ({
         ...material,
         company: { 
           name: material.companies?.name || 'Unknown Company', 
-          location: 'San Francisco, CA' 
+          location: material.companies?.location || 'Unknown Location'
         },
-        distance: `${Math.floor(Math.random() * 50) + 1}km`,
-        match_score: Math.floor(Math.random() * 30) + 70
+        distance: 'Calculating...',
+        match_score: 0
       })) || [];
 
       setMaterials(enhancedMaterials);
 
-      // Show ALL companies in the marketplace
+      // Load pending materials for approval
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('status', 'pending');
+
+      if (pendingError) throw pendingError;
+
+      const enhancedPending = pendingData?.map(material => ({
+        ...material,
+        company: { 
+          name: material.companies?.name || 'Unknown Company', 
+          location: material.companies?.location || 'Unknown Location'
+        },
+        ai_confidence: material.ai_confidence || 75
+      })) || [];
+
+      setPendingMaterials(enhancedPending);
+
+      // Load companies
       const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
         .select('*');
@@ -163,7 +209,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
         location: company.location,
         organization_type: company.industry,
         materials_of_interest: company.process_description,
-        sustainability_score: Math.floor(Math.random() * 30) + 70
+        sustainability_score: 0
       })) || [];
 
       setCompanies(enhancedCompanies);
@@ -227,51 +273,35 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
   async function handleConnect(companyId: string) {
     if (!currentUserId) {
-      alert('Please log in to connect with companies');
-      return;
-    }
-
-    // Prevent connecting to yourself
-    if (companyId === currentUserId) {
-      alert('You cannot connect to yourself');
-      return;
-    }
-
-    // Check if already connected
-      if (connections.has(companyId)) {
-      alert('You are already connected to this company');
+      alert('Please log in to connect');
       return;
     }
 
     setLoadingActions(prev => ({ ...prev, [`connect-${companyId}`]: true }));
 
     try {
-      // Create connection request
       const { error } = await supabase
         .from('connections')
         .insert({
-          requester_id: currentUserId,
-          recipient_id: companyId,
-          status: 'pending'
+          user_id: currentUserId,
+          connected_company_id: companyId,
+          status: 'connected'
         });
 
       if (error) throw error;
 
-      // Update local state
-        setConnections(prev => new Set([...prev, companyId]));
+      setConnections(prev => new Set([...prev, companyId]));
       
-      // Show success message in UI instead of alert
       const successMessage = document.createElement('div');
       successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      successMessage.textContent = 'Connection request sent successfully!';
+      successMessage.textContent = 'Connection established!';
       document.body.appendChild(successMessage);
       setTimeout(() => document.body.removeChild(successMessage), 3000);
-      
     } catch (error) {
       console.error('Error connecting:', error);
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      errorMessage.textContent = 'Failed to send connection request';
+      errorMessage.textContent = 'Failed to connect. Please try again.';
       document.body.appendChild(errorMessage);
       setTimeout(() => document.body.removeChild(errorMessage), 3000);
     } finally {
@@ -281,55 +311,41 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
   async function handleChat(companyId: string) {
     if (!currentUserId) {
-      alert('Please log in to start chatting');
-      return;
-    }
-
-    // Prevent chatting with yourself
-    if (companyId === currentUserId) {
-      alert('You cannot chat with yourself');
+      alert('Please log in to start a chat');
       return;
     }
 
     setLoadingActions(prev => ({ ...prev, [`chat-${companyId}`]: true }));
 
     try {
-      // Create or get existing chat conversation
-      const { data: existingChat, error: chatError } = await supabase
-        .from('conversations')
+      const { data: existingChat } = await supabase
+        .from('chats')
         .select('id')
-        .or(`participant1.eq.${currentUserId},participant2.eq.${currentUserId}`)
-        .or(`participant1.eq.${companyId},participant2.eq.${companyId}`)
+        .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
+        .or(`user1_id.eq.${companyId},user2_id.eq.${companyId}`)
         .single();
 
-      let conversationId;
-      
       if (existingChat) {
-        conversationId = existingChat.id;
+        navigate(`/chats?chat=${existingChat.id}`);
       } else {
-        // Create new conversation
-        const { data: newChat, error: createError } = await supabase
-          .from('conversations')
+        const { data: newChat, error } = await supabase
+          .from('chats')
           .insert({
-            participant1: currentUserId,
-            participant2: companyId,
+            user1_id: currentUserId,
+            user2_id: companyId,
             created_at: new Date().toISOString()
           })
-          .select('id')
+          .select()
           .single();
-        
-        if (createError) throw createError;
-        conversationId = newChat.id;
-      }
 
-      // Navigate to chat with conversation ID
-      navigate(`/chats?conversation=${conversationId}`);
-      
+        if (error) throw error;
+        navigate(`/chats?chat=${newChat.id}`);
+      }
     } catch (error) {
       console.error('Error starting chat:', error);
       const errorMessage = document.createElement('div');
       errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      errorMessage.textContent = 'Failed to start chat';
+      errorMessage.textContent = 'Failed to start chat. Please try again.';
       document.body.appendChild(errorMessage);
       setTimeout(() => document.body.removeChild(errorMessage), 3000);
     } finally {
@@ -346,35 +362,32 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
     setLoadingActions(prev => ({ ...prev, [`favorite-${materialId}`]: true }));
 
     try {
-      const isFavorited = favorites.has(materialId);
-      
-      if (isFavorited) {
-        // Remove from favorites
-        await supabase
+      if (favorites.has(materialId)) {
+        const { error } = await supabase
           .from('favorites')
           .delete()
-          .eq('company_id', currentUserId)
+          .eq('user_id', currentUserId)
           .eq('material_id', materialId);
-        
+
+        if (error) throw error;
         setFavorites(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(materialId);
-          return newSet;
+          const newFavorites = new Set(prev);
+          newFavorites.delete(materialId);
+          return newFavorites;
         });
       } else {
-        // Add to favorites
-        await supabase
+        const { error } = await supabase
           .from('favorites')
           .insert({
-            company_id: currentUserId,
+            user_id: currentUserId,
             material_id: materialId
           });
-        
+
+        if (error) throw error;
         setFavorites(prev => new Set([...prev, materialId]));
       }
     } catch (error) {
-      console.error('Error toggling favorite:', error);
-      alert('Failed to update favorite');
+      console.error('Error handling favorite:', error);
     } finally {
       setLoadingActions(prev => ({ ...prev, [`favorite-${materialId}`]: false }));
     }
@@ -389,7 +402,6 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
     setLoadingMatch(material.id);
 
     try {
-      // Call AI matching endpoint with specific material
       const response = await fetch('/api/generate-matches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -400,7 +412,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
       });
       
       if (response.ok) {
-      const result = await response.json();
+        const result = await response.json();
         setMatchResults(prev => ({ 
           ...prev, 
           [material.id]: result
@@ -426,16 +438,29 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
     }
   }
 
-  // Calculate rating based on material quality and company reputation
+  const handleMaterialApproved = async (materialId: string) => {
+    // Remove from pending and add to approved
+    setPendingMaterials(prev => prev.filter(m => m.id !== materialId));
+    await loadMarketplaceData(); // Refresh data
+  };
+
+  const handleMaterialRejected = async (materialId: string) => {
+    // Remove from pending
+    setPendingMaterials(prev => prev.filter(m => m.id !== materialId));
+  };
+
+  const handleFeedbackSubmitted = async () => {
+    // Refresh data after feedback
+    await loadMarketplaceData();
+  };
+
   function calculateRating(material: Material): number {
-    let rating = 70; // Base rating
+    let rating = 70;
     
-    // Material quality factors
     if (material.quantity > 100) rating += 10;
     if (material.description.length > 50) rating += 5;
     if (material.match_score && material.match_score > 80) rating += 10;
     
-    // Company reputation (mock)
     const companyAge = new Date().getTime() - new Date(material.created_at).getTime();
     const daysSinceCreation = companyAge / (1000 * 60 * 60 * 24);
     if (daysSinceCreation > 30) rating += 5;
@@ -445,243 +470,260 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`min-h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-50'} flex items-center justify-center`}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Marketplace</h1>
-            <p className="text-gray-600 mt-1">
-              Discover materials, connect with partners, and build sustainable relationships
-            </p>
-          </div>
-          <button
-            onClick={() => setShowMaterialForm('waste')}
-            className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 transition flex items-center space-x-2"
-          >
-            <Plus className="h-5 w-5" />
-            <span>List Material</span>
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                  placeholder="Search materials..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              />
+    <div className="min-h-screen bg-slate-900">
+      {/* Main Content */}
+      <div className="container mx-auto px-6 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Industrial Symbiosis Marketplace</h1>
+              <p className="text-gray-400">Connect with companies worldwide to exchange waste, resources, and create circular economies</p>
             </div>
+            <button
+              onClick={() => navigate('/marketplace/add-material')}
+              className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 transition flex items-center space-x-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add Material</span>
+            </button>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search materials..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+              </div>
+              
               <select
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value as 'all' | 'waste' | 'requirement')}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                onChange={(e) => setFilterType(e.target.value as any)}
+                className="px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               >
                 <option value="all">All Types</option>
                 <option value="waste">Waste</option>
                 <option value="requirement">Requirement</option>
               </select>
+              
+              <input
+                type="text"
+                placeholder="Enter location..."
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className="px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+              
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center justify-center space-x-2 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white hover:bg-slate-600 transition"
+              >
+                <FilterIcon className="w-5 h-5" />
+                <span>Filters</span>
+              </button>
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <Filter className="h-4 w-4" />
-              <span>More Filters</span>
-            </button>
+
+            {/* Advanced Filters */}
+            {showFilters && (
+              <div className="mt-4 pt-4 border-t border-slate-700">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Quantity</label>
+                    <input
+                      type="number"
+                      placeholder="Min Quantity..."
+                      value={quantityFilter}
+                      onChange={(e) => setQuantityFilter(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Date From</label>
+                    <input
+                      type="date"
+                      value={dateFilter}
+                      onChange={(e) => setDateFilter(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="flex items-center justify-center space-x-2 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white hover:bg-slate-600 transition"
+                  >
+                    <X className="w-5 h-5" />
+                    <span>Close Filters</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+        </div>
 
-          {showFilters && (
-            <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    placeholder="Filter by location..."
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Quantity</label>
-                  <input
-                    type="number"
-                    placeholder="Minimum quantity..."
-                    value={quantityFilter}
-                    onChange={(e) => setQuantityFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date From</label>
-                  <input
-                    type="date"
-                    value={dateFilter}
-                    onChange={(e) => setDateFilter(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => {
-                    setLocationFilter('');
-                    setQuantityFilter('');
-                    setDateFilter('');
-                  }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  Clear Filters
-                </button>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <div className="flex items-center space-x-3">
+              <Factory className="w-8 h-8 text-emerald-400" />
+              <div>
+                <p className="text-sm text-gray-400">Total Materials</p>
+                <p className="text-2xl font-bold text-white">{filteredMaterials.length}</p>
               </div>
             </div>
-          )}
+          </div>
+          
+          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <div className="flex items-center space-x-3">
+              <Users className="w-8 h-8 text-blue-400" />
+              <div>
+                <p className="text-sm text-gray-400">Active Companies</p>
+                <p className="text-2xl font-bold text-white">{companies.length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <div className="flex items-center space-x-3">
+              <Recycle className="w-8 h-8 text-green-400" />
+              <div>
+                <p className="text-sm text-gray-400">Waste Exchanges</p>
+                <p className="text-2xl font-bold text-white">{materials.filter(m => m.type === 'waste').length}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
+            <div className="flex items-center space-x-3">
+              <TrendingUp className="w-8 h-8 text-purple-400" />
+              <div>
+                <p className="text-sm text-gray-400">This Month</p>
+                <p className="text-2xl font-bold text-white">{materials.filter(m => new Date(m.created_at).getMonth() === new Date().getMonth()).length}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex space-x-1 mb-8">
-          <button
-            onClick={() => setActiveTab('materials')}
-            className={`px-6 py-3 rounded-lg font-medium transition ${
-              activeTab === 'materials'
-                ? 'bg-emerald-500 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Materials ({filteredMaterials.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('companies')}
-            className={`px-6 py-3 rounded-lg font-medium transition ${
-              activeTab === 'companies'
-                ? 'bg-emerald-500 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            Companies ({filteredCompanies.length})
-          </button>
-        </div>
-
-        {/* Content */}
-        {activeTab === 'materials' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMaterials.map((material) => (
-              <div key={material.id} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+        {/* Materials Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredMaterials.map((material) => (
+            <div key={material.id} className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 hover:shadow-xl transition-shadow">
+              <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-2">
                     {material.type === 'waste' ? (
-                      <Factory className="h-5 w-5 text-orange-500" />
+                      <Factory className="w-5 h-5 text-orange-500" />
                     ) : (
-                      <Recycle className="h-5 w-5 text-blue-500" />
+                      <Recycle className="w-5 h-5 text-blue-500" />
                     )}
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      material.type === 'waste'
-                        ? 'bg-orange-100 text-orange-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {material.type === 'waste' ? 'Available' : 'Needed'}
-                    </span>
+                    <h3 className="text-lg font-semibold text-white">{material.material_name}</h3>
                   </div>
-                  <button 
-                    onClick={() => handleFavorite(material.id)}
-                    disabled={loadingActions[`favorite-${material.id}`]}
-                    className={`transition-colors ${
-                      favorites.has(material.id) 
-                        ? 'text-red-500 hover:text-red-600' 
-                        : 'text-gray-400 hover:text-red-500'
-                    }`}
-                  >
-                    <Heart className={`h-5 w-5 ${favorites.has(material.id) ? 'fill-current' : ''}`} />
-                  </button>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    material.status === 'pending'
+                      ? 'bg-yellow-500 text-white'
+                      : material.status === 'approved'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-red-500 text-white'
+                  }`}>
+                    {material.status}
+                  </span>
                 </div>
-
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {material.material_name}
-                </h3>
                 
-                <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                  <span className="font-medium">
-                    {material.quantity} {material.unit}
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <MapPin className="h-4 w-4" />
-                    <span>{material.distance}</span>
-                  </span>
+                <p className="text-gray-300 mb-4 line-clamp-2">{material.description}</p>
+                
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <MapPin className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-300">{material.company?.location || 'Unknown Location'}</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 text-sm">
+                    <DollarSign className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-300">{material.quantity} {material.unit}</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 text-sm">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <span className="text-gray-300">{new Date(material.created_at).toLocaleDateString()}</span>
+                  </div>
                 </div>
-
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                  {material.description}
-                </p>
-
+                
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-medium text-emerald-800">
-                        {material.company?.name.charAt(0)}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-600">{material.company?.name}</span>
+                    <img 
+                      src={material.company?.name === 'Unknown Company' ? 'https://via.placeholder.com/32x32' : `https://ui-avatars.com/api/?name=${material.company?.name}&background=0D8ABC&color=fff`} 
+                      alt={material.company?.name || 'Unknown Company'}
+                      className="w-8 h-8 rounded-full"
+                    />
+                    <span className="text-sm text-gray-300">{material.company?.name || 'Unknown Company'}</span>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-yellow-500" />
-                    <span className="text-sm text-gray-600">{material.match_score}%</span>
+                  
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleFavorite(material.id)}
+                      disabled={loadingActions[`favorite-${material.id}`]}
+                      className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm transition ${
+                        favorites.has(material.id) 
+                          ? 'bg-red-500 text-white hover:bg-red-600' 
+                          : 'bg-slate-700 text-white hover:bg-slate-600'
+                      }`}
+                    >
+                      <Heart className="w-4 h-4" />
+                      <span>{favorites.has(material.id) ? 'Favorited' : 'Favorite'}</span>
+                    </button>
+                    <button
+                      onClick={() => handleConnect(material.company_id)}
+                      disabled={loadingActions[`connect-${material.company_id}`]}
+                      className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm transition ${
+                        connections.has(material.company_id)
+                          ? 'bg-green-500 text-white hover:bg-green-600'
+                          : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                      }`}
+                    >
+                      {loadingActions[`connect-${material.company_id}`] ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mx-auto"></div>
+                      ) : connections.has(material.company_id) ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
+                      <span>{connections.has(material.company_id) ? 'Connected' : 'Connect'}</span>
+                    </button>
+                    <button
+                      onClick={() => handleChat(material.company_id)}
+                      disabled={loadingActions[`chat-${material.company_id}`]}
+                      className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm transition ${isDark ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
+                    >
+                      {loadingActions[`chat-${material.company_id}`] ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mx-auto"></div>
+                      ) : (
+                        <MessageSquare className="w-4 h-4" />
+                      )}
+                      <span>Chat</span>
+                    </button>
+                    <button
+                      onClick={() => handleFindMatches(material)}
+                      disabled={loadingMatch === material.id}
+                      className="flex items-center space-x-1 px-3 py-1 rounded-md text-sm transition bg-purple-500 text-white hover:bg-purple-600"
+                    >
+                      {loadingMatch === material.id ? 'Matching...' : 'Find Matches'}
+                      <Zap className="w-4 h-4" />
+                    </button>
                   </div>
-                </div>
-
-                <div className="flex space-x-2 mt-4">
-                  <button 
-                    onClick={() => handleConnect(material.company_id)}
-                    disabled={loadingActions[`connect-${material.company_id}`]}
-                    className={`flex-1 py-2 px-4 rounded-lg transition text-sm font-medium ${
-                      connections.has(material.company_id)
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600'
-                    }`}
-                  >
-                    {loadingActions[`connect-${material.company_id}`] ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mx-auto"></div>
-                    ) : connections.has(material.company_id) ? (
-                      <div className="flex items-center justify-center space-x-1">
-                        <Check className="h-4 w-4" />
-                        <span>Connected</span>
-                      </div>
-                    ) : (
-                      'Connect'
-                    )}
-                  </button>
-                  <button 
-                    onClick={() => handleChat(material.company_id)}
-                    disabled={loadingActions[`chat-${material.company_id}`]}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    {loadingActions[`chat-${material.company_id}`] ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500"></div>
-                    ) : (
-                      <MessageSquare className="h-4 w-4" />
-                    )}
-                  </button>
-                  <button
-                    className="px-4 py-2 border border-emerald-500 text-emerald-600 rounded-lg hover:bg-emerald-50 transition text-sm font-medium"
-                    onClick={() => handleFindMatches(material)}
-                    disabled={loadingMatch === material.id}
-                  >
-                    {loadingMatch === material.id ? 'Matching...' : 'Find Matches'}
-                  </button>
                 </div>
 
                 {Array.isArray(matchResults[material.id]) ? (
@@ -705,108 +747,27 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
                   <div className="mt-2 p-2 bg-red-50 rounded text-sm text-red-500">{matchResults[material.id].error}</div>
                 ) : null}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCompanies.map((company) => (
-              <div key={company.id} className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <span className="text-lg font-bold text-emerald-800">
-                        {company.name.charAt(0)}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{company.name}</h3>
-                      <p className="text-sm text-gray-600 capitalize">{company.organization_type}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4" />
-                    <span>{company.location || 'Location not specified'}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
-                    <Users className="h-4 w-4" />
-                    <span className="capitalize">{company.role}</span>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Interests:</span> {company.materials_of_interest || 'Various materials'}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-1">
-                    <TrendingUp className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-gray-600">
-                      {company.sustainability_score}% sustainability score
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex space-x-2">
-                  <button 
-                    onClick={() => handleConnect(company.id)}
-                    disabled={loadingActions[`connect-${company.id}`]}
-                    className={`flex-1 py-2 px-4 rounded-lg transition text-sm font-medium ${
-                      connections.has(company.id)
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : 'bg-emerald-500 text-white hover:bg-emerald-600'
-                    }`}
-                  >
-                    {loadingActions[`connect-${company.id}`] ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mx-auto"></div>
-                    ) : connections.has(company.id) ? (
-                      <div className="flex items-center justify-center space-x-1">
-                        <Check className="h-4 w-4" />
-                        <span>Connected</span>
-                      </div>
-                    ) : (
-                      'Connect'
-                    )}
-                  </button>
-                  <button 
-                    onClick={() => handleChat(company.id)}
-                    disabled={loadingActions[`chat-${company.id}`]}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    {loadingActions[`chat-${company.id}`] ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500"></div>
-                    ) : (
-                    <MessageSquare className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
 
         {/* Empty State */}
-        {((activeTab === 'materials' && filteredMaterials.length === 0) ||
-          (activeTab === 'companies' && filteredCompanies.length === 0)) && (
+        {filteredMaterials.length === 0 && (
           <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="h-12 w-12 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No {activeTab} found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Try adjusting your search criteria or filters
-            </p>
+            <Factory className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No materials found</h3>
+            <p className="text-gray-400 mb-6">Try adjusting your search criteria or filters</p>
             <button
-              onClick={() => setShowMaterialForm('waste')}
+              onClick={() => {
+                setSearchQuery('');
+                setFilterType('all');
+                setLocationFilter('');
+                setQuantityFilter('');
+                setDateFilter('');
+              }}
               className="bg-emerald-500 text-white px-6 py-3 rounded-lg hover:bg-emerald-600 transition"
             >
-              List Your First Material
+              Clear Filters
             </button>
           </div>
         )}

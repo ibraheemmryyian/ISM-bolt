@@ -133,7 +133,7 @@ async function generateMaterialListings(companyData) {
           type: 'waste',
           description: `${waste} from ${companyData.companyName} ${companyData.industry} operations`,
           availability: 'Available',
-          price_per_unit: Math.random() * 5 + 0.1,
+          price_per_unit: 0,
           location: companyData.location,
           created_at: new Date().toISOString()
         });
@@ -147,12 +147,12 @@ async function generateMaterialListings(companyData) {
   for (const reqMaterial of requirementMaterials) {
     materials.push({
       material_name: reqMaterial,
-      quantity: Math.floor(Math.random() * 50000) + 500,
+              quantity: 0,
       unit: reqMaterial === 'Energy' ? 'kWh' : 'kg',
       type: 'requirement',
       description: `${reqMaterial} needed for ${companyData.companyName} operations`,
       availability: 'Needed',
-      price_per_unit: Math.random() * 10 + 0.5,
+              price_per_unit: 0,
       location: companyData.location,
       created_at: new Date().toISOString()
     });
@@ -226,15 +226,15 @@ async function completeOnboarding(companyData) {
 
 // Helper functions
 function parseVolumeToQuantity(volumeStr) {
-  if (!volumeStr) return Math.floor(Math.random() * 10000) + 100;
+      if (!volumeStr) return 0;
   
   const numbers = volumeStr.match(/\d+/);
   if (numbers) {
     const baseQuantity = parseInt(numbers[0]);
-    return Math.floor(baseQuantity * (0.8 + Math.random() * 0.4));
+    return baseQuantity;
   }
   
-  return Math.floor(Math.random() * 10000) + 100;
+      return 0;
 }
 
 function getUnitFromVolume(volumeStr) {

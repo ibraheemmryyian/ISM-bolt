@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Factory, Recycle, Users, Workflow, Home, CheckCircle, TrendingUp, Globe, DollarSign, Leaf, Target, ArrowRight, Play, BarChart3, Award, Zap } from 'lucide-react';
+import { Factory, Recycle, Users, Workflow, Home, CheckCircle, TrendingUp, Globe, DollarSign, Leaf, Target, ArrowRight, Play, BarChart3, Award, Zap, Brain, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 

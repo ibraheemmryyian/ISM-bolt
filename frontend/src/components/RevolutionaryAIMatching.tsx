@@ -187,7 +187,7 @@ export function RevolutionaryAIMatching({ userId }: RevolutionaryAIMatchingProps
       const data = await response.json();
       setGnnScores(prev => ({
         ...prev,
-        `${material1Id}_${material2Id}`: data.score
+        [`${material1Id}_${material2Id}`]: data.score
       }));
     } catch (err: any) {
       console.error('GNN scoring failed:', err);

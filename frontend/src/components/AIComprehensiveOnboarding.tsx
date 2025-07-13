@@ -4,8 +4,8 @@ import { aiService } from '../lib/aiService';
 import { X, Loader2, CheckCircle, ArrowRight, ArrowLeft, Building2, Factory, Truck, FlaskConical, Users, Target, TrendingUp } from 'lucide-react';
 
 interface AIComprehensiveOnboardingProps {
-  onClose: () => void;
-  onComplete: (portfolio: any) => void;
+  onClose?: () => void;
+  onComplete?: (portfolio: any) => void;
 }
 
 interface OnboardingStep {
@@ -31,7 +31,7 @@ interface OnboardingField {
   value: any;
 }
 
-export function AIComprehensiveOnboarding({ onClose, onComplete }: AIComprehensiveOnboardingProps) {
+export function AIComprehensiveOnboarding({ onClose = () => {}, onComplete = () => {} }: AIComprehensiveOnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -480,7 +480,7 @@ export function AIComprehensiveOnboarding({ onClose, onComplete }: AIComprehensi
       summary: formData.ai_portfolio_summary,
       recommendations: formData.ai_recommendations
     };
-    onComplete(portfolio);
+    onComplete?.(portfolio);
   };
 
   const currentStepData = steps[currentStep];

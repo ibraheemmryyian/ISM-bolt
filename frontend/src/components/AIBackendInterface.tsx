@@ -173,29 +173,18 @@ export class AIService implements AIBackendInterface {
   }
 
   async predictDemand(materialType: string, location: string): Promise<any> {
-    // Mock demand prediction
-    return {
-      material_type: materialType,
-      location: location,
-      predicted_demand: Math.floor(Math.random() * 1000) + 100,
-      confidence: Math.floor(Math.random() * 30) + 70,
-      trend: Math.random() > 0.5 ? 'increasing' : 'stable',
-      factors: ['seasonal_variation', 'local_industry', 'regulations']
-    };
+    // Real AI prediction required - no mock data allowed
+    throw new Error('❌ Real AI prediction required. Mock data not allowed for planetary moat.');
   }
 
   async optimizeLogistics(materials: any[], location: string): Promise<any> {
-    // Mock logistics optimization
-    return {
-      optimized_routes: materials.length,
-      estimated_cost_savings: Math.floor(Math.random() * 5000) + 1000,
-      carbon_reduction: Math.floor(Math.random() * 500) + 100,
-      recommendations: [
-        'Consolidate shipments from nearby locations',
-        'Use electric vehicles for short distances',
-        'Schedule pickups during off-peak hours'
-      ]
-    };
+    // Real AI optimization required - no mock data allowed
+    throw new Error('❌ Real AI optimization required. Mock data not allowed for planetary moat.');
+  }
+
+  async estimateCostSavings(materialType: string, quantity: number): Promise<any> {
+    // Real AI estimation required - no mock data allowed
+    throw new Error('❌ Real AI estimation required. Mock data not allowed for planetary moat.');
   }
 
   private calculateSimpleMatchScore(material1: any, material2: any): number {

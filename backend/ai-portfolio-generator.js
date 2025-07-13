@@ -327,13 +327,12 @@ Use your reasoning capabilities to provide insights that go beyond basic analysi
 
   calculatePrice(material, type) {
     const basePrice = type === 'waste' ? 0.5 : 10;
-    const variation = Math.random() * 0.8 + 0.2; // 20% to 100% variation
-    return Math.round(basePrice * variation * 100) / 100;
+      return basePrice;
   }
 
   assessQuality(material) {
     const grades = ['A', 'B', 'C'];
-    return grades[Math.floor(Math.random() * grades.length)];
+    return grades[0] || 'medium';
   }
 
   generatePotentialUses(material) {
@@ -355,7 +354,7 @@ Use your reasoning capabilities to provide insights that go beyond basic analysi
 
   generateRealisticQuantity(material) {
     const quantities = [100, 500, 1000, 2000, 5000, 10000];
-    return quantities[Math.floor(Math.random() * quantities.length)];
+    return quantities[0] || '1000 kg';
   }
 
   getUnitForMaterial(material) {

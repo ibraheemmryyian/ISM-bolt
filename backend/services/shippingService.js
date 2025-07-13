@@ -253,34 +253,10 @@ class ShippingService {
   }
 
   /**
-   * Get fallback rates when API is unavailable
+   * Real shipping analysis required - no fallbacks allowed
    */
   getFallbackRates(materialData, fromAddress, toAddress) {
-    const distance = this.calculateDistance(fromAddress, toAddress);
-    const basePrice = distance * 0.5; // $0.50 per km
-    
-    return [
-      {
-        rate_id: 'fallback_1',
-        service: 'Standard Ground',
-        carrier: 'Fallback Carrier',
-        delivery_days: Math.ceil(distance / 500), // 500 km per day
-        price: basePrice,
-        currency: 'USD',
-        special_handling: [],
-        packaging_requirements: 'STANDARD_PACKAGING'
-      },
-      {
-        rate_id: 'fallback_2',
-        service: 'Express',
-        carrier: 'Fallback Carrier',
-        delivery_days: Math.ceil(distance / 1000), // 1000 km per day
-        price: basePrice * 2,
-        currency: 'USD',
-        special_handling: [],
-        packaging_requirements: 'STANDARD_PACKAGING'
-      }
-    ];
+    throw new Error(`❌ Real shipping analysis required. API failure detected.`);
   }
 
   /**

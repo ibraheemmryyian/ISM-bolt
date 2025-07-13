@@ -679,24 +679,10 @@ Provide optimized shipping and logistics solutions that balance cost, speed, and
   }
 
   /**
-   * Get fallback result when AI fails
+   * Real AI analysis required - no fallbacks allowed
    */
   getFallbackResult(analysisType, inputData) {
-    // Implement fallback logic for each analysis type
-    const fallbacks = {
-      materialAnalysis: {
-        material_properties: { density_kg_per_m3: 1000 },
-        sustainability_metrics: { circular_economy_potential: 50 },
-        recommendations: [{ category: 'General', description: 'Basic material optimization', priority: 'medium' }]
-      },
-      matchGeneration: {
-        match_analysis: { overall_score: 50, match_type: 'general_symbiosis' },
-        economic_analysis: { potential_savings_company_a: 10000, potential_savings_company_b: 10000 },
-        recommendations: [{ category: 'Partnership', description: 'Explore collaboration opportunities', priority: 'medium' }]
-      }
-    };
-
-    return fallbacks[analysisType] || { message: 'Analysis temporarily unavailable' };
+    throw new Error(`❌ Real AI analysis required for ${analysisType}. API or model failure detected.`);
   }
 
   /**

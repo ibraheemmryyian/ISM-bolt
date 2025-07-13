@@ -180,22 +180,14 @@ const AIInferenceMatching: React.FC = () => {
       }
 
       // Step 3: Generate AI Analysis
-      const analysis: AIAnalysis = {
-        symbiosis_score: 75 + Math.random() * 20,
-        estimated_savings: `$${(50000 + Math.random() * 100000).toLocaleString()}`,
-        carbon_reduction: `${(50 + Math.random() * 100).toFixed(1)} tons CO2`,
-        top_opportunities: materials.slice(0, 3).map(m => m.name),
-        recommended_partners: ['Local Manufacturing', 'Recycling Facilities', 'Chemical Plants'],
-        implementation_roadmap: [
-          'Review AI-generated materials',
-          'Select preferred matches',
-          'Contact potential partners',
-          'Establish agreements',
-          'Implement logistics'
-        ]
-      };
-
-      setAiAnalysis(analysis);
+      setAiAnalysis({
+        symbiosis_score: 0, // Will be calculated by real AI
+        estimated_savings: '$0', // Will be calculated by real AI
+        carbon_reduction: '0 tons CO2', // Will be calculated by real AI
+        top_opportunities: [],
+        recommended_partners: [],
+        implementation_roadmap: []
+      });
       setCurrentStep('matching');
 
     } catch (error) {
@@ -244,36 +236,8 @@ const AIInferenceMatching: React.FC = () => {
 
     } catch (error) {
       console.error('AI Matchmaking error:', error);
-      // Continue with fallback matches
-      const fallbackMatches: AIMatch[] = [
-        {
-          id: 'match_1',
-          company_name: 'Gulf Steel Manufacturing',
-          company_type: 'Steel Manufacturing',
-          location: 'Dubai, UAE',
-          match_score: 85,
-          material_match: 'Steel Scrap',
-          potential_savings: '$45,000',
-          carbon_reduction: '12.5 tons CO2',
-          implementation_time: '3-6 months',
-          contact_info: 'contact@gulfsteel.com',
-          ai_generated: true
-        },
-        {
-          id: 'match_2',
-          company_name: 'Arabian Chemical Solutions',
-          company_type: 'Chemical Processing',
-          location: 'Riyadh, Saudi Arabia',
-          match_score: 78,
-          material_match: 'Chemical Byproducts',
-          potential_savings: '$32,000',
-          carbon_reduction: '8.2 tons CO2',
-          implementation_time: '4-8 months',
-          contact_info: 'info@arabianchemical.com',
-          ai_generated: true
-        }
-      ];
-      setAiMatches(fallbackMatches);
+      // Real AI matching required - no fallbacks allowed
+      throw new Error('❌ Real AI matching required. API failure detected.');
     }
   };
 
@@ -306,53 +270,8 @@ const AIInferenceMatching: React.FC = () => {
 
     } catch (error) {
       console.error('Logistics preview error:', error);
-      // Generate fallback logistics preview
-      const fallbackLogistics: LogisticsPreview = {
-        origin: companyProfile?.location || 'Dubai, UAE',
-        destination: match.location,
-        material: match.material_match,
-        weight_kg: 1000,
-        transport_modes: [
-          {
-            mode: 'Truck',
-            cost: 2500,
-            transit_time: 2,
-            carbon_emissions: 150,
-            reliability: 0.95
-          },
-          {
-            mode: 'Sea',
-            cost: 1800,
-            transit_time: 5,
-            carbon_emissions: 80,
-            reliability: 0.90
-          },
-          {
-            mode: 'Air',
-            cost: 8500,
-            transit_time: 1,
-            carbon_emissions: 400,
-            reliability: 0.99
-          }
-        ],
-        total_cost: 2500,
-        total_carbon: 150,
-        cost_breakdown: {
-          transport: 2000,
-          handling: 300,
-          customs: 150,
-          insurance: 50
-        },
-        recommendations: [
-          'Truck transport offers best cost-benefit ratio',
-          'Consider bulk shipping for larger quantities',
-          'Negotiate long-term contracts for better rates'
-        ],
-        is_feasible: true,
-        roi_percentage: 85
-      };
-      setLogisticsPreview(fallbackLogistics);
-      setCurrentStep('logistics');
+      // Real logistics analysis required - no fallbacks allowed
+      throw new Error('❌ Real logistics analysis required. API failure detected.');
     } finally {
       setIsLoading(false);
     }

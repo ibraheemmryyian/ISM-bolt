@@ -41,10 +41,10 @@ interface Match {
 }
 
 interface EnhancedMatchingInterfaceProps {
-  userId: string;
+  userId?: string;
 }
 
-const EnhancedMatchingInterface: React.FC<EnhancedMatchingInterfaceProps> = ({ userId }) => {
+const EnhancedMatchingInterface: React.FC<EnhancedMatchingInterfaceProps> = ({ userId = 'demo-user' }) => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
