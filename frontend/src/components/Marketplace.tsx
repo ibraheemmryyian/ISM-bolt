@@ -453,6 +453,19 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Nav Bar */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+          <div className="flex items-center space-x-8">
+            <button onClick={() => navigate('/dashboard')} className="text-gray-700 hover:text-emerald-600 font-semibold transition">Dashboard</button>
+            <button className="text-emerald-600 font-bold border-b-2 border-emerald-600 pb-1">Marketplace</button>
+            <button onClick={() => navigate('/onboarding')} className="text-gray-700 hover:text-emerald-600 font-semibold transition">AI Onboarding</button>
+          </div>
+          {onSignOut && (
+            <button onClick={onSignOut} className="text-gray-500 hover:text-red-600 transition">Sign Out</button>
+          )}
+        </div>
+      </nav>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

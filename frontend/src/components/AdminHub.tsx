@@ -179,7 +179,7 @@ export function AdminHub() {
       loadAdminData();
     } else {
       // Redirect to admin access page if not authenticated
-      window.location.href = '/admin';
+      window.location.href = '/admin-access';
     }
   }, []);
 

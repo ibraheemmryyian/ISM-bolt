@@ -22,8 +22,8 @@ class EnhancedMaterialsService {
 
     this.freightosService = new FreightosLogisticsService();
     
-    // MaterialsBERT integration
-    this.materialsBertEndpoint = process.env.MATERIALSBERT_ENDPOINT || 'http://localhost:8001';
+    // Advanced MaterialsBERT integration
+    this.materialsBertEndpoint = process.env.MATERIALSBERT_ENDPOINT || 'http://localhost:5002';
     this.materialsBertEnabled = process.env.MATERIALSBERT_ENABLED === 'true';
   }
 
@@ -128,7 +128,7 @@ class EnhancedMaterialsService {
   }
 
   /**
-   * Get MaterialsBERT semantic analysis
+   * Get Advanced MaterialsBERT comprehensive analysis
    */
   async getMaterialsBertAnalysis(materialName, context) {
     try {
@@ -136,14 +136,9 @@ class EnhancedMaterialsService {
       const cached = this.getFromCache(cacheKey);
       if (cached) return cached;
 
-      // Prepare text for MaterialsBERT analysis
-      const analysisText = this.prepareMaterialsBertText(materialName, context);
-      
-      // Call MaterialsBERT service
+      // Call Advanced MaterialsBERT service for comprehensive analysis
       const response = await axios.post(`${this.materialsBertEndpoint}/analyze`, {
-        text: analysisText,
-        material_name: materialName,
-        context: context
+        material: materialName
       }, {
         timeout: 30000,
         headers: {
@@ -152,43 +147,91 @@ class EnhancedMaterialsService {
       });
 
       const bertAnalysis = {
-        semantic_understanding: response.data.semantic_understanding,
-        material_classification: response.data.material_classification,
-        property_predictions: response.data.property_predictions,
-        application_suggestions: response.data.application_suggestions,
-        research_insights: response.data.research_insights,
-        confidence_scores: response.data.confidence_scores,
-        related_materials: response.data.related_materials,
-        scientific_context: response.data.scientific_context
+        material_properties: response.data.analysis.material_properties,
+        sustainability_metrics: response.data.analysis.sustainability_metrics,
+        symbiosis_opportunities: response.data.analysis.symbiosis_opportunities,
+        recommendations: response.data.analysis.recommendations,
+        market_trends: response.data.analysis.market_trends,
+        innovation_potential: response.data.analysis.innovation_potential,
+        semantic_understanding: {
+          material_classification: this.extractMaterialClassification(response.data.analysis),
+          property_predictions: response.data.analysis.material_properties,
+          application_suggestions: response.data.analysis.applications,
+          confidence_scores: this.calculateConfidenceScores(response.data.analysis)
+        },
+        scientific_context: {
+          research_insights: response.data.analysis.recommendations,
+          related_materials: this.findRelatedMaterials(response.data.analysis),
+          technical_analysis: response.data.analysis.material_properties
+        }
       };
 
       this.setCache(cacheKey, bertAnalysis);
       return bertAnalysis;
 
     } catch (error) {
-      console.error('MaterialsBERT analysis error:', error);
+      console.error('Advanced MaterialsBERT analysis error:', error);
       return this.getFallbackMaterialsBertAnalysis(materialName, context);
     }
   }
 
   /**
-   * Prepare text for MaterialsBERT analysis
+   * Extract material classification from analysis
    */
-  prepareMaterialsBertText(materialName, context) {
-    const textParts = [
-      `Material: ${materialName}`,
-      `Industry: ${context.industry || 'General'}`,
-      `Application: ${context.intended_use || 'General purpose'}`,
-      `Location: ${context.location || 'Global'}`,
-      `Quantity: ${context.quantity || 'Unknown'} ${context.unit || 'units'}`,
-      `Quality Requirements: ${context.quality_requirements || 'Standard'}`,
-      `Sustainability Focus: ${context.sustainability_focus || 'Standard'}`,
-      `Cost Sensitivity: ${context.cost_sensitivity || 'Medium'}`,
-      `Technical Specifications: ${context.technical_specs || 'Standard'}`,
-      `Regulatory Requirements: ${context.regulatory_requirements || 'Standard'}`
-    ];
+  extractMaterialClassification(analysis) {
+    const properties = analysis.material_properties || [];
+    const sustainability = analysis.sustainability_metrics || {};
+    
+    // Determine material category based on properties
+    if (properties.includes('renewable') || properties.includes('biodegradable')) {
+      return 'biomaterial';
+    } else if (properties.includes('conductive') || properties.includes('metallic')) {
+      return 'metal';
+    } else if (properties.includes('polymer') || properties.includes('plastic')) {
+      return 'polymer';
+    } else if (properties.includes('ceramic') || properties.includes('glass')) {
+      return 'ceramic';
+    } else if (properties.includes('composite')) {
+      return 'composite';
+    } else {
+      return 'other';
+    }
+  }
 
-    return textParts.join('. ');
+  /**
+   * Calculate confidence scores for analysis
+   */
+  calculateConfidenceScores(analysis) {
+    const sustainabilityScore = analysis.sustainability_metrics?.overall_score || 0.5;
+    const innovationScore = analysis.innovation_potential?.innovation_score || 0.5;
+    
+    return {
+      overall: (sustainabilityScore + innovationScore) / 2,
+      sustainability: sustainabilityScore,
+      innovation: innovationScore,
+      symbiosis: analysis.symbiosis_opportunities?.length > 0 ? 0.8 : 0.3
+    };
+  }
+
+  /**
+   * Find related materials based on analysis
+   */
+  findRelatedMaterials(analysis) {
+    const properties = analysis.material_properties || [];
+    const related = [];
+    
+    // Find materials with similar properties
+    if (properties.includes('renewable')) {
+      related.push('bamboo', 'cork', 'hemp');
+    }
+    if (properties.includes('conductive')) {
+      related.push('copper', 'aluminum', 'steel');
+    }
+    if (properties.includes('lightweight')) {
+      related.push('aluminum', 'carbon_fiber', 'bamboo');
+    }
+    
+    return [...new Set(related)]; // Remove duplicates
   }
 
   /**

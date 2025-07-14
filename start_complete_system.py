@@ -34,7 +34,7 @@ class CompleteSystemManager:
         
     def start_system(self):
         """Start the complete system"""
-        logger.info("🚀 Starting Complete AI System")
+        logger.info("Starting Complete AI System")
         
         try:
             # Step 1: Check dependencies
@@ -59,13 +59,13 @@ class CompleteSystemManager:
             self.print_system_status()
             
         except Exception as e:
-            logger.error(f"❌ System startup failed: {e}")
+            logger.error(f"System startup failed: {e}")
             self.cleanup_on_failure()
             sys.exit(1)
     
     def check_dependencies(self):
         """Check all system dependencies"""
-        logger.info("🔍 Checking system dependencies...")
+        logger.info("Checking system dependencies...")
         
         # Check Python version
         if sys.version_info < (3, 8):
@@ -89,7 +89,7 @@ class CompleteSystemManager:
             logger.info("Installing missing packages...")
             self.install_packages(missing_packages)
         
-        logger.info("✅ Dependencies check completed")
+        logger.info("Dependencies check completed")
     
     def install_packages(self, packages):
         """Install missing packages"""
@@ -105,7 +105,7 @@ class CompleteSystemManager:
     
     def initialize_ai_components(self):
         """Initialize all AI components"""
-        logger.info("🧠 Initializing AI components...")
+        logger.info("Initializing AI components...")
         
         try:
             # Import and initialize AI components
@@ -131,7 +131,7 @@ class CompleteSystemManager:
             logger.info("✅ AI components initialized")
             
         except Exception as e:
-            logger.error(f"❌ AI component initialization failed: {e}")
+            logger.error(f"AI component initialization failed: {e}")
             raise
     
     def start_backend_services(self):
@@ -289,7 +289,7 @@ class CompleteSystemManager:
     
     def cleanup_on_failure(self):
         """Cleanup on startup failure"""
-        logger.info("🧹 Cleaning up on startup failure...")
+        logger.info("Cleaning up on startup failure...")
         
         # Stop all processes
         for name, process in self.processes.items():

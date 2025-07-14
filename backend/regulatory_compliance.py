@@ -143,7 +143,7 @@ class AdvancedRegulatoryComplianceEngine:
         # Load regulatory data
         self._load_regulatory_data()
         
-        logger.info("🚀 Advanced Regulatory Compliance Engine initialized")
+        logger.info("Advanced Regulatory Compliance Engine initialized")
     
     def _default_config(self) -> Dict[str, Any]:
         """Default configuration"""

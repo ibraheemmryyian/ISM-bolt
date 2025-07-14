@@ -7,6 +7,11 @@ import logging
 from datetime import datetime
 import os
 from pathlib import Path
+try:
+    import psycopg2
+except ImportError:
+    psycopg2 = None
+from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
 
@@ -609,5 +614,37 @@ class KnowledgeGraph:
         except Exception as e:
             logger.error(f"Error clearing graph: {e}")
 
+    def load_companies_from_supabase(self, supabase_url, supabase_key):
+        """Load all companies from Supabase and add them as nodes."""
+        try:
+            supabase: Client = create_client(supabase_url, supabase_key)
+            response = supabase.table("companies").select("*").execute()
+            companies = response.data
+            count = 0
+            for company in companies:
+                company_id = company.get("id")
+                attributes = {
+                    "name": company.get("name"),
+                    "industry": company.get("industry"),
+                    "location": company.get("location"),
+                    "employee_count": company.get("employee_count"),
+                    "products": company.get("products"),
+                    "main_materials": company.get("main_materials"),
+                    "production_volume": company.get("production_volume"),
+                    "process_description": company.get("process_description")
+                }
+                self.add_entity(str(company_id), attributes, entity_type="company")
+                count += 1
+            logger.info(f"Loaded {count} companies from Supabase into the knowledge graph.")
+        except Exception as e:
+            logger.error(f"Error loading companies from Supabase: {e}")
+
 # Initialize global knowledge graph
-knowledge_graph = KnowledgeGraph() 
+knowledge_graph = KnowledgeGraph()
+# Load companies from Supabase at startup
+_supabase_url = os.getenv("SUPABASE_URL")
+_supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
+if _supabase_url and _supabase_key:
+    knowledge_graph.load_companies_from_supabase(_supabase_url, _supabase_key)
+else:
+    logger.warning("SUPABASE_URL or SUPABASE_SERVICE_KEY not set. Knowledge graph will not be populated from Supabase.") 

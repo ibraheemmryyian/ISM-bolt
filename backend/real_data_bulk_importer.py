@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 class RealDataBulkImporter:
     def __init__(self):
-        self.backend_url = "http://localhost:5001"
-        self.ai_gateway_url = "http://localhost:5001"
+        self.backend_url = "http://localhost:3000"
+        self.ai_gateway_url = "http://localhost:3000"
         self.companies_data = []
         self.imported_companies = []
         self.generated_listings = []
@@ -31,6 +31,8 @@ class RealDataBulkImporter:
         try:
             # Try both possible locations
             possible_files = [
+                "data/50_gulf_companies_fixed.json",
+                "../data/50_gulf_companies_fixed.json",
                 "data/50_real_gulf_companies_cleaned.json",
                 "../data/50_real_gulf_companies_cleaned.json"
             ]
@@ -151,25 +153,21 @@ class RealDataBulkImporter:
                 }
                 
                 async with aiohttp.ClientSession() as session:
-                    # Generate waste listings
+                    # Generate AI listings for the company
                     async with session.post(
-                        f"{self.backend_url}/api/ai/listings/generate",
-                        json={**listing_request, "type": "waste"}
+                        f"{self.backend_url}/api/ai/generate-listings/{company_id}",
+                        timeout=30
                     ) as response:
                         if response.status == 200:
-                            waste_result = await response.json()
-                            self.generated_listings.extend(waste_result.get("listings", []))
-                            logger.info(f"Generated waste listings for {company_data['name']}")
-                        
-                    # Generate requirement listings
-                    async with session.post(
-                        f"{self.backend_url}/api/ai/listings/generate",
-                        json={**listing_request, "type": "requirement"}
-                    ) as response:
-                        if response.status == 200:
-                            requirement_result = await response.json()
-                            self.generated_listings.extend(requirement_result.get("listings", []))
-                            logger.info(f"Generated requirement listings for {company_data['name']}")
+                            result = await response.json()
+                            if result.get('success') and result.get('data'):
+                                listings = result['data'].get('listings', [])
+                                self.generated_listings.extend(listings)
+                                logger.info(f"Generated {len(listings)} AI listings for {company_data['name']}")
+                            else:
+                                logger.warning(f"No listings generated for {company_data['name']}")
+                        else:
+                            logger.error(f"Failed to generate listings for {company_data['name']}: {response.status}")
                             
             except Exception as e:
                 logger.error(f"Error generating listings for {company['data']['name']}: {e}")
@@ -182,19 +180,38 @@ class RealDataBulkImporter:
         logger.info("Starting AI matching process...")
         
         try:
-            # Run AI matching via backend API
+            # Run AI matching via backend API with retry logic
             async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    f"{self.backend_url}/api/ai/matching/run"
-                ) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        self.created_matches = result.get("matches", [])
-                        logger.info(f"AI matching completed. Created {len(self.created_matches)} matches")
-                        return True
-                    else:
-                        logger.error(f"AI matching failed: {response.status}")
-                        return False
+                for attempt in range(3):  # Try 3 times
+                    try:
+                        async with session.post(
+                            f"{self.backend_url}/api/ai/matching/run",
+                            timeout=60
+                        ) as response:
+                            if response.status == 200:
+                                result = await response.json()
+                                self.created_matches = result.get("matches", [])
+                                logger.info(f"AI matching completed. Created {len(self.created_matches)} matches")
+                                return True
+                            elif response.status == 429:  # Rate limit
+                                if attempt < 2:  # Not the last attempt
+                                    wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
+                                    logger.warning(f"Rate limited, waiting {wait_time}s before retry...")
+                                    await asyncio.sleep(wait_time)
+                                    continue
+                                else:
+                                    logger.error("AI matching failed due to rate limiting after retries")
+                                    return False
+                            else:
+                                logger.error(f"AI matching failed: {response.status}")
+                                return False
+                    except asyncio.TimeoutError:
+                        if attempt < 2:
+                            logger.warning(f"Timeout on attempt {attempt + 1}, retrying...")
+                            continue
+                        else:
+                            logger.error("AI matching failed due to timeout after retries")
+                            return False
                         
         except Exception as e:
             logger.error(f"Error in AI matching: {e}")

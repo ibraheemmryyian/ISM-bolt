@@ -286,6 +286,28 @@ const PersonalPortfolio: React.FC = () => {
     );
   }
 
+  // If company is not onboarded or has missing data, show a call to action instead of portfolio
+  const company = portfolioData.company;
+  const missingProfile = !company.name || company.name === 'Your Company' || !company.industry || company.industry === 'Unknown' || !company.location || company.location === 'Unknown' || !company.employee_count;
+  if (missingProfile || company.industry_position === 'Pending') {
+    return (
+      <AuthenticatedLayout title="My Portfolio">
+        <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
+          <CardContent className="p-6 text-center">
+            <p className="text-gray-300 mb-4">Your company profile is incomplete. Complete AI onboarding to unlock your personalized portfolio and recommendations.</p>
+            <Button 
+              onClick={() => window.location.href = '/onboarding'}
+              className="mt-4 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Complete AI Onboarding
+            </Button>
+          </CardContent>
+        </Card>
+      </AuthenticatedLayout>
+    );
+  }
+
   return (
     <AuthenticatedLayout title="My Portfolio">
       <div className="space-y-6">
@@ -296,17 +318,17 @@ const PersonalPortfolio: React.FC = () => {
             <User className="w-8 h-8" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">{portfolioData.company.name}</h1>
+            <h1 className="text-3xl font-bold">{company.name}</h1>
             <p className="text-blue-100 flex items-center space-x-2">
               <MapPin className="w-4 h-4" />
-              <span>{portfolioData.company.location}</span>
+              <span>{company.location}</span>
               <span>•</span>
-              <span>{portfolioData.company.industry}</span>
+              <span>{company.industry}</span>
               <span>•</span>
-              <span>{portfolioData.company.employee_count} employees</span>
+              <span>{company.employee_count} employees</span>
             </p>
             <p className="text-blue-100 mt-1">
-              Member since {new Date(portfolioData.company.joined_date).toLocaleDateString()}
+              Member since {new Date(company.joined_date).toLocaleDateString()}
             </p>
           </div>
         </div>
@@ -373,22 +395,22 @@ const PersonalPortfolio: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Size Category</p>
-                <p className="font-semibold">{portfolioData.company.size_category}</p>
+                <p className="font-semibold">{company.size_category}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Industry Position</p>
-                <p className="font-semibold">{portfolioData.company.industry_position}</p>
+                <p className="font-semibold">{company.industry_position}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Sustainability Rating</p>
                 <Badge variant="outline" className="text-green-600">
-                  {portfolioData.company.sustainability_rating}
+                  {company.sustainability_rating}
                 </Badge>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Growth Potential</p>
                 <Badge variant="outline" className="text-blue-600">
-                  {portfolioData.company.growth_potential}
+                  {company.growth_potential}
                 </Badge>
               </div>
             </div>
@@ -520,23 +542,6 @@ const PersonalPortfolio: React.FC = () => {
                     {activity.category}
                   </Badge>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Next Milestones */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Next Milestones</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {portfolioData.next_milestones.map((milestone, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
-                <Target className="w-5 h-5 text-blue-600" />
-                <span className="font-medium">{milestone}</span>
               </div>
             ))}
           </div>

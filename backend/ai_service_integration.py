@@ -8,9 +8,9 @@ import asyncio
 from pathlib import Path
 
 # Import all required AI components directly, fail if missing
-from knowledge_graph import knowledge_graph
-from federated_meta_learning import federated_learner
-from gnn_reasoning_engine import gnn_reasoning_engine
+from backend.knowledge_graph import knowledge_graph
+from backend.federated_meta_learning import federated_learner
+from backend.gnn_reasoning_engine import gnn_reasoning_engine
 from revolutionary_ai_matching import RevolutionaryAIMatching
 from model_persistence_manager import model_persistence_manager
 

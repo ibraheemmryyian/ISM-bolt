@@ -132,9 +132,10 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/login');
+      // Get authenticated user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        navigate('/');
         return;
       }
 
@@ -223,8 +224,8 @@ const Dashboard: React.FC = () => {
 
       // Load AI-generated materials
       const { data: materials, error: materialsError } = await supabase
-              .from('materials')
-              .select('*')
+        .from('materials')
+        .select('*')
         .eq('company_id', user.id)
         .eq('ai_generated', true);
 
@@ -585,27 +586,28 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Company Profile Header - Beautiful Purple Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
-            <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-            <User className="w-8 h-8" />
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center py-10">
+      <div className="w-full max-w-3xl mx-auto space-y-6">
+        {/* Company Profile Header - Beautiful Purple Banner */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+              <User className="w-8 h-8" />
             </div>
-          <div>
-            <h1 className="text-3xl font-bold">{portfolioData.company.name}</h1>
-            <p className="text-blue-100 flex items-center space-x-2">
-              <MapPin className="w-4 h-4" />
-              <span>{portfolioData.company.location}</span>
-              <span>•</span>
-              <span>{portfolioData.company.industry}</span>
-              <span>•</span>
-              <span>{portfolioData.company.employee_count} employees</span>
-            </p>
-            <p className="text-blue-100 mt-1">
-              Member since {new Date(portfolioData.company.joined_date).toLocaleDateString()}
-            </p>
-          </div>
+            <div>
+              <h1 className="text-3xl font-bold">{portfolioData.company.name}</h1>
+              <p className="text-blue-100 flex items-center space-x-2">
+                <MapPin className="w-4 h-4" />
+                <span>{portfolioData.company.location}</span>
+                <span>•</span>
+                <span>{portfolioData.company.industry}</span>
+                <span>•</span>
+                <span>{portfolioData.company.employee_count} employees</span>
+              </p>
+              <p className="text-blue-100 mt-1">
+                Member since {new Date(portfolioData.company.joined_date).toLocaleDateString()}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -943,6 +945,6 @@ const Dashboard: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Dashboard;

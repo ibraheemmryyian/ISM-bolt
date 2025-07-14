@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Access - Simple</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        .icon {
+            width: 64px;
+            height: 64px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        
+        .icon svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        
+        p {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+            text-align: left;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        input[type="password"] {
+            flex: 1;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        input[type="password"]:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+        
+        button {
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button:hover {
+            background: #7c3aed;
+        }
+        
+        .quick-access {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .quick-btn {
+            width: 100%;
+            background: #10b981;
+            margin-bottom: 0.5rem;
+        }
+        
+        .quick-btn:hover {
+            background: #059669;
+        }
+        
+        .back-link {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        
+        .back-link:hover {
+            color: #374151;
+        }
+        
+        .dashboard {
+            display: none;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .dashboard h1 {
+            text-align: left;
+            margin-bottom: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card h3 {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .logout-btn {
+            background: #ef4444;
+            margin-left: auto;
+        }
+        
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginForm" class="container">
+        <div class="icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+            </svg>
+        </div>
+        
+        <h1>Admin Access</h1>
+        <p>Enter admin password to access the admin panel</p>
+        
+        <div class="form-group">
+            <label for="password">Admin Password</label>
+            <div class="input-group">
+                <input 
+                    type="password" 
+                    id="password" 
+                    placeholder="Enter admin password"
+                    onkeypress="if(event.key === 'Enter') checkPassword()"
+                >
+                <button onclick="checkPassword()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="quick-access">
+            <button class="quick-btn" onclick="grantAccess()">
+                🧪 Grant Admin Access (Development)
+            </button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 1rem;">
+            <a href="/" class="back-link">Back to Home</a>
+        </div>
+    </div>
+
+    <div id="adminDashboard" class="dashboard">
+        <div class="header">
+            <h1>Admin Dashboard</h1>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Companies</h3>
+                <div class="value" id="companyCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Materials</h3>
+                <div class="value" id="materialCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Matches</h3>
+                <div class="value" id="matchCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>AI Generated</h3>
+                <div class="value" id="aiCount">-</div>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <h3>System Status</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                <div>
+                    <strong>Backend API:</strong> 
+                    <span id="backendStatus" style="color: #6b7280;">Checking...</span>
+                </div>
+                <div>
+                    <strong>Database:</strong> 
+                    <span id="dbStatus" style="color: #6b7280;">Checking...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function checkPassword() {
+            const password = document.getElementById('password').value;
+            if (password === 'NA10EN') {
+                grantAccess();
+            } else {
+                alert('Wrong password! Access denied.');
+                document.getElementById('password').value = '';
+            }
+        }
+
+        function grantAccess() {
+            localStorage.setItem('temp-admin-access', 'true');
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('adminDashboard').style.display = 'block';
+            loadData();
+        }
+
+        function logout() {
+            localStorage.removeItem('temp-admin-access');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('adminDashboard').style.display = 'none';
+            document.getElementById('password').value = '';
+        }
+
+        async function loadData() {
+            try {
+                // Check backend status
+                const backendResponse = await fetch('http://localhost:3000/api/health');
+                const backendStatus = document.getElementById('backendStatus');
+                
+                if (backendResponse.ok) {
+                    backendStatus.textContent = '✅ Online';
+                    backendStatus.style.color = '#10b981';
+                } else {
+                    backendStatus.textContent = '❌ Offline';
+                    backendStatus.style.color = '#ef4444';
+                }
+
+                // Load companies
+                const companiesResponse = await fetch('http://localhost:3000/api/companies');
+                if (companiesResponse.ok) {
+                    const companies = await companiesResponse.json();
+                    document.getElementById('companyCount').textContent = companies.length;
+                }
+
+                // Load materials
+                const materialsResponse = await fetch('http://localhost:3000/api/materials');
+                if (materialsResponse.ok) {
+                    const materials = await materialsResponse.json();
+                    document.getElementById('materialCount').textContent = materials.length;
+                    
+                    // Count AI generated
+                    const aiGenerated = materials.filter(m => m.ai_generated).length;
+                    document.getElementById('aiCount').textContent = aiGenerated;
+                }
+
+                // Load matches
+                const matchesResponse = await fetch('http://localhost:3000/api/matches');
+                if (matchesResponse.ok) {
+                    const matches = await matchesResponse.json();
+                    document.getElementById('matchCount').textContent = matches.length;
+                }
+
+                // Check database status
+                const dbStatus = document.getElementById('dbStatus');
+                if (companiesResponse.ok && materialsResponse.ok && matchesResponse.ok) {
+                    dbStatus.textContent = '✅ Connected';
+                    dbStatus.style.color = '#10b981';
+                } else {
+                    dbStatus.textContent = '❌ Error';
+                    dbStatus.style.color = '#ef4444';
+                }
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('backendStatus').textContent = '❌ Error';
+                document.getElementById('backendStatus').style.color = '#ef4444';
+                document.getElementById('dbStatus').textContent = '❌ Error';
+                document.getElementById('dbStatus').style.color = '#ef4444';
+            }
+        }
+
+        // Check if already authenticated
+        if (localStorage.getItem('temp-admin-access') === 'true') {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('adminDashboard').style.display = 'block';
+            loadData();
+        }
+    </script>
+</body>
+</html> 

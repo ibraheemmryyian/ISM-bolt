@@ -1,25 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
-import { Badge } from './ui/badge';
-import { Progress } from './ui/progress';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  CheckCircle, 
-  Loader2,
+import {
   Home,
   Target,
   Lightbulb,
   Brain,
   AlertCircle,
   Info,
-  TrendingUp
+  TrendingUp,
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from './ui/alert';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Badge } from './ui/badge';
+import { Button } from './ui/button';
+import { Progress } from './ui/progress';
+import { Textarea } from './ui/textarea';
+import { Input } from './ui/input';
 import { supabase } from '../lib/supabase';
 
 interface OnboardingField {
@@ -35,25 +33,11 @@ interface OnboardingField {
 }
 
 interface OnboardingStep {
-  id: string;
   title: string;
   description: string;
   fields: OnboardingField[];
   isAI: boolean;
   category?: string;
-}
-
-interface CompanyProfile {
-  name: string;
-  industry: string;
-  location: string;
-  employee_count: number;
-  products?: string;
-  main_materials?: string;
-  production_volume?: string;
-  process_description?: string;
-  waste_streams?: string;
-  sustainability_goals?: string;
 }
 
 interface OnboardingQuestion {
@@ -70,8 +54,9 @@ interface OnboardingQuestion {
 interface OnboardingData {
   questions: OnboardingQuestion[];
   estimated_completion_time: string;
-  key_insights_expected: string[];
-  material_listings_focus: string[];
+  key_insights_expected?: string[];
+  material_listings_focus?: string[];
+  note?: string;
   ai_model: string;
 }
 
@@ -89,6 +74,10 @@ interface OnboardingWizardProps {
     industry: string;
     location: string;
     employee_count: number;
+    products?: string;
+    main_materials?: string;
+    production_volume?: string;
+    process_description?: string;
   };
   onComplete: (profile: any) => void;
   onCancel: () => void;
@@ -102,23 +91,22 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const [currentStep, setCurrentStep] = useState<'loading' | 'assessment' | 'questions' | 'processing' | 'complete'>('loading');
   const [questionsData, setQuestionsData] = useState<OnboardingData | null>(null);
   const [knowledgeAssessment, setKnowledgeAssessment] = useState<KnowledgeAssessment | null>(null);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, any>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [processingResult, setProcessingResult] = useState<any>(null);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [industryCategory, setIndustryCategory] = useState<string>('');
+  const [processingResult, setProcessingResult] = useState<any>(null);
   const navigate = useNavigate();
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
 
+  // Initial onboarding steps (basic info)
   const [onboardingSteps, setOnboardingSteps] = useState<OnboardingStep[]>([
     {
-      id: 'basic-info',
       title: 'Basic Company Information',
-      description: 'Let\'s start with some basic information about your company',
+      description: 'Tell us about your company to get started.',
       isAI: false,
       fields: [
         {
@@ -127,7 +115,7 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           label: 'Company Name',
           placeholder: 'Enter your company name',
           required: true,
-          value: '',
+          value: companyProfile?.name || '',
           importance: 'high'
         },
         {
@@ -136,7 +124,7 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           label: 'Industry',
           placeholder: 'e.g., Chemical Manufacturing, Food Processing, Steel Production...',
           required: true,
-          value: '',
+          value: companyProfile?.industry || '',
           importance: 'high'
         },
         {
@@ -145,17 +133,19 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           label: 'Location',
           placeholder: 'City, Country',
           required: true,
-          value: '',
+          value: companyProfile?.location || '',
           importance: 'high'
         },
         {
           id: 'employee_count',
           type: 'select',
-          label: 'Number of Employees',
+          label: 'Employee Count',
+          placeholder: 'Select range',
           required: true,
-          value: '',
+          value: companyProfile?.employee_count || '',
           options: [
-            '1-50',
+            '1-10',
+            '11-50',
             '51-200',
             '201-500',
             '501-1000',
@@ -173,21 +163,18 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
     if (companyProfile?.name) {
       setOnboardingSteps(prev => prev.map(step => ({
         ...step,
-        fields: step.fields.map(field => 
-          field.id === 'name' 
-            ? { ...field, value: companyProfile.name }
-            : field
+        fields: step.fields.map(field =>
+          field.id === 'name' ? { ...field, value: companyProfile.name } : field
         )
       })));
     }
+    // eslint-disable-next-line
   }, [companyProfile]);
 
   const startKnowledgeAssessment = async () => {
     try {
       setIsLoading(true);
       setCurrentStep('loading');
-
-      // Call the enhanced AI onboarding assessment
       const response = await fetch('/api/ai-onboarding/assess-knowledge', {
         method: 'POST',
         headers: {
@@ -199,26 +186,21 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
             industry: companyProfile?.industry || '',
             location: companyProfile?.location || '',
             employee_count: companyProfile?.employee_count || 0,
-            products: (companyProfile as any)?.products || '',
+            products: companyProfile?.products || '',
             main_materials: '',
             production_volume: '',
             process_description: ''
           }
         })
       });
-
       if (response.ok) {
         const data = await response.json();
-
         if (data.knowledge_assessment) {
           setKnowledgeAssessment(data.knowledge_assessment);
           setIndustryCategory(data.industry_category || '');
-
-          // If confidence is low, show assessment screen
           if (data.knowledge_assessment.confidence_score < 0.5) {
             setCurrentStep('assessment');
           } else {
-            // If confidence is high, proceed to questions
             if (data.questions_data) {
               setQuestionsData(data.questions_data);
               setCurrentStep('questions');
@@ -231,7 +213,7 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
     } catch (error) {
       console.error('Error starting knowledge assessment:', error);
       setError('Failed to start knowledge assessment. Please try again.');
-      setCurrentStep('questions'); // Fallback to basic questions
+      setCurrentStep('questions');
     } finally {
       setIsLoading(false);
     }
@@ -240,11 +222,7 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const generateAIQuestions = async () => {
     try {
       setIsGeneratingQuestions(true);
-
-      // Get current form data
       const formData = getCurrentFormData();
-
-      // Call AI to generate targeted questions
       const response = await fetch('/api/ai-onboarding/generate-questions', {
         method: 'POST',
         headers: {
@@ -255,7 +233,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           knowledgeAssessment: knowledgeAssessment
         })
       });
-
       if (response.ok) {
         const data = await response.json();
         if (data.questions && data.questions.length > 0) {
@@ -270,7 +247,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
     } catch (error) {
       console.error('Error generating AI questions:', error);
       setError('Failed to generate AI questions. Using standard questions.');
-      // Fallback to standard questions
       setCurrentStep('questions');
     } finally {
       setIsGeneratingQuestions(false);
@@ -287,47 +263,23 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
     return formData;
   };
 
-  const updateProgress = () => {
-    const totalSteps = onboardingSteps.length;
-    const completedSteps = onboardingSteps.filter(step => isStepComplete(step)).length;
-    const progressPercentage = totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0;
-    setProgress(progressPercentage);
-  };
-
   const handleFieldChange = (stepIndex: number, fieldId: string, value: any) => {
-    setOnboardingSteps(prev => prev.map((step, index) => 
-      index === stepIndex 
+    setOnboardingSteps(prev => prev.map((step, index) =>
+      index === stepIndex
         ? {
             ...step,
-            fields: step.fields.map(field => 
-              field.id === fieldId 
+            fields: step.fields.map(field =>
+              field.id === fieldId
                 ? { ...field, value }
                 : field
             )
           }
         : step
     ));
-    updateProgress();
   };
 
-  const isStepComplete = (step: OnboardingStep | undefined): boolean => {
-    if (!step) return false;
-    return step.fields.every((field: OnboardingField) => {
-      if (field.required) {
-        if (field.type === 'multiselect') {
-          return Array.isArray(field.value) && field.value.length > 0;
-        }
-        return field.value !== '' && field.value !== null && field.value !== undefined;
-      }
-      return true;
-    });
-  };
-
-  const handleAnswerChange = (questionId: string, value: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: value
-    }));
+  const handleAnswerChange = (questionId: string, value: any) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
   const handleNext = () => {
@@ -351,12 +303,8 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const processAnswers = async () => {
     try {
       setCurrentStep('processing');
-
-      // Get all form data
       const formData = getCurrentFormData();
       const allAnswers = { ...formData, ...answers };
-
-      // Generate material listings from answers
       const response = await fetch('/api/ai-onboarding/generate-listings', {
         method: 'POST',
         headers: {
@@ -367,14 +315,11 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           answers: allAnswers
         })
       });
-
       if (response.ok) {
         const result = await response.json();
         setProcessingResult(result);
         setCurrentStep('complete');
         setIsCompleted(true);
-
-        // Call onComplete with enriched profile
         const enrichedProfile = {
           ...formData,
           ...allAnswers,
@@ -383,7 +328,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
           ai_generated: true,
           confidence_score: result.confidence_score
         };
-
         onComplete(enrichedProfile);
       } else {
         throw new Error('Failed to generate material listings');
@@ -414,7 +358,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
   const renderQuestionInput = (question: OnboardingQuestion) => {
     const value = answers[question.id] || '';
-
     switch (question.expected_answer_type) {
       case 'multiselect':
         return (
@@ -429,7 +372,7 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     const newValues = e.target.checked
                       ? [...currentValues, option]
                       : currentValues.filter(v => v !== option);
-                    handleAnswerChange(question.id, JSON.stringify(newValues));
+                    handleAnswerChange(question.id, newValues);
                   }}
                   className="rounded border-gray-300"
                 />
@@ -438,7 +381,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
             ))}
           </div>
         );
-
       case 'boolean':
         return (
           <div className="space-y-2">
@@ -466,7 +408,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
             </label>
           </div>
         );
-
       case 'numeric':
         return (
           <Input
@@ -477,7 +418,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
             className="w-full"
           />
         );
-
       default:
         return (
           <Textarea
@@ -510,7 +450,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
                       {knowledgeAssessment.data_completeness}
                     </Badge>
                   </div>
-
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Confidence Score</span>
@@ -520,7 +459,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     </div>
                     <Progress value={knowledgeAssessment.confidence_score * 100} className="w-full" />
                   </div>
-
                   {industryCategory && (
                     <div className="p-3 bg-blue-50 rounded-lg">
                       <div className="flex items-center space-x-2">
@@ -528,12 +466,11 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
                         <span className="text-sm font-medium">Industry Category</span>
                       </div>
                       <p className="text-sm text-blue-700 mt-1">
-                        {industryCategory.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {industryCategory.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                       </p>
                     </div>
                   )}
                 </div>
-
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-sm font-medium mb-2">Critical Knowledge Gaps</h4>
@@ -542,26 +479,24 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
                         <div key={index} className="flex items-center space-x-2">
                           <AlertCircle className="h-4 w-4 text-red-500" />
                           <span className="text-sm text-red-700">
-                            {gap.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            {gap.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                           </span>
                         </div>
                       ))}
                     </div>
                   </div>
-
                   <div>
                     <h4 className="text-sm font-medium mb-2">Knowledge Areas</h4>
                     <div className="flex flex-wrap gap-1">
                       {knowledgeAssessment.knowledge_areas.map((area, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
-                          {area.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {area.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                         </Badge>
                       ))}
                     </div>
                   </div>
                 </div>
               </div>
-
               <Alert>
                 <Lightbulb className="h-4 w-4" />
                 <AlertDescription>
@@ -571,7 +506,6 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
               </Alert>
             </>
           )}
-
           <div className="flex justify-between">
             <Button variant="outline" onClick={onCancel}>
               Cancel
@@ -597,13 +531,15 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
   if (currentStep === 'loading') {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">AI Assessment in Progress</h3>
-          <p className="text-gray-600 text-center">
-            Our AI is analyzing your company profile to identify knowledge gaps and generate personalized questions...
-          </p>
+      <Card className="w-full max-w-2xl mx-auto mt-10">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            <span>Loading AI Onboarding...</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Progress value={getProgressPercentage()} className="w-full" />
         </CardContent>
       </Card>
     );
@@ -616,88 +552,65 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
   if (currentStep === 'questions' && questionsData) {
     const currentQuestion = questionsData.questions[currentQuestionIndex];
     const isLastQuestion = currentQuestionIndex === questionsData.questions.length - 1;
-
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-blue-600" />
-            AI-Powered Onboarding
-          </CardTitle>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Question {currentQuestionIndex + 1} of {questionsData.questions.length}</span>
-              <span>{questionsData.estimated_completion_time}</span>
-            </div>
-            <Progress value={getProgressPercentage()} className="h-2" />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {error && (
-            <Alert>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="space-y-4">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="text-lg font-medium mb-2">{currentQuestion.question}</h3>
-                {currentQuestion.follow_up_question && (
-                  <p className="text-sm text-gray-600 mb-3">{currentQuestion.follow_up_question}</p>
-                )}
+      <div className="max-w-2xl mx-auto mt-10">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Target className="h-6 w-6 text-green-600" />
+              <span>AI-Generated Onboarding Questions</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="mb-4">
+              <Progress value={getProgressPercentage()} className="w-full" />
+              <div className="text-xs text-gray-500 mt-1">
+                Question {currentQuestionIndex + 1} of {questionsData.questions.length}
               </div>
-              <Badge className={getImportanceColor(currentQuestion.importance)}>
-                {currentQuestion.importance} priority
-              </Badge>
             </div>
-
-            {renderQuestionInput(currentQuestion)}
-
-            <div className="flex justify-between pt-4">
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                disabled={currentQuestionIndex === 0}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+            <div className={`p-4 rounded-lg ${getImportanceColor(currentQuestion.importance)}`}> 
+              <div className="flex items-center space-x-2 mb-2">
+                <TrendingUp className="h-4 w-4" />
+                <span className="font-semibold">{currentQuestion.category.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>
+                <Badge variant="outline" className="ml-2 text-xs">{currentQuestion.importance.toUpperCase()}</Badge>
+              </div>
+              <div className="text-lg font-medium mb-2">{currentQuestion.question}</div>
+              {currentQuestion.reasoning && (
+                <div className="text-xs text-gray-600 mb-2">{currentQuestion.reasoning}</div>
+              )}
+              {renderQuestionInput(currentQuestion)}
+              {currentQuestion.follow_up_question && (
+                <div className="mt-2 text-xs text-blue-700">
+                  <Lightbulb className="inline h-4 w-4 mr-1" />
+                  <span>Follow-up: {currentQuestion.follow_up_question}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={handlePrevious} disabled={currentQuestionIndex === 0}>
                 Previous
               </Button>
-              <Button
-                onClick={handleNext}
-                disabled={!answers[currentQuestion.id]}
-              >
-                {isLastQuestion ? 'Complete' : 'Next'}
-                {!isLastQuestion && <ArrowRight className="h-4 w-4 ml-2" />}
+              <Button onClick={handleNext}>
+                {isLastQuestion ? 'Finish' : 'Next'}
               </Button>
             </div>
-          </div>
-
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">Expected Insights:</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              {questionsData.key_insights_expected.map((insight, index) => (
-                <li key={index} className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3" />
-                  {insight}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (currentStep === 'processing') {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Processing your answers...</h3>
-          <p className="text-gray-600 text-center">
-            Our AI is analyzing your responses to create a comprehensive company profile for optimal industrial symbiosis matching.
-          </p>
+      <Card className="w-full max-w-2xl mx-auto mt-10">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Loader2 className="h-6 w-6 animate-spin text-green-600" />
+            <span>Generating Material Listings...</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Progress value={getProgressPercentage()} className="w-full" />
         </CardContent>
       </Card>
     );
@@ -705,79 +618,126 @@ const AIOnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
   if (currentStep === 'complete' && processingResult) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            Onboarding Complete!
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              Your company profile has been successfully enriched with {Object.keys(processingResult.enriched_profile).length} categories of information.
-            </AlertDescription>
-          </Alert>
-
-          <div className="space-y-4">
-            <h4 className="font-medium">Profile Confidence Score</h4>
-            <div className="flex items-center gap-2">
-              <Progress value={processingResult.confidence_score * 100} className="flex-1" />
-              <span className="text-sm font-medium">
-                {Math.round(processingResult.confidence_score * 100)}%
-              </span>
+      <div className="max-w-3xl mx-auto mt-10">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Home className="h-6 w-6 text-blue-600" />
+              <span>Onboarding Complete</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="mb-4">
+              <Progress value={getProgressPercentage()} className="w-full" />
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <h4 className="font-medium">Key Insights Generated</h4>
-            <div className="grid grid-cols-1 gap-2">
-              {processingResult.insights.map((insight: string, index: number) => (
-                <div key={index} className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-3 w-3 text-green-600" />
-                  {insight}
-                </div>
-              ))}
+            <div className="text-lg font-semibold text-green-700 mb-2">
+              Congratulations! Your onboarding is complete.
             </div>
-          </div>
-
-          <div className="flex justify-between pt-4">
-            <Button variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button onClick={handleNext}>
-              Complete Setup
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="mb-4">
+              <div className="font-medium mb-1">AI-Generated Material Listings:</div>
+              <ul className="list-disc pl-6">
+                {processingResult.material_listings?.map((item: any, idx: number) => (
+                  <li key={idx} className="mb-1">
+                    <span className="font-semibold">{item.material_name}</span> ({item.type}) - {item.quantity} {item.unit} <span className="text-xs text-gray-500">({item.description})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="mb-4">
+              <div className="font-medium mb-1">Waste Management Requirements:</div>
+              <ul className="list-disc pl-6">
+                {processingResult.waste_requirements?.map((req: any, idx: number) => (
+                  <li key={idx} className="mb-1">
+                    <span className="font-semibold">{req.requirement_type.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</span>: {req.description} <span className="text-xs text-gray-500">(Priority: {req.priority})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={onCancel}>
+                Close
+              </Button>
+              <Button onClick={() => navigate('/dashboard')}>
+                Go to Dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
-  if (onboardingComplete) {
+  if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full text-center">
-          <div className="animate-pulse">
-            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-emerald-500" />
-            </div>
-            <h2 className="text-2xl font-bold text-emerald-700 mb-2">Onboarding Complete!</h2>
-            <p className="text-slate-600 mb-4">
-              Your AI profile has been created and we're generating your personalized materials and matches.
-            </p>
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-emerald-600">Preparing your dashboard...</span>
-            </div>
-          </div>
+      <div className="max-w-2xl mx-auto mt-10">
+        <Alert>
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <div className="mt-4 flex justify-center">
+          <Button onClick={onCancel}>Back</Button>
         </div>
       </div>
     );
   }
 
-  return null;
+  // Fallback: show basic info form if nothing else
+  return (
+    <div className="max-w-2xl mx-auto mt-10">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Home className="h-6 w-6 text-blue-600" />
+            <span>Company Onboarding</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {onboardingSteps.map((step, stepIdx) => (
+            <div key={stepIdx} className="space-y-4">
+              <div className="font-semibold text-lg mb-2">{step.title}</div>
+              <div className="text-sm text-gray-600 mb-2">{step.description}</div>
+              {step.fields.map((field, fieldIdx) => (
+                <div key={field.id} className="mb-2">
+                  <label className="block text-sm font-medium mb-1">{field.label}{field.required && <span className="text-red-500">*</span>}</label>
+                  {field.type === 'text' || field.type === 'number' ? (
+                    <Input
+                      type={field.type === 'number' ? 'number' : 'text'}
+                      value={field.value}
+                      placeholder={field.placeholder}
+                      onChange={e => handleFieldChange(stepIdx, field.id, e.target.value)}
+                      className="w-full"
+                    />
+                  ) : field.type === 'select' ? (
+                    <select
+                      value={field.value}
+                      onChange={e => handleFieldChange(stepIdx, field.id, e.target.value)}
+                      className="w-full border rounded px-2 py-1"
+                    >
+                      <option value="">Select...</option>
+                      {field.options?.map((opt, idx) => (
+                        <option key={idx} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  ) : field.type === 'textarea' ? (
+                    <Textarea
+                      value={field.value}
+                      placeholder={field.placeholder}
+                      onChange={e => handleFieldChange(stepIdx, field.id, e.target.value)}
+                      className="w-full min-h-[100px]"
+                    />
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ))}
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={onCancel}>Cancel</Button>
+            <Button onClick={startKnowledgeAssessment}>Start AI Onboarding</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export default AIOnboardingWizard; 

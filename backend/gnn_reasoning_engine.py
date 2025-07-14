@@ -10,6 +10,7 @@ from pathlib import Path
 import threading
 import time
 import random
+from supabase import create_client, Client
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,14 @@ class GNNReasoningEngine:
         
         # Load existing models
         self._load_models()
+        
+        # Load companies from Supabase at initialization
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
+        if supabase_url and supabase_key:
+            self.load_companies_from_supabase(supabase_url, supabase_key)
+        else:
+            logger.warning("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set. GNN graph will not be populated from Supabase.")
         
         logger.info("GNN Reasoning Engine initialized")
     
@@ -601,6 +610,31 @@ class GNNReasoningEngine:
             
         except Exception as e:
             logger.error(f"Error clearing inference history: {e}")
+
+    def load_companies_from_supabase(self, supabase_url, supabase_key):
+        """Load all companies from Supabase and add them as nodes to the GNN graph."""
+        try:
+            supabase: Client = create_client(supabase_url, supabase_key)
+            response = supabase.table("companies").select("*").execute()
+            companies = response.data
+            count = 0
+            for company in companies:
+                company_id = company.get("id")
+                attributes = {
+                    "name": company.get("name"),
+                    "industry": company.get("industry"),
+                    "location": company.get("location"),
+                    "employee_count": company.get("employee_count"),
+                    "products": company.get("products"),
+                    "main_materials": company.get("main_materials"),
+                    "production_volume": company.get("production_volume"),
+                    "process_description": company.get("process_description")
+                }
+                self.graph.add_node(str(company_id), **attributes)
+                count += 1
+            logger.info(f"Loaded {count} companies from Supabase into the GNN graph.")
+        except Exception as e:
+            logger.error(f"Error loading companies from Supabase into GNN graph: {e}")
 
 class ModelManager:
     """Manager for GNN models"""

@@ -6,7 +6,7 @@ const axios = require('axios');
 
 // Supabase configuration
 let supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'your-anon-key';
+const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || 'your-anon-key';
 
 // Remove trailing slash if present
 supabaseUrl = supabaseUrl.replace(/\/$/, '');
@@ -17,7 +17,7 @@ if (!supabaseUrl || supabaseUrl === 'https://your-project.supabase.co') {
 }
 
 if (!supabaseKey || supabaseKey === 'your-anon-key') {
-  console.error('❌ SUPABASE_ANON_KEY not configured. Please set the SUPABASE_ANON_KEY environment variable.');
+  console.error('❌ SUPABASE_KEY not configured. Please set the SUPABASE_KEY environment variable.');
 }
 
 // Debug: Show what we're using
