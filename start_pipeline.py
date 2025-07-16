@@ -49,7 +49,7 @@ def main():
     print("\n🔍 Checking if backend is running...")
     try:
         import requests
-        response = requests.get("http://localhost:5001/api/health", timeout=5)
+        response = requests.get("http://localhost:3000/api/health", timeout=5)
         if response.status_code == 200:
             print("✅ Backend is running!")
         else:

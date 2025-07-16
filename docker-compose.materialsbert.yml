@@ -1,0 +1,23 @@
+services:
+  materialsbert:
+    build:
+      context: .
+      dockerfile: materials_bert_dockerfile
+    environment:
+    - MATERIALSBERT_ENABLED=true
+    - MATERIALSBERT_CACHE_SIZE=1000
+    healthcheck:
+      interval: 30s
+      retries: '3'
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8001/health
+      timeout: 10s
+    ports:
+    - 8001:8001
+    restart: unless-stopped
+    volumes:
+    - ./model_storage:/app/model_storage
+version: '3.8'

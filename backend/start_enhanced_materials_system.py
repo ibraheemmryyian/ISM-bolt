@@ -18,6 +18,12 @@ from datetime import datetime
 import signal
 import atexit
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Configure logging for Windows compatibility
 logging.basicConfig(
     level=logging.INFO,
@@ -27,6 +33,13 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
+# Patch StreamHandler to use UTF-8 encoding if possible
+try:
+    for handler in logging.getLogger().handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.stream.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 logger = logging.getLogger(__name__)
 
 class EnhancedMaterialsSystem:

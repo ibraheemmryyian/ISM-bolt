@@ -897,7 +897,7 @@ class DynamicMaterialsIntegrationService:
                 async with session.post(
                     self.deepseek_r1_url,
                     json={
-                        'model': 'deepseek-r1',
+                        'model': 'deepseek-reasoner',
                         'messages': [{'role': 'user', 'content': prompt}],
                         'temperature': 0.1
                     },
@@ -970,7 +970,7 @@ class DynamicMaterialsIntegrationService:
                 async with session.post(
                     self.deepseek_url,
                     json={
-                        'model': 'deepseek-coder',
+                        'model': 'deepseek-reasoner',
                         'messages': [{'role': 'user', 'content': prompt}],
                         'temperature': 0.1
                     },

@@ -228,10 +228,10 @@ class SymbiosisPatternRecognizer:
         """Find densely connected clusters"""
         # Convert to undirected graph for clustering
         undirected_graph = graph.graph.to_undirected()
-        
+        if undirected_graph.number_of_nodes() == 0:
+            return []
         # Use community detection
         communities = nx.community.greedy_modularity_communities(undirected_graph)
-        
         return [list(community) for community in communities if len(community) >= 3]
     
     def find_bridge_patterns(self, graph: SymbiosisGraph) -> List[Dict]:
@@ -397,7 +397,11 @@ class MultiHopSymbiosisDetector:
         
         # Use NetworkX implementation
         try:
-            shortest_paths = nx.all_simple_paths(self.graph.graph, source, target, cutoff=max_hops)
+            # Ensure cutoff is strictly less than 1
+            cutoff = max_hops
+            if cutoff >= 1:
+                cutoff = min(cutoff, 0.99) if cutoff == 1 else cutoff
+            shortest_paths = nx.all_simple_paths(self.graph.graph, source, target, cutoff=cutoff)
             
             for path in shortest_paths:
                 if len(path) <= max_hops + 1:
@@ -540,15 +544,17 @@ class MultiHopSymbiosisDetector:
                 while not self.update_queue.empty():
                     update = self.update_queue.get_nowait()
                     self._process_update(update)
-                
                 # Update patterns periodically
                 if self.config.pattern_recognition:
-                    self.pattern_recognizer.extract_patterns(self.graph)
-                
+                    try:
+                        self.pattern_recognizer.extract_patterns(self.graph)
+                    except Exception as e:
+                        import traceback
+                        logging.error(f"Background update error: {e}\n{traceback.format_exc()}")
                 time.sleep(1)  # Check every second
-                
             except Exception as e:
-                logging.error(f"Background update error: {e}")
+                import traceback
+                logging.error(f"Background update error: {e}\n{traceback.format_exc()}")
                 time.sleep(5)
     
     def _process_update(self, update: Tuple):

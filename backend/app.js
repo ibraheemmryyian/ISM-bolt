@@ -24,6 +24,9 @@ const apiFusionService = require('./services/apiFusionService');
 const aiEvolutionEngine = require('./services/aiEvolutionEngine');
 const FreightosLogisticsService = require('./services/freightosLogisticsService');
 const freightosService = new FreightosLogisticsService();
+const requestWithRetry = require('./utils/requestWithRetry');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 // Adaptive onboarding is handled via proxy to Python Flask server
 
 const app = express();
@@ -116,12 +119,24 @@ app.use((error, req, res, next) => {
   });
 });
 
+// --- Standardized API Response Utility ---
+function sendResponse(res, { success, data = null, error = null, message = null }, statusCode = 200) {
+  const response = { success };
+  if (data !== null) response.data = data;
+  if (error !== null) response.error = error;
+  if (message !== null) response.message = message;
+  return res.status(statusCode).json(response);
+}
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    version: process.env.npm_package_version || '1.0.0'
+  sendResponse(res, {
+    success: true,
+    data: {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || '1.0.0'
+    }
   });
 });
 
@@ -154,10 +169,9 @@ app.post('/api/logs', async (req, res) => {
       }
     }
     
-    res.json({ success: true });
+    sendResponse(res, { success: true, message: 'Log stored' });
   } catch (error) {
-    console.error('Logging error:', error);
-    res.status(500).json({ error: 'Failed to log message' });
+    sendResponse(res, { success: false, error: 'Failed to log message' }, 500);
   }
 });
 
@@ -497,18 +511,20 @@ app.post('/api/ai-pipeline', async (req, res) => {
         
         console.log(`Two-Phase AI Pipeline completed: Generated portfolio with ${portfolioResult.predicted_outputs?.length || 0} outputs and created ${allMatches.length} matches`);
         
-        res.json({
-            success: true,
+        sendResponse(res, {
+          success: true,
+          data: {
             phase: 'complete',
             portfolio: savedPortfolio,
             matches_created: allMatches.length,
             total_matches: allMatches,
-            message: 'Two-phase AI pipeline completed successfully'
+          },
+          message: 'Two-phase AI pipeline completed successfully'
         });
         
     } catch (error) {
         console.error('Two-Phase AI Pipeline error:', error);
-        res.status(500).json({ error: error.message });
+        sendResponse(res, { success: false, error: error.message }, 500);
     }
 });
 
@@ -2282,53 +2298,45 @@ app.get('/api/v1/companies/:id/notifications/stream', async (req, res) => {
 app.post('/api/adaptive-onboarding/start', async (req, res) => {
   try {
     const { initial_profile } = req.body;
-    
-    // Get the authenticated user from the Authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return sendResponse(res, { success: false, error: 'Authentication required' }, 401);
     }
-
     const token = authHeader.split(' ')[1];
-    
-    // Verify the token with Supabase
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return sendResponse(res, { success: false, error: 'Authentication required' }, 401);
     }
-
-    // Make HTTP request to Python Flask server
-    const response = await fetch('http://localhost:5003/api/adaptive-onboarding/start', {
+    // Use requestWithRetry for Python Flask call
+    const response = await requestWithRetry({
       method: 'POST',
+      url: process.env.ADAPTIVE_ONBOARDING_URL || 'http://localhost:5003/api/adaptive-onboarding/start',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': authHeader
       },
-      body: JSON.stringify({
+      data: {
         user_id: user.id,
         initial_profile: initial_profile || {}
-      })
+      },
+      timeout: 10000
     });
-
-    if (!response.ok) {
-      throw new Error(`Python server responded with ${response.status}`);
-    }
-
-    const onboardingResult = await response.json();
-
+    const onboardingResult = response.data;
     if (onboardingResult.success && onboardingResult.session) {
-      res.json({
+      return sendResponse(res, {
         success: true,
-        session_id: onboardingResult.session.session_id,
-        initial_questions: onboardingResult.session.initial_questions,
-        completion_percentage: onboardingResult.session.completion_percentage
+        data: {
+          session_id: onboardingResult.session.session_id,
+          initial_questions: onboardingResult.session.initial_questions,
+          completion_percentage: onboardingResult.session.completion_percentage
+        }
       });
     } else {
-      res.json(onboardingResult);
+      return sendResponse(res, { success: false, error: onboardingResult.error || 'Onboarding failed' }, 500);
     }
-    
   } catch (error) {
     console.error('Error starting adaptive onboarding:', error);
-    res.status(500).json({ error: 'Failed to start adaptive onboarding' });
+    return sendResponse(res, { success: false, error: 'Failed to start adaptive onboarding' }, 500);
   }
 });
 
@@ -4727,3 +4735,144 @@ app.post('/api/ai-onboarding/generate-listings', async (req, res) => {
 });
 
 module.exports = app;
+
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Industrial AI Marketplace API',
+      version: '1.0.0',
+      description: 'API documentation for the Industrial AI Marketplace backend.'
+    },
+    servers: [
+      { url: 'http://localhost:3000', description: 'Development server' }
+    ]
+  },
+  apis: ['./app.js'], // You can add more files for endpoint annotations
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// =========================
+// AI MATCHING ENDPOINTS
+// =========================
+
+/**
+ * POST /api/ai-matching/semantic-search
+ * Body: { material_id: string, top_k: number }
+ * Returns: { matches: [...] }
+ */
+app.post('/api/ai-matching/semantic-search', async (req, res) => {
+  try {
+    const { material_id, top_k } = req.body;
+    if (!material_id || typeof material_id !== 'string') {
+      return sendResponse(res, { success: false, error: 'material_id is required' }, 400);
+    }
+    // TODO: Integrate with semantic search engine (Python or Node)
+    // Placeholder: return empty matches
+    return sendResponse(res, { success: true, data: { matches: [] } });
+  } catch (error) {
+    console.error('Semantic search error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/ai-matching/llm-analysis
+ * Body: { material1_id: string, material2_id: string }
+ * Returns: { analysis: ... }
+ */
+app.post('/api/ai-matching/llm-analysis', async (req, res) => {
+  try {
+    const { material1_id, material2_id } = req.body;
+    if (!material1_id || !material2_id) {
+      return sendResponse(res, { success: false, error: 'Both material1_id and material2_id are required' }, 400);
+    }
+    // TODO: Integrate with LLM analysis service
+    // Placeholder: return dummy analysis
+    return sendResponse(res, { success: true, data: { analysis: { compatibility: 'unknown', notes: 'LLM analysis not implemented' } } });
+  } catch (error) {
+    console.error('LLM analysis error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/ai-matching/gnn-scoring
+ * Body: { material1_id: string, material2_id: string }
+ * Returns: { score: number }
+ */
+app.post('/api/ai-matching/gnn-scoring', async (req, res) => {
+  try {
+    const { material1_id, material2_id } = req.body;
+    if (!material1_id || !material2_id) {
+      return sendResponse(res, { success: false, error: 'Both material1_id and material2_id are required' }, 400);
+    }
+    // TODO: Integrate with GNN scoring service
+    // Placeholder: return dummy score
+    return sendResponse(res, { success: true, data: { score: Math.random() } });
+  } catch (error) {
+    console.error('GNN scoring error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/ai-matching/comprehensive
+ * Body: { material_id: string, match_type: string, preferences: object }
+ * Returns: { matches: [...] }
+ */
+app.post('/api/ai-matching/comprehensive', async (req, res) => {
+  try {
+    const { material_id, match_type, preferences } = req.body;
+    if (!material_id) {
+      return sendResponse(res, { success: false, error: 'material_id is required' }, 400);
+    }
+    // TODO: Integrate with comprehensive matching engine
+    // Placeholder: return empty matches
+    return sendResponse(res, { success: true, data: { matches: [] } });
+  } catch (error) {
+    console.error('Comprehensive matching error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/ai-matching/multi-hop
+ * Body: { material_id: string, max_hops: number }
+ * Returns: { matches: [...] }
+ */
+app.post('/api/ai-matching/multi-hop', async (req, res) => {
+  try {
+    const { material_id, max_hops } = req.body;
+    if (!material_id) {
+      return sendResponse(res, { success: false, error: 'material_id is required' }, 400);
+    }
+    // TODO: Integrate with multi-hop symbiosis engine
+    // Placeholder: return empty matches
+    return sendResponse(res, { success: true, data: { matches: [] } });
+  } catch (error) {
+    console.error('Multi-hop matching error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/ai-matching/insights/:id
+ * Returns: { insights: ... }
+ */
+app.get('/api/ai-matching/insights/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return sendResponse(res, { success: false, error: 'Match ID is required' }, 400);
+    }
+    // TODO: Integrate with insights engine
+    // Placeholder: return dummy insights
+    return sendResponse(res, { success: true, data: { insights: { matchId: id, details: 'Insights not implemented' } } });
+  } catch (error) {
+    console.error('Insights error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});

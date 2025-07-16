@@ -24,7 +24,7 @@ python test_50_companies.py
 
 echo.
 echo ✅ System started! Check:
-echo    - Backend: http://localhost:5001/api/health
+echo    - Backend: http://localhost:3000/api/health
 echo    - Frontend: http://localhost:5173
 echo    - Admin: http://localhost:5173/admin
 echo.

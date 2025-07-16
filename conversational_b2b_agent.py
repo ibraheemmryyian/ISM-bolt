@@ -12,7 +12,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 import logging
 from enum import Enum
-import openai
+# Removed: import openai
 from transformers import AutoTokenizer, AutoModel
 import numpy as np
 from sentence_transformers import SentenceTransformer

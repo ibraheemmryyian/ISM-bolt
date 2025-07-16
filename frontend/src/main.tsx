@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
+import LogRocket from 'logrocket';
+LogRocket.init('n4ftdg/frontned');
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

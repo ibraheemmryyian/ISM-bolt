@@ -7,7 +7,7 @@ Write-Host "`n🧪 Testing: Backend Health" -ForegroundColor Yellow
 Write-Host "------------------------------" -ForegroundColor Yellow
 
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:5001/api/health" -Method Get -TimeoutSec 10
+    $response = Invoke-RestMethod -Uri "http://localhost:3000/api/health" -Method Get -TimeoutSec 10
     Write-Host "✅ Backend health: $($response.status)" -ForegroundColor Green
     $backendHealthy = $true
 } catch {
@@ -66,7 +66,7 @@ Write-Host "`n🧪 Testing: Companies API" -ForegroundColor Yellow
 Write-Host "------------------------------" -ForegroundColor Yellow
 
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:5001/api/companies" -Method Get -TimeoutSec 10
+    $response = Invoke-RestMethod -Uri "http://localhost:3000/api/companies" -Method Get -TimeoutSec 10
     $companies = $response.companies
     Write-Host "✅ Companies API: $($companies.Count) companies found" -ForegroundColor Green
     $companiesApiHealthy = $companies.Count -gt 0
@@ -80,7 +80,7 @@ Write-Host "`n🧪 Testing: AI Services" -ForegroundColor Yellow
 Write-Host "------------------------------" -ForegroundColor Yellow
 
 try {
-    $response = Invoke-RestMethod -Uri "http://localhost:5001/api/ai/services/status" -Method Get -TimeoutSec 15
+    $response = Invoke-RestMethod -Uri "http://localhost:3000/api/ai/services/status" -Method Get -TimeoutSec 15
     $services = $response.services_status
     
     $healthyServices = 0
@@ -118,7 +118,7 @@ try {
         }
     }
     
-    $response = Invoke-RestMethod -Uri "http://localhost:5001/api/logistics-preview" -Method Post -Body ($testData | ConvertTo-Json -Depth 3) -ContentType "application/json" -TimeoutSec 15
+    $response = Invoke-RestMethod -Uri "http://localhost:3000/api/logistics-preview" -Method Post -Body ($testData | ConvertTo-Json -Depth 3) -ContentType "application/json" -TimeoutSec 15
     Write-Host "✅ Logistics preview successful" -ForegroundColor Green
     $logisticsHealthy = $true
 } catch {

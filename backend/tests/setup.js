@@ -1,6 +1,6 @@
 // Test setup file
 process.env.NODE_ENV = 'test';
-process.env.PORT = 5001;
+process.env.PORT = 3000;
 
 // Mock console methods to reduce noise in tests
 global.console = {

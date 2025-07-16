@@ -26,10 +26,17 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('bulletproof_system.log'),
-        logging.StreamHandler()
+        logging.FileHandler('bulletproof_system.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
     ]
 )
+# Patch StreamHandler to use UTF-8 encoding if possible
+try:
+    for handler in logging.getLogger().handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.stream.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 logger = logging.getLogger(__name__)
 
 class BulletproofSystemManager:

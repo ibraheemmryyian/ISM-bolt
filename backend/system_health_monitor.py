@@ -31,16 +31,24 @@ from pathlib import Path
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import sys
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('system_health.log'),
-        logging.StreamHandler()
+        logging.FileHandler('system_health.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
     ]
 )
+# Patch StreamHandler to use UTF-8 encoding if possible
+try:
+    for handler in logging.getLogger().handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.stream.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -286,16 +294,15 @@ class SystemHealthMonitor:
     
     def _check_api_endpoints(self):
         """Check API endpoint health"""
-        endpoints = [
-            {'name': 'backend_health', 'url': 'http://localhost:3000/health', 'method': 'GET'},
-            {'name': 'api_health', 'url': 'http://localhost:3000/api/health', 'method': 'GET'},
-            {'name': 'companies_api', 'url': 'http://localhost:3000/api/companies', 'method': 'GET'},
-            {'name': 'materials_api', 'url': 'http://localhost:3000/api/materials', 'method': 'GET'},
-            {'name': 'ai_listings_api', 'url': 'http://localhost:3000/api/ai/listings', 'method': 'GET'},
-            {'name': 'frontend', 'url': 'http://localhost:5173', 'method': 'GET'}
+        health_checks = [
+            {'name': 'backend_health', 'url': os.environ.get('BACKEND_HEALTH_URL', 'http://localhost:3000/health'), 'method': 'GET'},
+            {'name': 'api_health', 'url': os.environ.get('API_HEALTH_URL', 'http://localhost:3000/api/health'), 'method': 'GET'},
+            {'name': 'companies_api', 'url': os.environ.get('COMPANIES_API_URL', 'http://localhost:3000/api/companies'), 'method': 'GET'},
+            {'name': 'materials_api', 'url': os.environ.get('MATERIALS_API_URL', 'http://localhost:3000/api/materials'), 'method': 'GET'},
+            {'name': 'ai_listings_api', 'url': os.environ.get('AI_LISTINGS_API_URL', 'http://localhost:3000/api/ai/listings'), 'method': 'GET'},
         ]
         
-        for endpoint in endpoints:
+        for endpoint in health_checks:
             try:
                 start_time = time.time()
                 response = requests.get(endpoint['url'], timeout=10)

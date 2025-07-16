@@ -68,7 +68,7 @@ export interface AIPreviewData {
 }
 
 class AIPreviewService {
-  private baseUrl = 'http://localhost:5001/api';
+  private baseUrl = import.meta.env.VITE_AI_PREVIEW_URL;
 
   /**
    * Generate AI preview data for a company

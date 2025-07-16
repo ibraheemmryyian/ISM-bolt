@@ -96,7 +96,8 @@ class APIClient {
     options: RequestInit = {}, 
     retryCount = 0
   ): Promise<AIResponse> {
-    const url = `http://localhost:5001/api${endpoint}`;
+    const API_BASE_URL = import.meta.env.VITE_API_URL;
+    const url = `${API_BASE_URL}/api${endpoint}`;
     
     try {
       this.logger.log('info', `API Request: ${options.method || 'GET'} ${url}`, {
@@ -173,10 +174,11 @@ class APIClient {
 class AIService {
   private apiClient = APIClient.getInstance();
   private logger = ProductionLogger.getInstance();
-  private baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+  private baseUrl = import.meta.env.VITE_API_URL;
 
   private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<AIResponse> {
-    const url = `${this.baseUrl}${endpoint}`;
+    const API_BASE_URL = import.meta.env.VITE_API_URL;
+    const url = `${API_BASE_URL}/api${endpoint}`;
     
     const defaultOptions: RequestInit = {
       headers: {
@@ -227,21 +229,21 @@ class AIService {
   }
 
   async generateListings(materialData: any): Promise<AIResponse> {
-    return this.makeRequest('/api/ai/generate-listings', {
+    return this.makeRequest('/ai/generate-listings', {
       method: 'POST',
       body: JSON.stringify(materialData),
     });
   }
 
   async analyzeMatch(buyerData: any, sellerData: any): Promise<AIResponse> {
-    return this.makeRequest('/api/ai/analyze-match', {
+    return this.makeRequest('/ai/analyze-match', {
       method: 'POST',
       body: JSON.stringify({ buyerData, sellerData }),
     });
   }
 
   async getRecommendations(userId: string): Promise<AIResponse> {
-    return this.makeRequest(`/api/ai/recommendations/${userId}`);
+    return this.makeRequest(`/ai/recommendations/${userId}`);
   }
 
   async processOnboarding(data: any): Promise<AIResponse> {

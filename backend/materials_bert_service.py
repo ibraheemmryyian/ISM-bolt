@@ -468,6 +468,10 @@ class MaterialsBertService:
             logger.error(f"Error in comprehensive analysis: {str(e)}")
             return self.get_fallback_analysis(material_name, text)
     
+    def analyze_material(self, text: str, material_name: str, context: dict = None) -> dict:
+        """Production-grade entry point for material analysis, matching test and API expectations."""
+        return self.analyze_material_text(text, material_name, context)
+    
     def calculate_semantic_similarity(self, text: str, material_name: str) -> float:
         """Calculate semantic similarity between text and material"""
         try:
@@ -558,7 +562,7 @@ def analyze_material():
             return jsonify({'error': 'Missing required fields: text and material_name'}), 400
         
         # Perform analysis
-        analysis = materials_bert_service.analyze_material_text(text, material_name, context)
+        analysis = materials_bert_service.analyze_material(text, material_name, context)
         
         return jsonify(analysis)
         

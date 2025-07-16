@@ -21,7 +21,6 @@ xgboost==1.7.6
 lightgbm==4.0.0
 
 # NLP dependencies
-sentence-transformers==2.2.2
 transformers==4.33.2
 nltk==3.8.1
 
@@ -79,7 +78,7 @@ redis==4.5.4
 
 # Additional utilities
 python-multipart==0.0.6
-pydantic==2.0.0
+pydantic==1.10.9
 typing-extensions==4.7.0
 
 # Monitoring and observability
@@ -121,3 +120,6 @@ alpha-vantage==2.3.1
 # Additional utilities
 python-decouple==3.8
 python-json-logger==2.0.7 
+# DeepSeek R1 replaces sentence-transformers for semantic analysis
+flask-cors
+faiss-cpu==1.7.4

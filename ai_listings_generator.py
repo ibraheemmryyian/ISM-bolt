@@ -5,8 +5,8 @@ import asyncio
 from typing import List, Dict, Any
 from supabase import create_client, Client
 from datetime import datetime, timedelta
-import openai
-from dotenv import load_dotenv
+import uuid
+from decimal import Decimal
 
 # Load environment variables
 load_dotenv()
@@ -15,14 +15,6 @@ load_dotenv()
 supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 supabase: Client = create_client(supabase_url, supabase_key)
-
-# Initialize OpenAI client (optional - will use fallback if not available)
-try:
-    openai.api_key = os.getenv('OPENAI_API_KEY')
-    OPENAI_AVAILABLE = True
-except:
-    OPENAI_AVAILABLE = False
-    print("OpenAI not available, using fallback generation")
 
 class AIListingsGenerator:
     def __init__(self):
@@ -103,61 +95,78 @@ class AIListingsGenerator:
         }
 
     def generate_material_listing(self, company_id: str, company_name: str, material_type: str) -> Dict[str, Any]:
-        """Generate a realistic material listing"""
+        """Generate a realistic material listing, matching the actual materials table schema"""
         profile = self.generate_company_profile(company_name)
         industry = profile['industry']
-        
         if material_type == 'waste':
             materials = self.industries[industry]['waste_materials']
         else:
             materials = self.industries[industry]['required_materials']
-        
         material_name = random.choice(materials)
-        
-        # Generate realistic quantities
+        # Generate realistic quantities and costs
         if material_type == 'waste':
             quantity = random.randint(10, 1000)
             unit = random.choice(['kg', 'tons', 'liters', 'pieces', 'cubic meters'])
+            current_cost = round(random.uniform(10, 100), 2)
         else:
             quantity = random.randint(100, 5000)
             unit = random.choice(['kg', 'tons', 'liters', 'pieces', 'cubic meters'])
-        
-        # Generate realistic descriptions
-        descriptions = {
-            'waste': [
-                f"High-quality {material_name} available for recycling or repurposing",
-                f"Clean {material_name} waste from {profile['industry']} production",
-                f"Regular supply of {material_name} waste, suitable for various applications",
-                f"Industrial {material_name} waste, properly sorted and cleaned"
-            ],
-            'requirement': [
-                f"Seeking reliable supplier for {material_name}",
-                f"Looking for high-quality {material_name} for production",
-                f"Need regular supply of {material_name} for manufacturing",
-                f"Searching for {material_name} suppliers in the region"
-            ]
-        }
-        
-        description = random.choice(descriptions[material_type])
-        
+            current_cost = round(random.uniform(100, 1000), 2)
         # Generate realistic pricing
-        if material_type == 'waste':
-            price_per_unit = random.uniform(0.1, 5.0)  # Usually cheaper for waste
-        else:
-            price_per_unit = random.uniform(5.0, 50.0)  # More expensive for requirements
-        
+        price_per_unit = round(random.uniform(0.1, 50.0), 2)
+        # Generate a robust, production-grade material listing
+        now = datetime.now().astimezone()
+        # Generate a UUID for the primary key
+        material_id = str(uuid.uuid4())
+        # Compose a rich description
+        description = f"{material_type.title()} - {material_name} for {company_name} ({industry})"
+        # AI tags and advanced fields
+        ai_tags = [material_type, industry, 'ai_generated']
+        estimated_value = round(price_per_unit * quantity, 2)
+        priority_score = random.randint(1, 100)
+        is_sponsored = False
+        ai_generated = True
+        availability = 'Available' if material_type == 'waste' else 'Needed'
+        location = profile['location']
+        # Compose the insert dict
         return {
+            'id': material_id,
             'company_id': company_id,
             'material_name': material_name,
-            'quantity': quantity,
+            'quantity': float(quantity),
             'unit': unit,
             'description': description,
             'type': material_type,
-            'price_per_unit': round(price_per_unit, 2),
-            'frequency': random.choice(['daily', 'weekly', 'monthly', 'quarterly']),
-            'quality_grade': random.choice(['A', 'B', 'C']),
-            'ai_generated': True,
-            'created_at': datetime.now().isoformat()
+            'created_at': now.isoformat(),
+            'ai_tags': ai_tags,
+            'estimated_value': float(estimated_value),
+            'priority_score': priority_score,
+            'is_sponsored': is_sponsored,
+            'embeddings': None,  # Placeholder for future AI embeddings
+            'ai_generated': ai_generated,
+            'availability': availability,
+            'location': location,
+            'price_per_unit': float(price_per_unit),
+            'current_cost': str(round(price_per_unit * quantity, 2)),
+            'potential_sources': [f"{material_name} supplier", f"{industry} recycler"],
+            'updated_at': now.isoformat(),
+            'category': material_type,
+            'status': 'active',
+            'material_properties': {
+                'material_name': material_name,
+                'quantity': float(quantity),
+                'unit': unit,
+                'description': description,
+                'industry': industry
+            },
+            'shipping_params': {
+                'preferred_method': random.choice(['truck', 'ship', 'rail']),
+                'lead_time_days': random.randint(1, 14)
+            },
+            'sustainability_metrics': {
+                'carbon_footprint': round(random.uniform(0.1, 10.0), 2),
+                'recyclability': random.choice(['high', 'medium', 'low'])
+            }
         }
 
     def generate_listings_for_company(self, company: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -219,8 +228,8 @@ class AIListingsGenerator:
             print(f"   - Total listings created: {len(all_listings)}")
             
             # Calculate statistics
-            waste_count = len([l for l in all_listings if l['type'] == 'waste'])
-            requirement_count = len([l for l in all_listings if l['type'] == 'requirement'])
+            waste_count = len([l for l in all_listings if l['category'] == 'waste'])
+            requirement_count = len([l for l in all_listings if l['category'] == 'requirement'])
             
             print(f"   - Waste listings: {waste_count}")
             print(f"   - Requirement listings: {requirement_count}")

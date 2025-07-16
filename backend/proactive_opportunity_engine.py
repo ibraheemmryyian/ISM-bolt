@@ -114,7 +114,7 @@ class AdvancedProactiveOpportunityEngine:
         self.prediction_accuracy = []
         self.processing_times = []
         
-        logger.info("�� Advanced Proactive Opportunity Engine initialized")
+        logger.info("🚀 Advanced Proactive Opportunity Engine initialized")
     
     def _default_config(self) -> Dict[str, Any]:
         """Default configuration"""
@@ -797,3 +797,4 @@ class AdvancedProactiveOpportunityEngine:
 
 # Global instance
 proactive_opportunity_engine = AdvancedProactiveOpportunityEngine() 
+ProactiveOpportunityEngine = AdvancedProactiveOpportunityEngine 

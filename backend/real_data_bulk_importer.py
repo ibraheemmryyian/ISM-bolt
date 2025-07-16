@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 class RealDataBulkImporter:
     def __init__(self):
-        self.backend_url = "http://localhost:3000"
-        self.ai_gateway_url = "http://localhost:3000"
+        self.backend_url = os.environ.get('BACKEND_URL', 'http://localhost:3000')
+        self.ai_gateway_url = os.environ.get('AI_GATEWAY_URL', 'http://localhost:3000')
         self.companies_data = []
         self.imported_companies = []
         self.generated_listings = []

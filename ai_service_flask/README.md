@@ -14,7 +14,7 @@ This directory contains a comprehensive suite of advanced AI services designed t
    - Rate limiting and caching
    - Orchestration of complex AI workflows
 
-2. **GNN Reasoning Engine** (`gnn_reasoning_service.py`) - Port 5001
+2. **GNN Reasoning Engine** (`gnn_reasoning_service.py`) - Port 3000
    - Graph Neural Network inference for industrial networks
    - Multi-hop relationship analysis
    - Real-time pattern recognition
@@ -70,7 +70,7 @@ REDIS_DB=0
 
 # Service Configuration
 GATEWAY_PORT=5000
-GNN_PORT=5001
+GNN_PORT=3000
 FEDERATED_PORT=5002
 SYMBIOSIS_PORT=5003
 ANALYTICS_PORT=5004
@@ -89,7 +89,7 @@ LOG_LEVEL=INFO
 python ai_gateway.py
 
 # Terminal 2 - GNN Reasoning
-python gnn_reasoning_service.py
+python gnn_reasoning_service.py --port 3000
 
 # Terminal 3 - Federated Learning
 python federated_learning_service.py

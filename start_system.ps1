@@ -26,7 +26,7 @@ python test_50_companies.py
 
 Write-Host ""
 Write-Host "✅ System started! Check:" -ForegroundColor Green
-Write-Host "   - Backend: http://localhost:5001/api/health" -ForegroundColor Cyan
+Write-Host "   - Backend: http://localhost:3000/api/health" -ForegroundColor Cyan
 Write-Host "   - Frontend: http://localhost:5173" -ForegroundColor Cyan
 Write-Host "   - Admin: http://localhost:5173/admin" -ForegroundColor Cyan
 Write-Host ""

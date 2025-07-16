@@ -994,3 +994,6 @@ class AdvancedRegulatoryComplianceEngine:
 
 # Global instance
 regulatory_compliance_engine = AdvancedRegulatoryComplianceEngine() 
+
+# Export for compatibility
+RegulatoryComplianceEngine = AdvancedRegulatoryComplianceEngine 

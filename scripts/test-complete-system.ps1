@@ -1,3 +1,4 @@
+# NOTE: Run this script as a whole file (not by copy-pasting sections) to ensure all functions are loaded.
 # ISM AI Complete System Test Script
 # Tests all components including enhanced admin dashboard and AI services
 
@@ -311,26 +312,56 @@ function Show-Recommendations {
     Write-Host "6. Verify logistics and compliance integrations" -ForegroundColor $Yellow
 }
 
+# Pre-check: Ensure backend and frontend are reachable before running tests
+function PreCheck-Service {
+    param($URL, $Name)
+    try {
+        $response = Invoke-WebRequest -Uri $URL -Method GET -TimeoutSec 5
+        if ($response.StatusCode -eq 200) {
+            Write-Status "$Name is reachable" "PASS"
+            return $true
+        } else {
+            Write-Status "$Name unreachable (Status: $($response.StatusCode))" "FAIL" $Red
+            return $false
+        }
+    } catch {
+        Write-Status "$Name unreachable (Error: $($_.Exception.Message))" "FAIL" $Red
+        return $false
+    }
+}
+
 # Main test execution
 Write-Host "Starting comprehensive system test..." -ForegroundColor $Blue
 
-$results = @{
-    Database = Test-Database
-    Backend = Test-BackendServices
-    Frontend = Test-Frontend
-    AIServices = Test-AIServices
-    AdminDashboard = Test-AdminDashboard
-    DataIntegrity = Test-DataIntegrity
-    AIListings = Test-AIListingsGenerator
-    AIMatching = Test-AIMatchingEngine
-    Logistics = Test-LogisticsIntegration
-    Compliance = Test-ComplianceIntegration
+$backendUp = PreCheck-Service $BACKEND_URL "Backend"
+$frontendUp = PreCheck-Service $FRONTEND_URL "Frontend"
+
+if (-not $backendUp) {
+    Write-Host "Backend is not reachable. Please start the backend service and retry." -ForegroundColor $Red
+}
+if (-not $frontendUp) {
+    Write-Host "Frontend is not reachable. Please start the frontend service and retry." -ForegroundColor $Red
 }
 
-# Calculate overall score
+$results = @{}
+if ($backendUp) {
+    $results.Database = Test-Database
+    $results.Backend = Test-BackendServices
+    $results.AIServices = Test-AIServices
+    $results.DataIntegrity = Test-DataIntegrity
+    $results.AIListings = Test-AIListingsGenerator
+    $results.AIMatching = Test-AIMatchingEngine
+    $results.Logistics = Test-LogisticsIntegration
+    $results.Compliance = Test-ComplianceIntegration
+}
+if ($frontendUp) {
+    $results.Frontend = Test-Frontend
+    $results.AdminDashboard = Test-AdminDashboard
+}
+
 $totalTests = $results.Count
 $passedTests = ($results.Values | Where-Object { $_ -eq $true }).Count
-$score = [math]::Round(($passedTests / $totalTests) * 100, 1)
+$score = if ($totalTests -gt 0) { [math]::Round(($passedTests / $totalTests) * 100, 1) } else { 0 }
 
 Write-Host "`n🎯 Overall Test Results" -ForegroundColor $Blue
 Write-Host "=====================" -ForegroundColor $Blue
@@ -344,7 +375,7 @@ if ($score -ge 80) {
     Write-Host "`n❌ System needs significant work before production" -ForegroundColor $Red
 }
 
-Show-SystemSummary
+if ($backendUp) { Show-SystemSummary }
 Show-Recommendations
 
 Write-Host "`n✅ Test completed!" -ForegroundColor $Green 

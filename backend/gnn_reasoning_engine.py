@@ -12,6 +12,12 @@ import time
 import random
 from supabase import create_client, Client
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 logger = logging.getLogger(__name__)
 
 class GNNReasoningEngine:

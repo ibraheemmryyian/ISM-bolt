@@ -35,6 +35,13 @@ import backoff
 from contextlib import asynccontextmanager
 import sqlite3
 import uuid
+import sys
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # Materials Project API
 try:
@@ -49,10 +56,17 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('ai_listings_generator.log'),
-        logging.StreamHandler()
+        logging.FileHandler('ai_listings_generator.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
     ]
 )
+# Patch StreamHandler to use UTF-8 encoding if possible
+try:
+    for handler in logging.getLogger().handlers:
+        if isinstance(handler, logging.StreamHandler):
+            handler.stream.reconfigure(encoding='utf-8')
+except Exception:
+    pass
 logger = logging.getLogger(__name__)
 
 @dataclass

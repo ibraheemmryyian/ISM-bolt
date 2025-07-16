@@ -377,7 +377,7 @@ class AIServiceGateway:
         
         # Service registry
         self.services = config.services or {
-            'gnn_reasoning': 'http://localhost:5001',
+            'gnn_reasoning': os.environ.get('GNN_REASONING_URL', 'http://localhost:3000'),
             'federated_learning': 'http://localhost:5002',
             'multi_hop_symbiosis': 'http://localhost:5003',
             'advanced_analytics': 'http://localhost:5004'

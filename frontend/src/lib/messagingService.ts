@@ -61,9 +61,10 @@ class MessagingAPIClient {
     options: RequestInit = {}, 
     retryCount = 0
   ): Promise<{ success: boolean; data?: T; error?: string }> {
-    const url = `http://localhost:5001/api${endpoint}`;
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     
     try {
+      const url = `${API_BASE_URL}/api${endpoint}`;
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
@@ -382,8 +383,9 @@ class MessagingService {
   // Real-time messaging with WebSocket fallback
   async subscribeToMessages(conversationId: string, callback: (message: Message) => void): Promise<() => void> {
     try {
+      const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
       // Try WebSocket first
-      const ws = new WebSocket(`ws://localhost:5001/ws/conversations/${conversationId}`);
+      const ws = new WebSocket(`${WS_BASE_URL}/ws/conversations/${conversationId}`);
       
       ws.onmessage = (event) => {
         try {

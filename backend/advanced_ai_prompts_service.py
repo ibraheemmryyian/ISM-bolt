@@ -10,7 +10,7 @@ import traceback
 # DeepSeek API Configuration
 DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
-DEEPSEEK_MODEL = 'deepseek-coder'  # Can be changed to deepseek-r1 for advanced reasoning
+DEEPSEEK_MODEL = 'deepseek-r1'  # Can be changed to deepseek-r1 for advanced reasoning
 
 # MaterialsBERT Configuration
 MATERIALSBERT_ENDPOINT = os.environ.get('MATERIALSBERT_ENDPOINT', 'http://localhost:8001')

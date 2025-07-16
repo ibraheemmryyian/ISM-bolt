@@ -507,7 +507,7 @@ class AdvancedMaterialsBERTService:
                 try:
                     time.sleep(self.cache_cleanup_interval)
                     self._cleanup_expired_cache()
-        except Exception as e:
+                except Exception as e:
                     logger.error(f"Cache cleanup error: {e}")
         
         cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
@@ -650,7 +650,7 @@ class AdvancedMaterialsBERTService:
                 'POST',
                 self.deepseek_url,
                 json={
-                    'model': 'deepseek-coder',
+                    'model': 'deepseek-reasoner',
                     'messages': [{'role': 'user', 'content': prompt}],
                     'temperature': 0.1
                 },

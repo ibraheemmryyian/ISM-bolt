@@ -21,19 +21,11 @@ class AIListingsGenerator:
     def __init__(self):
         self.supabase_url = os.getenv('SUPABASE_URL')
         self.supabase_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-        self.openai_api_key = os.getenv('OPENAI_API_KEY')
         
         if not all([self.supabase_url, self.supabase_key]):
             raise ValueError("Missing Supabase credentials")
         
         self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
-        
-        if self.openai_api_key:
-            openai.api_key = self.openai_api_key
-            self.use_openai = True
-        else:
-            logger.warning("OpenAI API key not found, using fallback generation")
-            self.use_openai = False
     
     def get_all_companies(self) -> List[Dict[str, Any]]:
         """Fetch all companies from the database"""
@@ -47,47 +39,44 @@ class AIListingsGenerator:
     def generate_listing_description(self, company: Dict[str, Any], material: str) -> str:
         """Generate a compelling listing description using AI"""
         
-        if self.use_openai:
-            try:
-                prompt = f"""
-                Generate a professional material exchange listing for a company with the following profile:
-                
-                Company: {company.get('name', 'Unknown')}
-                Industry: {company.get('industry', 'Unknown')}
-                Location: {company.get('location', 'Unknown')}
-                Materials: {company.get('materials', [])}
-                Products: {company.get('products', [])}
-                Waste Streams: {company.get('waste_streams', [])}
-                Sustainability Score: {company.get('sustainability_score', 0)}
-                
-                Material Available: {material}
-                
-                Create a compelling listing description that includes:
-                1. Material quality and specifications
-                2. Available quantity and frequency
-                3. Environmental benefits of the exchange
-                4. Logistics and delivery options
-                5. Contact information and terms
-                
-                Make it professional, detailed, and attractive to potential partners.
-                """
-                
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are an expert in industrial symbiosis and circular economy. Create compelling material exchange listings."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=300,
-                    temperature=0.7
-                )
-                
-                return response.choices[0].message.content.strip()
-                
-            except Exception as e:
-                logger.error(f"OpenAI API error: {e}")
-                return self._generate_fallback_description(company, material)
-        else:
+        prompt = f"""
+        Generate a professional material exchange listing for a company with the following profile:
+        
+        Company: {company.get('name', 'Unknown')}
+        Industry: {company.get('industry', 'Unknown')}
+        Location: {company.get('location', 'Unknown')}
+        Materials: {company.get('materials', [])}
+        Products: {company.get('products', [])}
+        Waste Streams: {company.get('waste_streams', [])}
+        Sustainability Score: {company.get('sustainability_score', 0)}
+        
+        Material Available: {material}
+        
+        Create a compelling listing description that includes:
+        1. Material quality and specifications
+        2. Available quantity and frequency
+        3. Environmental benefits of the exchange
+        4. Logistics and delivery options
+        5. Contact information and terms
+        
+        Make it professional, detailed, and attractive to potential partners.
+        """
+        
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an expert in industrial symbiosis and circular economy. Create compelling material exchange listings."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=300,
+                temperature=0.7
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            logger.error(f"OpenAI API error: {e}")
             return self._generate_fallback_description(company, material)
     
     def _generate_fallback_description(self, company: Dict[str, Any], material: str) -> str:
@@ -237,7 +226,7 @@ class AIListingsGenerator:
                 else:
                     logger.warning(f"No listings generated for {company.get('name', 'Unknown')}")
             
-        except Exception as e:
+            except Exception as e:
                 logger.error(f"Error generating listings for {company.get('name', 'Unknown')}: {e}")
         
         result = {
@@ -254,7 +243,7 @@ class AIListingsGenerator:
 def main():
     """Main function to run the AI listings generator"""
     try:
-    generator = AIListingsGenerator()
+        generator = AIListingsGenerator()
         result = generator.generate_all_listings()
         print(json.dumps(result, indent=2))
         return result

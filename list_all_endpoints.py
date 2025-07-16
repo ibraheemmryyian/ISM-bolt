@@ -13,7 +13,7 @@ def list_all_endpoints():
     print("=" * 60)
     
     # Backend URL
-    BASE_URL = "http://localhost:5001"
+    BASE_URL = "http://localhost:3000"
     
     # Test if backend is running
     try:

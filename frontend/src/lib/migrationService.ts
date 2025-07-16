@@ -255,8 +255,8 @@ export class MigrationService {
     try {
       console.log('Triggering AI listings generation for company:', companyId);
       
-      // Use port 5000 for backend
-      const response = await fetch(`http://localhost:5001/api/v1/companies/${companyId}/generate-listings`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_BASE_URL}/api/v1/companies/${companyId}/generate-listings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -603,4 +603,4 @@ def verify_api_key(api_key: str) -> bool:
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    app.run(host='0.0.0.0', port=5001, debug=False) 
+    app.run(host='0.0.0.0', port=3000, debug=False) 

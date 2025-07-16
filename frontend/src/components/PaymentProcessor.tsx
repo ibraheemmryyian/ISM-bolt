@@ -78,7 +78,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
       const endpoint = exchangeData ? '/api/payments/create-order' : '/api/payments/create-subscription';
       const data = exchangeData ? { exchangeData } : { subscriptionData };
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}${endpoint}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payments/capture/${orderId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/capture/${orderId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

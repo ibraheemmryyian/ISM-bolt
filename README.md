@@ -218,6 +218,39 @@ npm run test         # Run tests
 - [ ] Monitoring configured
 - [ ] Backup strategy implemented
 
+### 🌐 Environment Variables Reference
+
+| Variable Name                  | Description                                      | Example/Default Value                | Used By                |
+|-------------------------------|--------------------------------------------------|--------------------------------------|------------------------|
+| SUPABASE_URL                  | Supabase project URL                             | https://xxxx.supabase.co             | Backend, Frontend      |
+| SUPABASE_KEY / SUPABASE_ANON_KEY | Supabase anon/public key                      | (long string)                        | Backend, Frontend      |
+| SUPABASE_SERVICE_ROLE_KEY     | Supabase service role key (secure)               | (long string)                        | Backend                |
+| DEEPSEEK_API_KEY              | DeepSeek AI API key                              | sk-xxxx...                           | Backend, Frontend      |
+| DEEPSEEK_R1_API_KEY           | DeepSeek R1 advanced AI key                      | sk-xxxx...                           | Backend                |
+| MP_API_KEY                    | Materials Project API key                        | zSFjfpRg6m...                        | Backend                |
+| NEXT_GEN_MATERIALS_API_KEY    | Next Gen Materials API key                       | zSFjfpRg6m...                        | Backend                |
+| MATERIALSBERT_ENABLED         | Enable MaterialsBERT service                     | true/false                           | Backend                |
+| JWT_SECRET                    | JWT signing secret                               | (secure random string)               | Backend                |
+| SESSION_SECRET                | Session secret                                   | (secure random string)               | Backend                |
+| FREIGHTOS_API_KEY             | Freightos logistics API key                      | (string)                             | Backend                |
+| FREIGHTOS_SECRET_KEY          | Freightos secret key                             | (string)                             | Backend                |
+| NEWS_API_KEY                  | News API key for market intelligence             | (string)                             | Backend                |
+| VITE_SUPABASE_URL             | Supabase URL for frontend                        | https://xxxx.supabase.co             | Frontend               |
+| VITE_SUPABASE_ANON_KEY        | Supabase anon/public key for frontend            | (long string)                        | Frontend               |
+| VITE_API_URL                  | Backend API base URL for frontend                | http://localhost:3000                | Frontend               |
+| VITE_WS_URL                   | WebSocket URL for frontend                       | ws://localhost:3000                  | Frontend               |
+| VITE_AI_PREVIEW_URL           | AI preview API URL for frontend                  | http://localhost:5001/api            | Frontend               |
+| LOG_LEVEL                     | Logging level                                    | info                                 | Backend                |
+| LOG_FILE                      | Log file path                                    | logs/app.log                         | Backend                |
+| RATE_LIMIT_WINDOW_MS          | Rate limit window (ms)                           | 900000                               | Backend                |
+| RATE_LIMIT_MAX_REQUESTS       | Max requests per window                          | 100                                  | Backend                |
+| BACKEND_URL                   | Backend service URL                              | http://localhost:5001                | Backend                |
+| FRONTEND_URL                  | Frontend service URL                             | http://localhost:5173                | Backend                |
+
+> **Note:** Never commit your actual `.env` files or secrets to version control. Always use secure, unique values for all secrets and API keys.
+
+---
+
 ### Deployment Options
 
 #### Docker Compose

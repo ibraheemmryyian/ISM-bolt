@@ -17,7 +17,7 @@ echo.
 
 REM Check if backend is running
 echo %YELLOW%Checking backend...%RESET%
-curl -s http://localhost:5001/api/health >nul 2>&1
+curl -s http://localhost:3000/api/health >nul 2>&1
 if %errorlevel% equ 0 (
     echo %GREEN%✅ Backend is running%RESET%
 ) else (
@@ -35,7 +35,7 @@ if %errorlevel% equ 0 (
     echo %GREEN%✅ Pipeline completed successfully!%RESET%
     echo.
     echo %BLUE%Check your results:%RESET%
-    echo %GREEN%• Admin Dashboard: http://localhost:5001/api/admin/stats%RESET%
+    echo %GREEN%• Admin Dashboard: http://localhost:3000/api/admin/stats%RESET%
     echo %GREEN%• Frontend: http://localhost:5173%RESET%
     echo %GREEN%• Report: pipeline_report.json%RESET%
 ) else (
