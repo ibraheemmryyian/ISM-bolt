@@ -29,6 +29,20 @@ start "AI Gateway" cmd /k "cd ai_service_flask && python ai_gateway.py"
 REM Wait a bit for AI gateway to start
 timeout /t 5 /nobreak >nul
 
+REM Start AI Pricing Service (Python)
+echo %YELLOW%2a. Starting AI Pricing Service...%RESET%
+start "AI Pricing Service" cmd /k "cd ai_service_flask && python ai_pricing_service_wrapper.py"
+
+REM Wait a bit for AI pricing service to start
+timeout /t 3 /nobreak >nul
+
+REM Start Logistics Service (Python)
+echo %YELLOW%2b. Starting Logistics Service...%RESET%
+start "Logistics Service" cmd /k "cd ai_service_flask && python logistics_service_wrapper.py"
+
+REM Wait a bit for logistics service to start
+timeout /t 3 /nobreak >nul
+
 REM Start Frontend (React)
 echo %YELLOW%3. Starting React Frontend...%RESET%
 start "Frontend" cmd /k "cd frontend && npm run dev"
@@ -56,6 +70,22 @@ if %errorlevel% equ 0 (
     echo %RED%❌ AI Gateway: Not running%RESET%
 )
 
+REM Test AI pricing service
+curl -s http://localhost:5005/health >nul 2>&1
+if %errorlevel% equ 0 (
+    echo %GREEN%✅ AI Pricing Service: Running%RESET%
+) else (
+    echo %RED%❌ AI Pricing Service: Not running%RESET%
+)
+
+REM Test logistics service
+curl -s http://localhost:5006/health >nul 2>&1
+if %errorlevel% equ 0 (
+    echo %GREEN%✅ Logistics Service: Running%RESET%
+) else (
+    echo %RED%❌ Logistics Service: Not running%RESET%
+)
+
 REM Test frontend
 curl -s http://localhost:5173 >nul 2>&1
 if %errorlevel% equ 0 (
@@ -76,8 +106,10 @@ echo.
 echo %BLUE%📊 Access your platform:%RESET%
 echo %GREEN%• Frontend: http://localhost:5173%RESET%
 echo %GREEN%• Admin Dashboard: http://localhost:5173/admin%RESET%
-echo %GREEN%• Backend API: http://localhost:5000%RESET%
+echo %GREEN%• Backend API: http://localhost:3000%RESET%
 echo %GREEN%• AI Gateway: http://localhost:5000%RESET%
+echo %GREEN%• AI Pricing Service: http://localhost:5005%RESET%
+echo %GREEN%• Logistics Service: http://localhost:5006%RESET%
 echo.
 echo %BLUE%📋 What you can do now:%RESET%
 echo %YELLOW%• View 50 real Gulf companies%RESET%

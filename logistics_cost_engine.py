@@ -251,7 +251,7 @@ class LogisticsCostEngine:
         
         # Add additional costs
         additional_costs = self._calculate_additional_costs(cargo_weight, cargo_value, total_distance)
-        total_cost += additional_costs['total']
+        total_cost += additional_costs.total
         
         # Apply urgency multiplier
         if urgency == 'urgent':

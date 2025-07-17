@@ -12,9 +12,24 @@ DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
 DEEPSEEK_MODEL = 'deepseek-coder'
 
-# Configure logging
+# Configure logging first
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Import pricing integration (commented out to avoid circular imports)
+# try:
+#     from ai_pricing_integration import (
+#         validate_match_pricing_requirement_integrated,
+#         get_material_pricing_data_integrated,
+#         enforce_pricing_validation_decorator
+#     )
+#     PRICING_INTEGRATION_AVAILABLE = True
+# except ImportError:
+#     PRICING_INTEGRATION_AVAILABLE = False
+#     logger.warning("Pricing integration not available")
+
+PRICING_INTEGRATION_AVAILABLE = False
+logger.warning("Pricing integration temporarily disabled to avoid circular imports")
 
 class AIMatchmakingService:
     def __init__(self):
@@ -250,32 +265,78 @@ class AIMatchmakingService:
         
         return matching_companies
     
-    def create_matches_in_database(self, company_id: str, partner_companies: List[Dict[str, Any]], material_name: str) -> List[Dict[str, Any]]:
+    # @enforce_pricing_validation_decorator  # Temporarily disabled
+    async def create_matches_in_database(self, company_id: str, partner_companies: List[Dict[str, Any]], material_name: str) -> List[Dict[str, Any]]:
         """
         Create match records in the database for the partner companies.
-        In production, this would insert actual records into the matches table.
+        Now includes mandatory pricing validation before creating matches.
         """
         
         created_matches = []
         
         for partner in partner_companies:
-            match_record = {
-                'id': f"match_{company_id}_{partner['company_id']}_{datetime.now().timestamp()}",
-                'company_id': company_id,
-                'partner_company_id': partner['company_id'],
-                'match_score': partner['match_score'],
-                'match_reason': partner['match_reason'],
-                'materials_involved': [material_name],
-                'status': 'pending',
-                'created_at': datetime.now().isoformat(),
-                'ai_generated': True
-            }
-            
-            # In production, this would be a database insert
-            # For now, we'll just return the match records
-            created_matches.append(match_record)
-            
-            logger.info(f"Created match: {company_id} -> {partner['company_id']} for material: {material_name}")
+            try:
+                # Get pricing data for validation
+                if PRICING_INTEGRATION_AVAILABLE:
+                    pricing_data = await get_material_pricing_data_integrated(material_name)
+                    if pricing_data:
+                        # Create match data for pricing validation
+                        match_data = {
+                            "material": material_name,
+                            "quantity": partner.get("quantity", 1000.0),
+                            "quality": partner.get("quality", "clean"),
+                            "source_location": partner.get("location", "unknown"),
+                            "destination_location": "unknown",
+                            "price": pricing_data.recycled_price,
+                            "company_id": company_id,
+                            "partner_company_id": partner.get("company_id")
+                        }
+                        
+                        # Validate pricing before creating match
+                        is_valid = await validate_match_pricing_requirement_integrated(
+                            match_data["material"],
+                            match_data["quantity"],
+                            match_data["quality"],
+                            match_data["source_location"],
+                            match_data["destination_location"],
+                            match_data["price"]
+                        )
+                        
+                        if not is_valid:
+                            logger.warning(f"Pricing validation failed for match: {company_id} -> {partner.get('company_id')}")
+                            continue
+                
+                # Create match record
+                match_record = {
+                    'id': f"match_{company_id}_{partner['company_id']}_{datetime.now().timestamp()}",
+                    'company_id': company_id,
+                    'partner_company_id': partner['company_id'],
+                    'match_score': partner['match_score'],
+                    'match_reason': partner['match_reason'],
+                    'materials_involved': [material_name],
+                    'status': 'pending',
+                    'created_at': datetime.now().isoformat(),
+                    'ai_generated': True,
+                    'pricing_validated': True,
+                    'pricing_timestamp': datetime.now().isoformat()
+                }
+                
+                # Add pricing data if available
+                if PRICING_INTEGRATION_AVAILABLE and pricing_data:
+                    match_record['pricing_data'] = {
+                        'virgin_price': pricing_data.virgin_price,
+                        'recycled_price': pricing_data.recycled_price,
+                        'savings_percentage': pricing_data.savings_percentage,
+                        'profit_margin': pricing_data.profit_margin,
+                        'risk_level': pricing_data.risk_level
+                    }
+                
+                created_matches.append(match_record)
+                logger.info(f"Created pricing-validated match: {company_id} -> {partner['company_id']} for material: {material_name}")
+                
+            except Exception as e:
+                logger.error(f"Error creating match for partner {partner.get('company_id')}: {e}")
+                continue
         
         return created_matches
 

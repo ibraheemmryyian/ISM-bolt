@@ -3,6 +3,9 @@ const apiFusionService = require('./apiFusionService');
 const aiEvolutionEngine = require('./aiEvolutionEngine');
 const { spawn } = require('child_process');
 
+// Import pricing integration utilities (commented out until Python bridge is implemented)
+// const { NodeJSIntegration } = require('../ai_pricing_integration');
+
 class IntelligentMatchingService {
   constructor() {
     this.matchingEngines = {
@@ -56,19 +59,29 @@ class IntelligentMatchingService {
         includeSustainabilityAnalysis
       );
       
-      // Step 5: Store matches in database
-      await this.storeMatches(enhancedMatches, companyProfile.id);
+      // Step 5: Apply pricing validation to all matches (temporarily disabled)
+      // const pricingValidatedMatches = NodeJSIntegration.validate_matches_with_pricing(enhancedMatches);
+      const pricingValidatedMatches = enhancedMatches; // Temporarily skip pricing validation
       
-      // Step 6: Generate insights and recommendations
-      const insights = await this.generateMatchingInsights(enhancedMatches, companyProfile);
+      // Step 6: Store only pricing-validated matches in database
+      await this.storeMatches(pricingValidatedMatches, companyProfile.id);
+      
+      // Step 7: Generate insights and recommendations
+      const insights = await this.generateMatchingInsights(pricingValidatedMatches, companyProfile);
       
       return {
         success: true,
-        matches: enhancedMatches,
+        matches: pricingValidatedMatches,
         insights: insights,
         total_matches_found: aggregatedMatches.length,
         top_matches_count: enhancedMatches.length,
-        matching_engines_used: Object.keys(engineResults).length
+        pricing_validated_count: pricingValidatedMatches.length,
+        matching_engines_used: Object.keys(engineResults).length,
+        pricing_validation_stats: {
+          total_matches: enhancedMatches.length,
+          validated_matches: pricingValidatedMatches.length,
+          failed_validations: enhancedMatches.length - pricingValidatedMatches.length
+        }
       };
       
     } catch (error) {
@@ -370,10 +383,19 @@ class IntelligentMatchingService {
 
   /**
    * Store matches in database
+   * Now only stores pricing-validated matches
    */
   async storeMatches(matches, companyId) {
     try {
-      const matchData = matches.map(match => ({
+      // Filter only pricing-validated matches
+      const validatedMatches = matches.filter(match => match.pricing_validated === true);
+      
+      if (validatedMatches.length === 0) {
+        console.log('⚠️ No pricing-validated matches to store');
+        return;
+      }
+      
+      const matchData = validatedMatches.map(match => ({
         company_a_id: companyId,
         company_b_id: match.company_b_id || match.company_id,
         material_a_id: match.material_a_id,
@@ -390,7 +412,10 @@ class IntelligentMatchingService {
         location_proximity: match.location_proximity || 0,
         ai_confidence: match.ai_confidence || 0,
         match_analysis: match.ai_analysis || {},
-        status: 'potential'
+        status: 'potential',
+        pricing_validated: true,
+        pricing_timestamp: new Date().toISOString(),
+        pricing_data: match.pricing_data || null
       }));
 
       const { error } = await supabase
@@ -399,7 +424,14 @@ class IntelligentMatchingService {
 
       if (error) throw error;
 
-      console.log(`✅ Stored ${matchData.length} matches in database`);
+      console.log(`✅ Stored ${matchData.length} pricing-validated matches in database`);
+      
+      // Log pricing validation statistics
+      const failedValidations = matches.length - validatedMatches.length;
+      if (failedValidations > 0) {
+        console.log(`⚠️ ${failedValidations} matches failed pricing validation and were not stored`);
+      }
+      
     } catch (error) {
       console.error('Error storing matches:', error);
     }

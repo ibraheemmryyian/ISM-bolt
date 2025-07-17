@@ -11,6 +11,9 @@ import threading
 import time
 import random
 from supabase import create_client, Client
+from dataclasses import dataclass, asdict, field
+from threading import Lock
+from collections import defaultdict
 
 try:
     from dotenv import load_dotenv
@@ -20,15 +23,56 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+class NodeType:
+    COMPANY = "company"
+    MATERIAL = "material"
+    PROCESS = "process"
+    LOGISTICS = "logistics"
+    STORAGE = "storage"
+
+class EdgeType:
+    MATERIAL_FLOW = "material_flow"
+    WASTE_FLOW = "waste_flow"
+    LOGISTICS = "logistics"
+    PROCESS_LINK = "process_link"
+    STORAGE_LINK = "storage_link"
+
+# --- Dataclasses for Node/Edge ---
+@dataclass
+class HeteroNode:
+    id: str
+    node_type: str
+    attributes: dict = field(default_factory=dict)
+    layer: str = None
+
+@dataclass
+class HeteroEdge:
+    source: str
+    target: str
+    edge_type: str
+    attributes: dict = field(default_factory=dict)
+    key: str = None
+
+# --- Dynamic Type Registration ---
+class TypeRegistry:
+    def __init__(self):
+        self.node_types = set([NodeType.COMPANY, NodeType.MATERIAL, NodeType.PROCESS, NodeType.LOGISTICS, NodeType.STORAGE])
+        self.edge_types = set([EdgeType.MATERIAL_FLOW, EdgeType.WASTE_FLOW, EdgeType.LOGISTICS, EdgeType.PROCESS_LINK, EdgeType.STORAGE_LINK])
+    def register_node_type(self, node_type):
+        self.node_types.add(node_type)
+    def register_edge_type(self, edge_type):
+        self.edge_types.add(edge_type)
+    def get_node_types(self):
+        return list(self.node_types)
+    def get_edge_types(self):
+        return list(self.edge_types)
+
+type_registry = TypeRegistry()
+
 class GNNReasoningEngine:
     """
-    Graph Neural Network Reasoning Engine for Industrial Symbiosis
-    Features:
-    - Graph-based reasoning and inference
-    - Node and edge embedding generation
-    - Link prediction and recommendation
-    - Community detection and analysis
-    - Real-time graph updates
+    Heterogeneous, Multi-Layered Graph Neural Network Reasoning Engine for Industrial Symbiosis
+    Now supports multiple node/edge types and multi-hop, multi-entity reasoning.
     """
     
     def __init__(self, model_dir: str = "gnn_models"):
@@ -39,8 +83,8 @@ class GNNReasoningEngine:
         self.models = {}
         self.model_manager = ModelManager(self.model_dir)
         
-        # Graph data
-        self.graph = nx.Graph()
+        # Heterogeneous, multi-layered graph
+        self.graph = nx.MultiDiGraph()
         self.node_features = {}
         self.edge_features = {}
         
@@ -62,15 +106,19 @@ class GNNReasoningEngine:
         # Load existing models
         self._load_models()
         
-        # Load companies from Supabase at initialization
+        # Load companies and materials from Supabase at initialization
         supabase_url = os.getenv("SUPABASE_URL")
         supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_SERVICE_KEY")
         if supabase_url and supabase_key:
-            self.load_companies_from_supabase(supabase_url, supabase_key)
+            self.load_entities_from_supabase(supabase_url, supabase_key)
         else:
             logger.warning("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set. GNN graph will not be populated from Supabase.")
         
-        logger.info("GNN Reasoning Engine initialized")
+        logger.info("Heterogeneous GNN Reasoning Engine initialized")
+        self.lock = Lock()
+        self.monitoring = defaultdict(list)
+        self.type_registry = type_registry
+        self.layers = defaultdict(set)  # layer_name -> set(node_ids)
     
     def _load_models(self):
         """Load existing GNN models"""
@@ -177,33 +225,32 @@ class GNNReasoningEngine:
             logger.error(f"Error training GNN model: {e}")
             return {'error': str(e)}
     
-    def _prepare_graph_data(self, graph_data: Dict[str, Any]) -> nx.Graph:
-        """Prepare graph data for training"""
+    def _prepare_graph_data(self, graph_data: Dict[str, Any]) -> nx.MultiDiGraph:
+        """Prepare heterogeneous, multi-layered graph data for training/inference"""
         try:
-            # Create graph from data
-            graph = nx.Graph()
-            
-            # Add nodes
+            graph = nx.MultiDiGraph()
+            # Add nodes with type
             if 'nodes' in graph_data:
                 for node in graph_data['nodes']:
                     node_id = node.get('id', str(node))
+                    node_type = node.get('node_type', NodeType.COMPANY)
                     attributes = {k: v for k, v in node.items() if k != 'id'}
+                    attributes['node_type'] = node_type
                     graph.add_node(node_id, **attributes)
-            
-            # Add edges
+            # Add edges with type
             if 'edges' in graph_data:
                 for edge in graph_data['edges']:
                     source = edge.get('source')
                     target = edge.get('target')
+                    edge_type = edge.get('edge_type', EdgeType.MATERIAL_FLOW)
                     attributes = {k: v for k, v in edge.items() if k not in ['source', 'target']}
+                    attributes['edge_type'] = edge_type
                     if source and target:
                         graph.add_edge(source, target, **attributes)
-            
             return graph
-            
         except Exception as e:
-            logger.error(f"Error preparing graph data: {e}")
-            return nx.Graph()
+            logger.error(f"Error preparing heterogeneous graph data: {e}")
+            return nx.MultiDiGraph()
     
     def _create_model(self, model_type: str, model_name: str) -> Dict[str, Any]:
         """Create a GNN model"""
@@ -246,7 +293,7 @@ class GNNReasoningEngine:
             logger.error(f"Error creating model: {e}")
             return {'type': 'gcn', 'layers': 2, 'embedding_dim': 64}
     
-    def _simulate_training(self, model: Dict[str, Any], graph: nx.Graph) -> Dict[str, Any]:
+    def _simulate_training(self, model: Dict[str, Any], graph: nx.MultiDiGraph) -> Dict[str, Any]:
         """Simulate model training"""
         try:
             # Simulate training metrics
@@ -338,7 +385,7 @@ class GNNReasoningEngine:
             logger.error(f"Error in inference: {e}")
             return {'error': str(e)}
     
-    def _generate_node_embeddings(self, graph: nx.Graph, model: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_node_embeddings(self, graph: nx.MultiDiGraph, model: Dict[str, Any]) -> Dict[str, Any]:
         """Generate node embeddings"""
         try:
             embeddings = {}
@@ -361,42 +408,102 @@ class GNNReasoningEngine:
             logger.error(f"Error generating node embeddings: {e}")
             return {'embeddings': {}, 'embedding_dim': 0, 'num_nodes': 0}
     
-    def _create_node_embedding(self, node: str, features: Dict[str, Any], graph: nx.Graph) -> np.ndarray:
-        """Create embedding for a single node"""
+    # --- Thread-safe Real-time Updates ---
+    def add_node(self, node: HeteroNode):
+        with self.lock:
+            self.graph.add_node(node.id, **node.attributes, node_type=node.node_type, layer=node.layer)
+            if node.layer:
+                self.layers[node.layer].add(node.id)
+            self.type_registry.register_node_type(node.node_type)
+            self.monitoring['node_add'].append((node.id, node.node_type, node.layer, datetime.now()))
+
+    def add_edge(self, edge: HeteroEdge):
+        with self.lock:
+            key = edge.key or f"{edge.source}_{edge.target}_{edge.edge_type}_{len(self.graph.edges())}"
+            self.graph.add_edge(edge.source, edge.target, key=key, **edge.attributes, edge_type=edge.edge_type)
+            self.type_registry.register_edge_type(edge.edge_type)
+            self.monitoring['edge_add'].append((edge.source, edge.target, edge.edge_type, datetime.now()))
+
+    def remove_node(self, node_id):
+        with self.lock:
+            self.graph.remove_node(node_id)
+            for layer, nodes in self.layers.items():
+                nodes.discard(node_id)
+            self.monitoring['node_remove'].append((node_id, datetime.now()))
+
+    def remove_edge(self, source, target, key=None):
+        with self.lock:
+            if key:
+                self.graph.remove_edge(source, target, key=key)
+            else:
+                self.graph.remove_edges_from([(source, target)])
+            self.monitoring['edge_remove'].append((source, target, key, datetime.now()))
+
+    # --- Layered Subgraph Extraction ---
+    def get_layer_subgraph(self, layer_name):
+        node_ids = self.layers[layer_name]
+        return self.graph.subgraph(node_ids).copy()
+
+    def get_type_subgraph(self, node_type):
+        node_ids = [n for n, d in self.graph.nodes(data=True) if d.get('node_type') == node_type]
+        return self.graph.subgraph(node_ids).copy()
+
+    # --- Advanced Multi-hop/Meta-path Pathfinding ---
+    def find_meta_paths(self, source, target, meta_path: list, max_hops=5):
+        """Find all paths from source to target that follow a meta-path (sequence of node types)."""
+        results = []
+        def dfs(current, path, meta_idx):
+            if len(path) > max_hops or meta_idx >= len(meta_path):
+                return
+            if current == target and meta_idx == len(meta_path)-1:
+                results.append(list(path))
+                return
+            for neighbor in self.graph.successors(current):
+                ntype = self.graph.nodes[neighbor].get('node_type')
+                if ntype == meta_path[meta_idx]:
+                    path.append(neighbor)
+                    dfs(neighbor, path, meta_idx+1)
+                    path.pop()
+        dfs(source, [source], 1)
+        return results
+
+    def extract_subgraph_by_predicate(self, node_predicate=None, edge_predicate=None):
+        nodes = [n for n, d in self.graph.nodes(data=True) if node_predicate is None or node_predicate(n, d)]
+        edges = [(u, v, k) for u, v, k, d in self.graph.edges(keys=True, data=True) if edge_predicate is None or edge_predicate(u, v, k, d)]
+        return self.graph.edge_subgraph(edges).copy().subgraph(nodes).copy()
+
+    # --- Type-aware Embeddings ---
+    def _create_node_embedding(self, node: str, features: Dict[str, Any], graph: nx.MultiDiGraph) -> np.ndarray:
         try:
-            # Get node features
             feature_vector = []
-            
-            # Basic features
-            feature_vector.append(len(str(node)) / 20)  # Normalized node ID length
-            feature_vector.append(len(features) / 10)   # Normalized feature count
-            
-            # Neighbor features
-            neighbors = list(graph.neighbors(node))
-            feature_vector.append(len(neighbors) / 50)  # Normalized degree
-            
+            feature_vector.append(len(str(node)) / 20)
+            feature_vector.append(len(features) / 10)
+            feature_vector.append(len(list(graph.neighbors(node))) / 50)
+            # Encode node type as one-hot
+            node_type = features.get('node_type', NodeType.COMPANY)
+            type_vec = [1.0 if node_type == t else 0.0 for t in self.type_registry.get_node_types()]
+            feature_vector.extend(type_vec)
+            # Encode layer as one-hot
+            layer = features.get('layer', None)
+            if layer:
+                layer_vec = [1.0 if layer == l else 0.0 for l in self.layers.keys()]
+                feature_vector.extend(layer_vec)
             # Feature-based components
             for key, value in features.items():
                 if isinstance(value, (int, float)):
-                    feature_vector.append(min(value / 1000, 1.0))  # Normalized numerical features
+                    feature_vector.append(min(value / 1000, 1.0))
                 elif isinstance(value, str):
-                    feature_vector.append(len(value) / 100)  # Normalized string length
-            
-            # Pad to embedding dimension
+                    feature_vector.append(len(value) / 100)
             target_dim = self.config['embedding_dim']
             while len(feature_vector) < target_dim:
                 feature_vector.append(0.0)
-            
-            # Truncate if too long
             feature_vector = feature_vector[:target_dim]
-            
             return np.array(feature_vector)
-            
         except Exception as e:
             logger.error(f"Error creating node embedding: {e}")
             return np.zeros(self.config['embedding_dim'])
     
-    def _predict_links(self, graph: nx.Graph, model: Dict[str, Any]) -> Dict[str, Any]:
+    def _predict_links(self, graph: nx.MultiDiGraph, model: Dict[str, Any]) -> Dict[str, Any]:
         """Predict missing links in the graph"""
         try:
             predictions = []
@@ -441,7 +548,7 @@ class GNNReasoningEngine:
             logger.error(f"Error predicting links: {e}")
             return {'predictions': [], 'num_predictions': 0, 'threshold': self.config['inference_threshold']}
     
-    def _calculate_link_score(self, node1: str, node2: str, graph: nx.Graph) -> float:
+    def _calculate_link_score(self, node1: str, node2: str, graph: nx.MultiDiGraph) -> float:
         """Calculate link prediction score between two nodes"""
         try:
             # Get node features
@@ -480,7 +587,7 @@ class GNNReasoningEngine:
             logger.error(f"Error calculating link score: {e}")
             return 0.0
     
-    def _classify_nodes(self, graph: nx.Graph, model: Dict[str, Any]) -> Dict[str, Any]:
+    def _classify_nodes(self, graph: nx.MultiDiGraph, model: Dict[str, Any]) -> Dict[str, Any]:
         """Classify nodes in the graph"""
         try:
             classifications = {}
@@ -504,7 +611,7 @@ class GNNReasoningEngine:
             logger.error(f"Error classifying nodes: {e}")
             return {'classifications': {}, 'num_nodes': 0, 'classes': []}
     
-    def _classify_node(self, node: str, features: Dict[str, Any], neighbors: List[str], graph: nx.Graph) -> str:
+    def _classify_node(self, node: str, features: Dict[str, Any], neighbors: List[str], graph: nx.MultiDiGraph) -> str:
         """Classify a single node"""
         try:
             # Simple classification logic
@@ -523,7 +630,7 @@ class GNNReasoningEngine:
             logger.error(f"Error classifying node {node}: {e}")
             return "unknown"
     
-    def _detect_communities(self, graph: nx.Graph, model: Dict[str, Any]) -> Dict[str, Any]:
+    def _detect_communities(self, graph: nx.MultiDiGraph, model: Dict[str, Any]) -> Dict[str, Any]:
         """Detect communities in the graph"""
         try:
             # Use networkx community detection
@@ -548,6 +655,75 @@ class GNNReasoningEngine:
             logger.error(f"Error detecting communities: {e}")
             return {'communities': [], 'num_communities': 0, 'modularity': 0.0}
     
+    # --- Community Detection & Role Discovery ---
+    def detect_communities(self, method="greedy_modularity"):  # can add more methods
+        try:
+            if method == "greedy_modularity":
+                communities = list(nx.community.greedy_modularity_communities(self.graph.to_undirected()))
+            else:
+                raise NotImplementedError(f"Community detection method {method} not implemented.")
+            return communities
+        except Exception as e:
+            logger.error(f"Error detecting communities: {e}")
+            return []
+
+    def discover_roles(self):
+        """Assign roles (hub, bridge, supplier, consumer, etc.) to nodes based on degree, betweenness, etc."""
+        try:
+            roles = {}
+            deg = dict(self.graph.degree())
+            betw = nx.betweenness_centrality(self.graph)
+            for n in self.graph.nodes():
+                if deg[n] > 10:
+                    roles[n] = "hub"
+                elif betw[n] > 0.1:
+                    roles[n] = "bridge"
+                else:
+                    roles[n] = self.graph.nodes[n].get('node_type', 'unknown')
+            return roles
+        except Exception as e:
+            logger.error(f"Error discovering roles: {e}")
+            return {}
+
+    # --- Monitoring & Analytics ---
+    def get_monitoring_stats(self):
+        return {k: list(v) for k, v in self.monitoring.items()}
+
+    def get_graph_metrics(self):
+        try:
+            return {
+                'total_nodes': self.graph.number_of_nodes(),
+                'total_edges': self.graph.number_of_edges(),
+                'node_types': dict(self.graph.nodes(data='node_type')),
+                'edge_types': [d.get('edge_type') for _, _, d in self.graph.edges(data=True)],
+                'layers': {k: list(v) for k, v in self.layers.items()}
+            }
+        except Exception as e:
+            logger.error(f"Error getting graph metrics: {e}")
+            return {}
+
+    # --- Robust API for All Graph Operations ---
+    def to_json(self):
+        """Export the entire graph as a JSON-serializable dict."""
+        data = {
+            'nodes': [dict(id=n, **d) for n, d in self.graph.nodes(data=True)],
+            'edges': [dict(source=u, target=v, key=k, **d) for u, v, k, d in self.graph.edges(keys=True, data=True)]
+        }
+        return data
+
+    def from_json(self, data):
+        """Load graph from JSON-serializable dict."""
+        with self.lock:
+            self.graph.clear()
+            for node in data.get('nodes', []):
+                node_id = node.pop('id')
+                self.graph.add_node(node_id, **node)
+            for edge in data.get('edges', []):
+                source = edge.pop('source')
+                target = edge.pop('target')
+                key = edge.pop('key', None)
+                self.graph.add_edge(source, target, key=key, **edge)
+
     def list_available_models(self) -> List[str]:
         """List all available models"""
         return list(self.models.keys())
@@ -617,15 +793,14 @@ class GNNReasoningEngine:
         except Exception as e:
             logger.error(f"Error clearing inference history: {e}")
 
-    def load_companies_from_supabase(self, supabase_url, supabase_key):
-        """Load all companies from Supabase and add them as nodes to the GNN graph."""
+    def load_entities_from_supabase(self, supabase_url, supabase_key):
+        """Load companies, materials, and other entities from Supabase and add as nodes/edges."""
         try:
             supabase: Client = create_client(supabase_url, supabase_key)
-            response = supabase.table("companies").select("*").execute()
-            companies = response.data
-            count = 0
+            # Load companies
+            companies = supabase.table("companies").select("*").execute().data
             for company in companies:
-                company_id = company.get("id")
+                company_id = str(company.get("id"))
                 attributes = {
                     "name": company.get("name"),
                     "industry": company.get("industry"),
@@ -634,13 +809,209 @@ class GNNReasoningEngine:
                     "products": company.get("products"),
                     "main_materials": company.get("main_materials"),
                     "production_volume": company.get("production_volume"),
-                    "process_description": company.get("process_description")
+                    "process_description": company.get("process_description"),
+                    "node_type": NodeType.COMPANY
                 }
-                self.graph.add_node(str(company_id), **attributes)
-                count += 1
-            logger.info(f"Loaded {count} companies from Supabase into the GNN graph.")
+                self.add_node(HeteroNode(id=company_id, node_type=NodeType.COMPANY, attributes=attributes))
+            # Load materials
+            materials = supabase.table("materials").select("*").execute().data
+            for material in materials:
+                material_id = str(material.get("id"))
+                attributes = {
+                    "name": material.get("name"),
+                    "category": material.get("category"),
+                    "description": material.get("description"),
+                    "quantity_estimate": material.get("quantity_estimate"),
+                    "potential_value": material.get("potential_value"),
+                    "quality_grade": material.get("quality_grade"),
+                    "potential_uses": material.get("potential_uses"),
+                    "symbiosis_opportunities": material.get("symbiosis_opportunities"),
+                    "node_type": NodeType.MATERIAL
+                }
+                self.add_node(HeteroNode(id=material_id, node_type=NodeType.MATERIAL, attributes=attributes))
+            # Optionally, add process/logistics/storage nodes here
+            # Add edges (material flows, etc.)
+            flows = supabase.table("material_flows").select("*").execute().data
+            for flow in flows:
+                source = str(flow.get("source_id"))
+                target = str(flow.get("target_id"))
+                attributes = {
+                    "material": flow.get("material"),
+                    "flow_rate": flow.get("flow_rate"),
+                    "cost_per_unit": flow.get("cost_per_unit"),
+                    "carbon_intensity": flow.get("carbon_intensity"),
+                    "distance": flow.get("distance"),
+                    "reliability": flow.get("reliability"),
+                    "edge_type": EdgeType.MATERIAL_FLOW
+                }
+                self.add_edge(HeteroEdge(source=source, target=target, edge_type=EdgeType.MATERIAL_FLOW, attributes=attributes))
+            logger.info(f"Loaded {len(companies)} companies, {len(materials)} materials, and {len(flows)} flows from Supabase into the heterogeneous GNN graph.")
         except Exception as e:
-            logger.error(f"Error loading companies from Supabase into GNN graph: {e}")
+            logger.error(f"Error loading entities from Supabase into GNN graph: {e}")
+
+    # Add multi-hop, multi-entity pathfinding for symbiosis
+    def find_multi_hop_paths(self, source: str, target: str, max_hops: int = 5, allowed_node_types: Optional[List[str]] = None, allowed_edge_types: Optional[List[str]] = None) -> List[List[str]]:
+        """Find all multi-hop paths between source and target, optionally filtering by node/edge types."""
+        try:
+            paths = []
+            for path in nx.all_simple_paths(self.graph, source=source, target=target, cutoff=max_hops):
+                if allowed_node_types:
+                    if not all(self.graph.nodes[n].get('node_type') in allowed_node_types for n in path):
+                        continue
+                if allowed_edge_types:
+                    valid = True
+                    for i in range(len(path)-1):
+                        edge_data = self.graph.get_edge_data(path[i], path[i+1])
+                        if edge_data:
+                            if not any(ed.get('edge_type') in allowed_edge_types for ed in edge_data.values()):
+                                valid = False
+                                break
+                    if not valid:
+                        continue
+                paths.append(path)
+            return paths
+        except Exception as e:
+            logger.error(f"Error finding multi-hop paths: {e}")
+            return []
+
+    # Import pricing integration
+    try:
+        from ai_pricing_integration import (
+            validate_match_pricing_requirement_integrated,
+            get_material_pricing_data_integrated,
+            enforce_pricing_validation_decorator
+        )
+        PRICING_INTEGRATION_AVAILABLE = True
+    except ImportError:
+        PRICING_INTEGRATION_AVAILABLE = False
+        logger.warning("Pricing integration not available")
+
+    @enforce_pricing_validation_decorator
+    async def find_symbiotic_matches(self, company_data: Dict[str, Any], top_k: int = 10) -> List[Dict[str, Any]]:
+        """
+        Find symbiotic matches using GNN reasoning with pricing validation.
+        """
+        try:
+            # Build heterogeneous graph
+            graph = self._prepare_graph_data(company_data)
+            
+            # Find matches using GNN
+            matches = await self._find_matches_with_gnn(graph, company_data, top_k)
+            
+            # Apply pricing validation to all matches
+            if PRICING_INTEGRATION_AVAILABLE:
+                validated_matches = []
+                for match in matches:
+                    try:
+                        # Extract pricing information from match
+                        material = match.get("material_name") or match.get("material")
+                        quantity = match.get("quantity", 1000.0)
+                        quality = match.get("quality", "clean")
+                        source_location = match.get("source_location", "unknown")
+                        destination_location = match.get("destination_location", "unknown")
+                        
+                        # Get pricing data
+                        pricing_data = await get_material_pricing_data_integrated(material)
+                        if pricing_data:
+                            proposed_price = pricing_data.recycled_price
+                            
+                            # Validate pricing
+                            is_valid = await validate_match_pricing_requirement_integrated(
+                                material, quantity, quality, source_location, destination_location, proposed_price
+                            )
+                            
+                            if is_valid:
+                                match["pricing_validated"] = True
+                                match["pricing_data"] = {
+                                    "virgin_price": pricing_data.virgin_price,
+                                    "recycled_price": pricing_data.recycled_price,
+                                    "savings_percentage": pricing_data.savings_percentage,
+                                    "profit_margin": pricing_data.profit_margin,
+                                    "risk_level": pricing_data.risk_level
+                                }
+                                validated_matches.append(match)
+                            else:
+                                logger.warning(f"Pricing validation failed for GNN match: {material}")
+                        else:
+                            logger.warning(f"No pricing data available for GNN match: {material}")
+                            
+                    except Exception as e:
+                        logger.error(f"Error validating pricing for GNN match: {e}")
+                        continue
+                
+                logger.info(f"GNN found {len(matches)} matches, {len(validated_matches)} passed pricing validation")
+                return validated_matches
+            
+            return matches
+            
+        except Exception as e:
+            logger.error(f"Error in GNN symbiotic matching: {e}")
+            return []
+
+    @enforce_pricing_validation_decorator
+    async def detect_multi_hop_symbiosis(self, participants: List[Dict[str, Any]], max_hops: int = 3) -> List[Dict[str, Any]]:
+        """
+        Detect multi-hop symbiosis opportunities with pricing validation.
+        """
+        try:
+            # Build multi-hop graph
+            graph = self._build_multi_hop_graph(participants, max_hops)
+            
+            # Find multi-hop paths
+            paths = self._find_multi_hop_paths(graph, max_hops)
+            
+            # Convert paths to matches
+            matches = self._convert_paths_to_matches(paths, participants)
+            
+            # Apply pricing validation to multi-hop matches
+            if PRICING_INTEGRATION_AVAILABLE:
+                validated_matches = []
+                for match in matches:
+                    try:
+                        # Extract pricing information
+                        material = match.get("material_name") or match.get("material")
+                        quantity = match.get("quantity", 1000.0)
+                        quality = match.get("quality", "clean")
+                        source_location = match.get("source_location", "unknown")
+                        destination_location = match.get("destination_location", "unknown")
+                        
+                        # Get pricing data
+                        pricing_data = await get_material_pricing_data_integrated(material)
+                        if pricing_data:
+                            proposed_price = pricing_data.recycled_price
+                            
+                            # Validate pricing
+                            is_valid = await validate_match_pricing_requirement_integrated(
+                                material, quantity, quality, source_location, destination_location, proposed_price
+                            )
+                            
+                            if is_valid:
+                                match["pricing_validated"] = True
+                                match["pricing_data"] = {
+                                    "virgin_price": pricing_data.virgin_price,
+                                    "recycled_price": pricing_data.recycled_price,
+                                    "savings_percentage": pricing_data.savings_percentage,
+                                    "profit_margin": pricing_data.profit_margin,
+                                    "risk_level": pricing_data.risk_level
+                                }
+                                validated_matches.append(match)
+                            else:
+                                logger.warning(f"Pricing validation failed for multi-hop match: {material}")
+                        else:
+                            logger.warning(f"No pricing data available for multi-hop match: {material}")
+                            
+                    except Exception as e:
+                        logger.error(f"Error validating pricing for multi-hop match: {e}")
+                        continue
+                
+                logger.info(f"Multi-hop found {len(matches)} matches, {len(validated_matches)} passed pricing validation")
+                return validated_matches
+            
+            return matches
+            
+        except Exception as e:
+            logger.error(f"Error in multi-hop symbiosis detection: {e}")
+            return []
 
 class ModelManager:
     """Manager for GNN models"""

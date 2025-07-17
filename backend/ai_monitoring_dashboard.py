@@ -16,6 +16,9 @@ import sqlite3
 import pandas as pd
 import numpy as np
 from collections import defaultdict, deque
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Web framework imports
 from flask import Flask, jsonify, request, render_template_string

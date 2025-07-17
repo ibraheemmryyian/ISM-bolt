@@ -18,6 +18,8 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import signal
 import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # AI component imports
 from backend.ai_feedback_orchestrator import AIFeedbackOrchestrator

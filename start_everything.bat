@@ -22,6 +22,12 @@ start cmd /k "python ai_service_flask/gnn_inference_service.py"
 REM Start Multi-Hop Symbiosis Service
 start cmd /k "python ai_service_flask/multi_hop_symbiosis_service.py"
 
+REM Start AI Pricing Service
+start cmd /k "python backend/ai_pricing_service.py"
+
+REM Start Logistics Cost Service
+start cmd /k "python logistics_cost_service.py"
+
 REM Start Frontend React Dev Server
 start cmd /k "cd frontend && npm run dev"
 

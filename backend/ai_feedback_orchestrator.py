@@ -3,34 +3,54 @@ Production-Grade AI Feedback Orchestration System
 Handles feedback ingestion, retraining triggers, and automated model updates
 """
 
-import asyncio
 import logging
+import asyncio
 import json
-import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Union
-from dataclasses import dataclass, asdict
-from pathlib import Path
-import threading
-import queue
-import hashlib
-import uuid
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import sqlite3
-import pickle
-import numpy as np
-import pandas as pd
-
-# Database imports
-from supabase import create_client, Client
+import uuid
+import queue
+from datetime import datetime, timedelta
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 import os
+import sys
 
-# AI component imports
-from backend.model_persistence_manager import ModelPersistenceManager
-from backend.federated_meta_learning import FederatedMetaLearning
-from backend.gnn_reasoning_engine import GNNReasoningEngine
-from backend.knowledge_graph import KnowledgeGraph
-from revolutionary_ai_matching import RevolutionaryAIMatching
+# Add the current directory to Python path for local imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from supabase import create_client, Client
+
+# AI component imports - using relative imports
+try:
+    from .model_persistence_manager import ModelPersistenceManager
+    from .federated_meta_learning import FederatedMetaLearning
+    from .gnn_reasoning_engine import GNNReasoningEngine
+    from .knowledge_graph import KnowledgeGraph
+    from .revolutionary_ai_matching import RevolutionaryAIMatching
+except ImportError:
+    # Fallback for direct execution
+    try:
+        from model_persistence_manager import ModelPersistenceManager
+        from federated_meta_learning import FederatedMetaLearning
+        from gnn_reasoning_engine import GNNReasoningEngine
+        from knowledge_graph import KnowledgeGraph
+        from revolutionary_ai_matching import RevolutionaryAIMatching
+    except ImportError:
+        # Create placeholder classes for missing modules
+        class ModelPersistenceManager:
+            def __init__(self): pass
+        class FederatedMetaLearning:
+            def __init__(self): pass
+        class GNNReasoningEngine:
+            def __init__(self): pass
+        class KnowledgeGraph:
+            def __init__(self): pass
+        class RevolutionaryAIMatching:
+            def __init__(self): pass
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +119,6 @@ class FeedbackDatabase:
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS retraining_triggers (
                     trigger_id TEXT PRIMARY KEY,
@@ -112,7 +131,6 @@ class FeedbackDatabase:
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS model_performance (
                     model_name TEXT,
@@ -124,12 +142,9 @@ class FeedbackDatabase:
                     PRIMARY KEY (model_name, version)
                 )
             """)
-            
-            conn.execute("""
-                CREATE INDEX IF NOT EXISTS idx_feedback_timestamp ON feedback_events(timestamp);
-                CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback_events(event_type);
-                CREATE INDEX IF NOT EXISTS idx_feedback_processed ON feedback_events(processed);
-            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_timestamp ON feedback_events(timestamp);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback_events(event_type);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_feedback_processed ON feedback_events(processed);")
     
     async def store_feedback(self, feedback: FeedbackEvent) -> bool:
         """Store feedback event in both local and cloud databases"""

@@ -4478,8 +4478,8 @@ async function initializePythonServices() {
     }
 }
 
-// Initialize Python services on startup
-initializePythonServices();
+// Initialize Python services on startup (temporarily disabled to avoid fallback issues)
+// initializePythonServices();
 
 // Temporarily disable problematic production monitoring middleware
 // app.use(productionMonitoring.httpRequestMiddleware());

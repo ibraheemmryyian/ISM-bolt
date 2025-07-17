@@ -10,7 +10,7 @@ import traceback
 # Use the provided DeepSeek API key
 DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
-DEEPSEEK_MODEL = 'deepseek-coder'
+DEEPSEEK_MODEL = 'deepseek-code'
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
