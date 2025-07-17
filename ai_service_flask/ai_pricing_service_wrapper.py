@@ -5,161 +5,73 @@ Flask wrapper for the AI pricing integration service
 """
 
 import os
-import sys
+import json
 import logging
-import traceback
-from datetime import datetime
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-import threading
-import time
-
-# Add parent directory to path to import backend modules
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('ai_pricing_service.log', encoding='utf-8')
-    ]
-)
-logger = logging.getLogger(__name__)
+import torch
+from ml_core.models import ModelFactory
+from ml_core.utils import ModelRegistry
+from ml_core.monitoring import MLMetricsTracker
+from ml_core.data_processing import DataValidator
+from ml_core.optimization import HyperparameterOptimizer
 
 app = Flask(__name__)
-CORS(app)
 
-# Global flag to track service status
-service_healthy = True
-startup_time = datetime.now()
+model_registry = ModelRegistry()
+metrics_tracker = MLMetricsTracker()
+data_validator = DataValidator()
+optimizer = HyperparameterOptimizer()
+
+
+def get_pricing_model(model_id):
+    model_info = model_registry.get_model(model_id)
+    if not model_info:
+        raise ValueError(f"Model {model_id} not found in registry")
+    model = model_info['model_class'](**model_info['model_params'])
+    model.load_state_dict(torch.load(model_info['model_path'], map_location='cpu'))
+    return model.eval()
+
+@app.route('/price_predict', methods=['POST'])
+def price_predict():
+    try:
+        data = request.json
+        model_id = data.get('model_id')
+        input_data = data.get('input_data')
+        model = get_pricing_model(model_id)
+        validated = data_validator.validate_pricing_input(input_data)
+        input_tensor = torch.FloatTensor(validated['features']).unsqueeze(0)
+        with torch.no_grad():
+            output = model(input_tensor)
+        metrics_tracker.record_inference_metrics({'model_id': model_id, 'success': True})
+        return jsonify({'price_prediction': output.cpu().numpy().tolist()})
+    except Exception as e:
+        metrics_tracker.record_inference_metrics({'model_id': request.json.get('model_id', 'unknown'), 'success': False, 'error': str(e)})
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/batch_price_predict', methods=['POST'])
+def batch_price_predict():
+    try:
+        data = request.json
+        model_id = data.get('model_id')
+        batch_data = data.get('batch_data')
+        model = get_pricing_model(model_id)
+        validated = [data_validator.validate_pricing_input(d) for d in batch_data]
+        input_tensor = torch.FloatTensor([v['features'] for v in validated])
+        with torch.no_grad():
+            output = model(input_tensor)
+        metrics_tracker.record_inference_metrics({'model_id': model_id, 'success': True, 'batch': True})
+        return jsonify({'price_predictions': output.cpu().numpy().tolist()})
+    except Exception as e:
+        metrics_tracker.record_inference_metrics({'model_id': request.json.get('model_id', 'unknown'), 'success': False, 'error': str(e), 'batch': True})
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
+def health():
     try:
-        return jsonify({
-            'status': 'healthy' if service_healthy else 'unhealthy',
-            'service': 'ai_pricing_service',
-            'timestamp': datetime.now().isoformat(),
-            'uptime': str(datetime.now() - startup_time),
-            'version': '1.0.0'
-        }), 200
+        health_metrics = metrics_tracker.get_latest_metrics()
+        return jsonify({'status': 'healthy', 'metrics': health_metrics})
     except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return jsonify({
-            'status': 'unhealthy',
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
-        }), 500
-
-@app.route('/api/pricing/validate', methods=['POST'])
-def validate_pricing():
-    """Validate pricing data"""
-    try:
-        data = request.get_json()
-        logger.info(f"Pricing validation request: {data}")
-        
-        # Mock validation response
-        response = {
-            'valid': True,
-            'confidence': 0.95,
-            'suggestions': [],
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        return jsonify(response), 200
-    except Exception as e:
-        logger.error(f"Pricing validation failed: {e}")
-        return jsonify({
-            'error': 'Pricing validation failed',
-            'message': str(e)
-        }), 500
-
-@app.route('/api/pricing/calculate', methods=['POST'])
-def calculate_pricing():
-    """Calculate optimal pricing"""
-    try:
-        data = request.get_json()
-        logger.info(f"Pricing calculation request: {data}")
-        
-        # Mock pricing calculation
-        response = {
-            'optimal_price': 150.0,
-            'market_average': 140.0,
-            'competitiveness_score': 0.85,
-            'profit_margin': 0.25,
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        return jsonify(response), 200
-    except Exception as e:
-        logger.error(f"Pricing calculation failed: {e}")
-        return jsonify({
-            'error': 'Pricing calculation failed',
-            'message': str(e)
-        }), 500
-
-@app.route('/api/pricing/analyze', methods=['POST'])
-def analyze_pricing():
-    """Analyze pricing trends"""
-    try:
-        data = request.get_json()
-        logger.info(f"Pricing analysis request: {data}")
-        
-        # Mock pricing analysis
-        response = {
-            'trend': 'increasing',
-            'volatility': 'low',
-            'recommendation': 'maintain_current_pricing',
-            'market_insights': [
-                'Demand is stable',
-                'Competition is moderate',
-                'Raw material costs are stable'
-            ],
-            'timestamp': datetime.now().isoformat()
-        }
-        
-        return jsonify(response), 200
-    except Exception as e:
-        logger.error(f"Pricing analysis failed: {e}")
-        return jsonify({
-            'error': 'Pricing analysis failed',
-            'message': str(e)
-        }), 500
-
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Endpoint not found'}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    logger.error(f"Internal server error: {error}")
-    return jsonify({'error': 'Internal server error'}), 500
-
-def start_service():
-    """Start the AI pricing service"""
-    global service_healthy
-    
-    try:
-        logger.info("Starting AI Pricing Service...")
-        logger.info("Service will be available at: http://localhost:5005")
-        
-        # Set service as healthy
-        service_healthy = True
-        
-        # Start Flask app
-        app.run(
-            host='0.0.0.0',
-            port=5005,
-            debug=False,
-            threaded=True
-        )
-    except Exception as e:
-        logger.error(f"Failed to start AI pricing service: {e}")
-        service_healthy = False
-        raise
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 if __name__ == '__main__':
-    start_service() 
+    app.run(host='0.0.0.0', port=8002, debug=False) 

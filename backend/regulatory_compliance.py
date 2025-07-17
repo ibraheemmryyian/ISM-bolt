@@ -29,9 +29,20 @@ import warnings
 import re
 from urllib.parse import urljoin
 import requests
+import torch
+from backend.ml_core.models import BaseNN
+from backend.ml_core.training import train_supervised
+from backend.ml_core.inference import predict_supervised
+from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from torch.utils.data import DataLoader, TensorDataset
+import os
+import shap
+from flask import Flask, request, jsonify
+from flask_restx import Api, Resource, fields
 warnings.filterwarnings('ignore')
 
-logger = logging.getLogger(__name__)
+# Replace standard logger with DistributedLogger
+logger = DistributedLogger('RegulatoryComplianceEngine', log_file='logs/regulatory_compliance.log')
 
 @dataclass
 class ComplianceResult:
@@ -991,6 +1002,50 @@ class AdvancedRegulatoryComplianceEngine:
         except Exception as e:
             logger.error(f"Error calculating cache hit rate: {e}")
             return 0.0
+
+# Add Flask app and API for explainability endpoint if not present
+app = Flask(__name__)
+api = Api(app, version='1.0', title='Regulatory Compliance Engine', description='Advanced ML Regulatory Compliance', doc='/docs')
+
+# Add data validator
+data_validator = AdvancedDataValidator(logger=logger)
+
+explain_input = api.model('ExplainInput', {
+    'model_type': fields.String(required=True, description='Model type (compliance_classifier, risk_assessor)'),
+    'input_data': fields.Raw(required=True, description='Input data for explanation')
+})
+
+@api.route('/explain')
+class Explain(Resource):
+    @api.expect(explain_input)
+    @api.response(200, 'Success')
+    @api.response(400, 'Invalid input data')
+    @api.response(500, 'Internal error')
+    def post(self):
+        try:
+            data = request.json
+            model_type = data.get('model_type')
+            input_data = data.get('input_data')
+            schema = {'type': 'object', 'properties': {'features': {'type': 'array'}}, 'required': ['features']}
+            data_validator.set_schema(schema)
+            if not data_validator.validate(input_data):
+                logger.error('Input data failed schema validation.')
+                return {'error': 'Invalid input data'}, 400
+            features = np.array(input_data['features']).reshape(1, -1)
+            if model_type == 'compliance_classifier':
+                model = self.compliance_classifier
+            elif model_type == 'risk_assessor':
+                model = self.risk_assessor
+            else:
+                logger.error(f'Unknown model_type: {model_type}')
+                return {'error': 'Unknown model_type'}, 400
+            explainer = shap.Explainer(model.predict, features)
+            shap_values = explainer(features)
+            logger.info(f'Explanation generated for {model_type}')
+            return {'shap_values': shap_values.values.tolist(), 'base_values': shap_values.base_values.tolist()}
+        except Exception as e:
+            logger.error(f'Explainability error: {e}')
+            return {'error': str(e)}, 500
 
 # Global instance
 regulatory_compliance_engine = AdvancedRegulatoryComplianceEngine() 

@@ -12,6 +12,11 @@ from datetime import datetime, timedelta
 import numpy as np
 import requests
 from enum import Enum
+import torch
+from backend.ml_core.models import BaseRLAgent
+from backend.ml_core.training import train_rl
+from backend.ml_core.monitoring import log_metrics, save_checkpoint
+import os
 
 # Import existing services
 try:
@@ -1043,3 +1048,18 @@ class AdaptiveAIOnboarding:
 
 # Global instance
 adaptive_onboarding = AdaptiveAIOnboarding() 
+
+class AdaptiveOnboardingAgent:
+    def __init__(self, state_dim=20, action_dim=10, model_dir="onboarding_models"):
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.model_dir = model_dir
+        self.agent = BaseRLAgent(state_dim, action_dim)
+    def train(self, env, episodes=100):
+        train_rl(self.agent, env, episodes=episodes)
+        save_checkpoint(self.agent, None, episodes, os.path.join(self.model_dir, "onboarding_agent.pt"))
+    def select_question(self, state):
+        self.agent.eval()
+        with torch.no_grad():
+            q_values = self.agent(torch.tensor(state, dtype=torch.float))
+            return torch.argmax(q_values).item() 

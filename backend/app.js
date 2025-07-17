@@ -3378,10 +3378,13 @@ app.post('/api/ai-analysis', async (req, res) => {
 app.post('/api/ai-feedback', async (req, res) => {
   try {
     const { feedbackId, feedbackData } = req.body;
-    
-    const result = await aiEvolutionEngine.collectUserFeedback(feedbackId, feedbackData);
-    
-    res.json(result);
+    // Call the orchestrator's ingest_feedback (assume exposed via HTTP API at http://localhost:5000/feedback/ingest)
+    const axios = require('axios');
+    const response = await axios.post('http://localhost:5000/feedback/ingest', {
+      model_id: feedbackId,
+      feedback_data: feedbackData
+    });
+    res.json({ success: true, message: 'Feedback ingested and queued for processing', data: response.data });
   } catch (error) {
     console.error('AI feedback error:', error);
     res.status(500).json({ error: error.message });

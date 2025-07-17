@@ -3,729 +3,894 @@ Impact Forecasting Engine for Industrial Symbiosis
 Predicts environmental, economic, and social impact of symbiosis partnerships
 """
 
+import os
+import json
+import logging
 import numpy as np
 import pandas as pd
+from typing import Dict, List, Optional, Tuple, Any, Union
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, asdict
-import logging
-import json
 import asyncio
 import aiohttp
+from concurrent.futures import ThreadPoolExecutor
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+from transformers import (
+    AutoTokenizer, 
+    AutoModel,
+    AutoModelForSequenceClassification
+)
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import joblib
+import pickle
 from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from scipy.stats import pearsonr, spearmanr
+import statsmodels.api as sm
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller, kpss
+from statsmodels.tsa.seasonal import seasonal_decompose
 import warnings
 warnings.filterwarnings('ignore')
 
-# Required ML imports - fail if missing
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
+# ML Core imports
+from ml_core.models import (
+    ModelFactory,
+    ModelArchitecture,
+    ModelConfig
+)
+from ml_core.training import (
+    ModelTrainer,
+    TrainingConfig,
+    TrainingMetrics
+)
+from ml_core.data_processing import (
+    DataProcessor,
+    DataValidator,
+    TimeSeriesProcessor
+)
+from ml_core.optimization import (
+    HyperparameterOptimizer,
+    ForecastingOptimizer
+)
+from ml_core.monitoring import (
+    MLMetricsTracker,
+    ForecastingMonitor
+)
+from ml_core.utils import (
+    ModelRegistry,
+    TimeSeriesValidator,
+    ConfigManager
+)
 
-# Required time series imports - fail if missing
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.seasonal import seasonal_decompose
-
-# Required optimization imports - fail if missing
-from scipy.optimize import minimize
-from scipy.stats import norm
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-@dataclass
-class ImpactForecast:
-    """Impact forecast data structure"""
-    forecast_id: str
-    company_id: str
-    forecast_type: str  # 'carbon_reduction', 'cost_savings', 'waste_reduction', 'energy_savings'
-    timeframe: str
-    carbon_reduction: float  # kg CO2e
-    cost_savings: float  # USD
-    waste_reduction: float  # kg
-    energy_savings: float  # kWh
-    water_savings: float  # liters
-    social_impact_score: float  # 0-1
-    economic_impact_score: float  # 0-1
-    environmental_impact_score: float  # 0-1
-    confidence_level: float  # 0-1
-    assumptions: List[str]
-    risks: List[str]
-    recommendations: List[str]
-    created_at: datetime
-
-class ImpactForecastingEngine:
-    """
-    Advanced Impact Forecasting Engine for Industrial Symbiosis
+class TimeSeriesDataset(Dataset):
+  dataset for time series forecasting with real data processing
+    def __init__(self, 
+                 data: pd.DataFrame,
+                 target_column: str,
+                 feature_columns: List[str],
+                 sequence_length: int = 30,
+                 forecast_horizon: int = 7,
+                 step_size: int = 1):
+        self.data = data
+        self.target_column = target_column
+        self.feature_columns = feature_columns
+        self.sequence_length = sequence_length
+        self.forecast_horizon = forecast_horizon
+        self.step_size = step_size
+        
+        # Process data
+        self.processed_data = self._process_data()
+        
+        # Create sequences
+        self.sequences = self._create_sequences()
     
-    Features:
-    - Multi-dimensional impact prediction
-    - Time series forecasting
-    - Machine learning models
-    - Uncertainty quantification
-    - Scenario analysis
-    - Real-time updates
-    """
+    def _process_data(self) -> pd.DataFrame:
+     Process time series data with feature engineering"""
+        processed = self.data.copy()
+        
+        # Handle missing values
+        processed = processed.fillna(method='ffill).fillna(method=bfill)
+        
+        # Add time-based features
+        if 'timestamp' in processed.columns:
+            processed['timestamp'] = pd.to_datetime(processed['timestamp'])
+            processed['year'] = processed['timestamp'].dt.year
+            processed['month'] = processed['timestamp'].dt.month
+            processed[day'] = processed['timestamp'].dt.day
+            processed['day_of_week'] = processed['timestamp'].dt.dayofweek
+            processed['quarter'] = processed['timestamp'].dt.quarter
+            processed['is_weekend'] = processed['timestamp].dt.dayofweek.isin([5, 6]).astype(int)
+        
+        # Add lag features
+        for lag in [1, 7, 14, 30]:
+            processed[f'{self.target_column}_lag_{lag}'] = processed[self.target_column].shift(lag)
+        
+        # Add rolling statistics
+        for window in [7, 14, 30]:
+            processed[f'{self.target_column}_rolling_mean_{window}'] = processed[self.target_column].rolling(window=window).mean()
+            processed[f'{self.target_column}_rolling_std_{window}'] = processed[self.target_column].rolling(window=window).std()
+            processed[f'{self.target_column}_rolling_min_{window}'] = processed[self.target_column].rolling(window=window).min()
+            processed[f'{self.target_column}_rolling_max_{window}'] = processed[self.target_column].rolling(window=window).max()
+        
+        # Add seasonal decomposition features
+        if len(processed) > 50
+            try:
+                decomposition = seasonal_decompose(
+                    processed[self.target_column].dropna(),
+                    period=7,
+                    extrapolate_trend='freq'
+                )
+                processed['trend] = decomposition.trend
+                processed['seasonal]= decomposition.seasonal
+                processed['residual] = decomposition.resid
+            except:
+                processed['trend'] = processed[self.target_column].rolling(window=7).mean()
+                processed['seasonal'] =0         processed['residual'] = processed[self.target_column] - processed[trend]
+        
+        # Normalize features
+        scaler = StandardScaler()
+        feature_cols = [col for col in processed.columns if col not in ['timestamp', target
+        processed[feature_cols] = scaler.fit_transform(processed[feature_cols].fillna(0))
+        
+        return processed
     
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or self._default_config()
+    def _create_sequences(self) -> List[Tuple[torch.Tensor, torch.Tensor]]:
+     Create sequences for time series forecasting"""
+        sequences = []
         
-        # Initialize ML models
-        self.carbon_model = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.cost_model = GradientBoostingRegressor(n_estimators=100, random_state=42)
-        self.waste_model = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.energy_model = LinearRegression()
+        for i in range(0, len(self.processed_data) - self.sequence_length - self.forecast_horizon +1 self.step_size):
+            # Input sequence
+            input_seq = self.processed_data.iloc[i:i + self.sequence_length]
+            input_features = input_seq[self.feature_columns].values
+            input_tensor = torch.FloatTensor(input_features)
+            
+            # Target sequence
+            target_seq = self.processed_data.iloc[i + self.sequence_length:i + self.sequence_length + self.forecast_horizon]
+            target_values = target_seq[self.target_column].values
+            target_tensor = torch.FloatTensor(target_values)
+            
+            sequences.append((input_tensor, target_tensor))
         
-        # Data preprocessing
-        self.scaler = StandardScaler()
-        self.feature_importance = {}
+        return sequences
+    
+    def __len__(self):
+        return len(self.sequences)
+    
+    def __getitem__(self, idx):
+        return self.sequences[idx]
+
+class TransformerForecastingModel(nn.Module):
+    rmer-based forecasting model with attention mechanisms
+    def __init__(self, 
+                 input_dim: int,
+                 hidden_dim: int = 256,
+                 num_layers: int = 4,
+                 num_heads: int = 8,
+                 dropout: float = 0.1,
+                 forecast_horizon: int =7        super().__init__()
         
-        # Model performance tracking
-        self.model_performance = {}
-        self.forecast_history = []
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.forecast_horizon = forecast_horizon
+        
+        # Input projection
+        self.input_projection = nn.Linear(input_dim, hidden_dim)
+        
+        # Positional encoding
+        self.positional_encoding = nn.Parameter(torch.randn(1, 10en_dim))
+        
+        # Transformer encoder
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=hidden_dim,
+            nhead=num_heads,
+            dim_feedforward=hidden_dim * 4,
+            dropout=dropout,
+            batch_first=True
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers)
+        
+        # Forecasting head
+        self.forecast_head = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, hidden_dim // 4
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 4, forecast_horizon)
+        )
+        
+        # Uncertainty estimation
+        self.uncertainty_head = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 2, forecast_horizon),
+            nn.Sigmoid()
+        )
+    
+    def forward(self, x):
+        batch_size, seq_len, _ = x.shape
+        
+        # Input projection
+        x = self.input_projection(x)
+        
+        # Add positional encoding
+        pos_encoding = self.positional_encoding[:, :seq_len, :]
+        x = x + pos_encoding
+        
+        # Apply transformer
+        encoded = self.transformer(x)
+        
+        # Global pooling
+        pooled = torch.mean(encoded, dim=1)
+        
+        # Generate forecasts
+        forecast = self.forecast_head(pooled)
+        uncertainty = self.uncertainty_head(pooled)
+        
+        return forecast, uncertainty
+
+class CausalImpactModel(nn.Module):
+  al impact analysis model using counterfactual prediction
+    def __init__(self, 
+                 input_dim: int,
+                 hidden_dim: int = 128,
+                 num_layers: int = 3,
+                 dropout: float = 00.1        super().__init__()
+        
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        
+        # Feature extraction
+        self.feature_extractor = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout)
+        )
+        
+        # Treatment effect estimation
+        self.treatment_net = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, 1)
+        )
+        
+        # Outcome prediction
+        self.outcome_net = nn.Sequential(
+            nn.Linear(hidden_dim + 1, hidden_dim // 2  # +1 for treatment indicator
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, 1)
+        )
+        
+        # Propensity score estimation
+        self.propensity_net = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 21,
+            nn.Sigmoid()
+        )
+    
+    def forward(self, features, treatment=None):
+        # Extract features
+        extracted_features = self.feature_extractor(features)
+        
+        # Estimate treatment effect
+        treatment_effect = self.treatment_net(extracted_features)
+        
+        # Estimate propensity score
+        propensity_score = self.propensity_net(extracted_features)
+        
+        # Predict outcomes
+        if treatment is not None:
+            # Combine features with treatment indicator
+            combined_features = torch.cat([extracted_features, treatment.unsqueeze(1)], dim=1)
+            outcome = self.outcome_net(combined_features)
+        else:
+            # Predict for both treatment and control
+            treatment_combined = torch.cat([extracted_features, torch.ones(extracted_features.size(01to(features.device)], dim=1)
+            control_combined = torch.cat([extracted_features, torch.zeros(extracted_features.size(01to(features.device)], dim=1)
+            
+            outcome_treatment = self.outcome_net(treatment_combined)
+            outcome_control = self.outcome_net(control_combined)
+            outcome = outcome_treatment - outcome_control
+        
+        return outcome, treatment_effect, propensity_score
+
+class AdvancedImpactForecastingModel(nn.Module):
+    impact forecasting model with multiple components
+    def __init__(self, 
+                 input_dim: int,
+                 hidden_dim: int = 256,
+                 num_layers: int = 4,
+                 forecast_horizon: int = 7,
+                 use_causal: bool = True):
+        super().__init__()
+        
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.forecast_horizon = forecast_horizon
+        self.use_causal = use_causal
+        
+        # Time series forecasting component
+        self.forecasting_model = TransformerForecastingModel(
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=num_layers,
+            forecast_horizon=forecast_horizon
+        )
+        
+        # Causal impact component
+        if use_causal:
+            self.causal_model = CausalImpactModel(
+                input_dim=input_dim,
+                hidden_dim=hidden_dim // 2
+            )
+        
+        # Impact assessment head
+        self.impact_head = nn.Sequential(
+            nn.Linear(hidden_dim + (hidden_dim // 2 if use_causal else 0), hidden_dim // 2
+            nn.ReLU(),
+            nn.Dropout(0.1,
+            nn.Linear(hidden_dim // 2, forecast_horizon),
+            nn.Tanh()  # Output in [-1, 1] range
+        )
+        
+        # Confidence estimation
+        self.confidence_head = nn.Sequential(
+            nn.Linear(hidden_dim + (hidden_dim // 2 if use_causal else 0), hidden_dim // 4
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 4, forecast_horizon),
+            nn.Sigmoid()
+        )
+    
+    def forward(self, x, treatment_features=None):
+        # Time series forecasting
+        forecast, uncertainty = self.forecasting_model(x)
+        
+        # Causal impact analysis
+        if self.use_causal and treatment_features is not None:
+            causal_outcome, treatment_effect, propensity = self.causal_model(treatment_features)
+            
+            # Combine features for impact assessment
+            combined_features = torch.cat([
+                forecast,
+                causal_outcome.expand(-1 self.forecast_horizon)
+            ], dim=1)
+        else:
+            combined_features = forecast
+            treatment_effect = torch.zeros(forecast.size(01to(forecast.device)
+            propensity = torch.zeros(forecast.size(01to(forecast.device)
+        
+        # Impact assessment
+        impact = self.impact_head(combined_features)
+        confidence = self.confidence_head(combined_features)
+        
+        return {
+         forecast': forecast,
+         uncertainty': uncertainty,
+         impact': impact,
+         confidence': confidence,
+         treatment_effect': treatment_effect,
+         propensity': propensity
+        }
+
+class ImpactForecastingService:
+    Real ML-powered impact forecasting service with advanced time series and causal analysis
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.device = torch.device('cuda if torch.cuda.is_available() else 'cpu')
+        
+        # Initialize components
+        self.model_factory = ModelFactory()
+        self.model_registry = ModelRegistry()
+        self.time_series_processor = TimeSeriesProcessor()
+        self.time_series_validator = TimeSeriesValidator()
+        self.metrics_tracker = MLMetricsTracker()
+        self.forecasting_monitor = ForecastingMonitor()
+        self.config_manager = ConfigManager()
         
         # Initialize models
-        self._initialize_models()
+        self.forecasting_models =[object Object]       self.causal_models = {}
         
-        logger.info("Impact Forecasting Engine initialized successfully")
-
-    def _default_config(self) -> Dict[str, Any]:
-        """Default configuration"""
-        return {
-            'forecast_horizon': 365,  # days
-            'confidence_level': 0.95,
-            'update_frequency': 24,  # hours
-            'min_data_points': 10,
-            'max_forecast_periods': 12,  # months
-            'uncertainty_quantification': True,
-            'scenario_analysis': True
+        # Forecasting configuration
+        self.forecasting_config = {
+            batch_size:32     learning_rate':1e-4
+        epochs:50          early_stopping_patience': 10,
+           validation_split': 00.2   sequence_length': 30,
+         forecast_horizon:7        use_causal_analysis': True,
+         confidence_threshold': 0.7
         }
-
-    def _initialize_models(self):
-        """Initialize forecasting models"""
+        
+        # Model paths
+        self.model_paths =[object Object]
+         forecasting':models/forecasting/,
+         causal':models/causal/,
+         impact:models/impact/'
+        }
+        
+        # Ensure directories exist
+        for path in self.model_paths.values():
+            os.makedirs(path, exist_ok=True)
+    
+    async def create_forecasting_model(self,
+                                     model_config: Dict,
+                                     model_type: str =transformer)-> str:
+     reate a new forecasting model"""
         try:
-            # Load historical data for training
-            historical_data = self._load_historical_data()
+            self.logger.info(f"Creating forecasting model: {model_type}")
             
-            if historical_data is not None and len(historical_data) > self.config['min_data_points']:
-                self._train_models(historical_data)
+            # Create model
+            if model_type == 'transformer:             model = TransformerForecastingModel(
+                    input_dim=model_config.get(input_dim                   hidden_dim=model_config.get('hidden_dim', 256),
+                    num_layers=model_config.get(num_layers                   forecast_horizon=model_config.get('forecast_horizon', 7                ).to(self.device)
+            elif model_type == 'advanced:             model = AdvancedImpactForecastingModel(
+                    input_dim=model_config.get(input_dim                   hidden_dim=model_config.get('hidden_dim', 256),
+                    num_layers=model_config.get(num_layers                   forecast_horizon=model_config.get('forecast_horizon', 7),
+                    use_causal=model_config.get(use_causal', True)
+                ).to(self.device)
             else:
-                logger.warning("Insufficient historical data for model training")
-                
-        except Exception as e:
-            logger.error(f"Model initialization failed: {e}")
-            raise
-
-    def _load_historical_data(self) -> Optional[pd.DataFrame]:
-        """Load historical impact data"""
-        try:
-            # Load from database or file
-            data_path = Path("data/historical_impact_data.csv")
-            if data_path.exists():
-                return pd.read_csv(data_path)
-            else:
-                logger.warning("Historical data file not found")
-                return None
-        except Exception as e:
-            logger.error(f"Failed to load historical data: {e}")
-            return None
-
-    def _train_models(self, data: pd.DataFrame):
-        """Train forecasting models"""
-        try:
-            # Prepare features and targets
-            features = ['company_size', 'industry_type', 'location_factor', 'technology_level']
-            targets = ['carbon_reduction', 'cost_savings', 'waste_reduction', 'energy_savings']
+                raise ValueError(f"Unknown model type: {model_type}")
             
-            X = data[features]
+            # Generate model ID
+            model_id = f"forecast_{model_type}_{datetime.now().strftime(%Y%m%d_%H%M%S')}"      
+            # Save model
+            torch.save(model.state_dict(), f{self.model_paths['forecasting]}/{model_id}.pth")
             
-            # Train each model
-            for target in targets:
-                if target in data.columns:
-                    y = data[target]
-                    
-                    # Split data
-                    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                    
-                    # Scale features
-                    X_train_scaled = self.scaler.fit_transform(X_train)
-                    X_test_scaled = self.scaler.transform(X_test)
-                    
-                    # Train model
-                    if target == 'carbon_reduction':
-                        model = self.carbon_model
-                    elif target == 'cost_savings':
-                        model = self.cost_model
-                    elif target == 'waste_reduction':
-                        model = self.waste_model
-                    elif target == 'energy_savings':
-                        model = self.energy_model
-                    
-                    model.fit(X_train_scaled, y_train)
-                    
-                    # Evaluate model
-                    y_pred = model.predict(X_test_scaled)
-                    mse = mean_squared_error(y_test, y_pred)
-                    r2 = r2_score(y_test, y_pred)
-                    
-                    self.model_performance[target] = {
-                        'mse': mse,
-                        'r2': r2,
-                        'rmse': np.sqrt(mse)
-                    }
-                    
-                    # Feature importance for tree-based models
-                    if hasattr(model, 'feature_importances_'):
-                        self.feature_importance[target] = dict(zip(features, model.feature_importances_))
-                    
-                    logger.info(f"Trained {target} model: R²={r2:.4f}, RMSE={np.sqrt(mse):.4f}")
-                    
-        except Exception as e:
-            logger.error(f"Model training failed: {e}")
-            raise
-
-    def forecast_impact(self, company_data: Dict[str, Any], 
-                       forecast_type: str = 'comprehensive',
-                       timeframe_days: int = 365) -> ImpactForecast:
-        """Generate impact forecast for a company"""
-        try:
-            # Validate inputs
-            if not company_data:
-                raise ValueError("Company data is required")
+            # Register model
+            self.forecasting_models[model_id] = model
             
-            if timeframe_days <= 0:
-                raise ValueError("Timeframe must be positive")
-            
-            # Generate forecast
-            if forecast_type == 'comprehensive':
-                forecast = self._generate_comprehensive_forecast(company_data, timeframe_days)
-            elif forecast_type == 'carbon_reduction':
-                forecast = self._generate_carbon_forecast(company_data, timeframe_days)
-            elif forecast_type == 'cost_savings':
-                forecast = self._generate_cost_forecast(company_data, timeframe_days)
-            elif forecast_type == 'waste_reduction':
-                forecast = self._generate_waste_forecast(company_data, timeframe_days)
-            else:
-                raise ValueError(f"Unknown forecast type: {forecast_type}")
-            
-            # Store forecast
-            self.forecast_history.append(forecast)
-            
-            logger.info(f"Generated {forecast_type} forecast for company {company_data.get('id', 'unknown')}")
-            
-            return forecast
-            
-        except Exception as e:
-            logger.error(f"Impact forecasting failed: {e}")
-            raise
-
-    def _generate_comprehensive_forecast(self, company_data: Dict[str, Any], 
-                                       timeframe_days: int) -> ImpactForecast:
-        """Generate comprehensive impact forecast"""
-        try:
-            # Extract features
-            features = self._extract_company_features(company_data)
-            
-            # Make predictions
-            carbon_reduction = self._predict_carbon_reduction(features, timeframe_days)
-            cost_savings = self._predict_cost_savings(features, timeframe_days)
-            waste_reduction = self._predict_waste_reduction(features, timeframe_days)
-            energy_savings = self._predict_energy_savings(features, timeframe_days)
-            
-            # Calculate impact scores
-            environmental_score = self._calculate_environmental_score(carbon_reduction, waste_reduction, energy_savings)
-            economic_score = self._calculate_economic_score(cost_savings)
-            social_score = self._calculate_social_score(company_data)
-            
-            # Calculate confidence level
-            confidence = self._calculate_confidence_level(features)
-            
-            # Generate recommendations
-            recommendations = self._generate_recommendations(company_data, carbon_reduction, cost_savings)
-            
-            # Identify risks
-            risks = self._identify_risks(company_data, timeframe_days)
-            
-            # List assumptions
-            assumptions = self._list_assumptions(company_data, timeframe_days)
-            
-            return ImpactForecast(
-                forecast_id=f"forecast_{company_data.get('id', 'unknown')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                company_id=company_data.get('id', 'unknown'),
-                forecast_type='comprehensive',
-                timeframe=f"{timeframe_days} days",
-                carbon_reduction=carbon_reduction,
-                cost_savings=cost_savings,
-                waste_reduction=waste_reduction,
-                energy_savings=energy_savings,
-                water_savings=self._predict_water_savings(features, timeframe_days),
-                social_impact_score=social_score,
-                economic_impact_score=economic_score,
-                environmental_impact_score=environmental_score,
-                confidence_level=confidence,
-                assumptions=assumptions,
-                risks=risks,
-                recommendations=recommendations,
-                created_at=datetime.now()
-            )
-            
-        except Exception as e:
-            logger.error(f"Comprehensive forecast generation failed: {e}")
-            raise
-
-    def _extract_company_features(self, company_data: Dict[str, Any]) -> np.ndarray:
-        """Extract features from company data"""
-        try:
-            # Map company data to features
-            features = []
-            
-            # Company size (normalized)
-            size = company_data.get('employee_count', 100)
-            features.append(min(size / 1000, 1.0))
-            
-            # Industry type (encoded)
-            industry = company_data.get('industry', 'manufacturing').lower()
-            industry_encoding = {
-                'manufacturing': 0.8,
-                'chemical': 0.9,
-                'food': 0.6,
-                'textiles': 0.7,
-                'construction': 0.5
+            # Save metadata
+            metadata =[object Object]             model_id': model_id,
+                model_type': model_type,
+                config': model_config,
+                created_at:datetime.now().isoformat()
             }
-            features.append(industry_encoding.get(industry, 0.5))
             
-            # Location factor
-            location = company_data.get('location', 'unknown').lower()
-            location_factor = 0.7  # Default
-            if 'gulf' in location or 'middle_east' in location:
-                location_factor = 0.8
-            features.append(location_factor)
+            with open(f{self.model_paths['forecasting']}/{model_id}_metadata.json", 'w') as f:
+                json.dump(metadata, f, indent=2)
             
-            # Technology level
-            tech_level = company_data.get('technology_level', 'medium').lower()
-            tech_encoding = {'low': 0.3, 'medium': 0.6, 'high': 0.9}
-            features.append(tech_encoding.get(tech_level, 0.6))
-            
-            return np.array(features).reshape(1, -1)
+            self.logger.info(fForecasting model created: {model_id}")
+            return model_id
             
         except Exception as e:
-            logger.error(f"Feature extraction failed: {e}")
+            self.logger.error(f"Error creating forecasting model: {e}")
             raise
 
-    def _predict_carbon_reduction(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Predict carbon reduction"""
+    async def train_forecasting_model(self,
+                                    model_id: str,
+                                    training_data: pd.DataFrame,
+                                    target_column: str,
+                                    feature_columns: List[str]) -> Dict:
+     Train forecasting model with real ML pipeline"""
         try:
-            if hasattr(self.carbon_model, 'predict'):
-                # Scale features
-                features_scaled = self.scaler.transform(features)
-                
-                # Make prediction
-                base_prediction = self.carbon_model.predict(features_scaled)[0]
-                
-                # Adjust for timeframe
-                timeframe_factor = timeframe_days / 365.0
-                
-                return max(0, base_prediction * timeframe_factor)
+            self.logger.info(f"Training forecasting model: {model_id}")
+            
+            # Load model
+            if model_id not in self.forecasting_models:
+                model = await self._load_forecasting_model(model_id)
             else:
-                # Fallback calculation
-                return self._calculate_fallback_carbon_reduction(features, timeframe_days)
-                
-        except Exception as e:
-            logger.error(f"Carbon reduction prediction failed: {e}")
-            raise
-
-    def _predict_cost_savings(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Predict cost savings"""
-        try:
-            if hasattr(self.cost_model, 'predict'):
-                # Scale features
-                features_scaled = self.scaler.transform(features)
-                
-                # Make prediction
-                base_prediction = self.cost_model.predict(features_scaled)[0]
-                
-                # Adjust for timeframe
-                timeframe_factor = timeframe_days / 365.0
-                
-                return max(0, base_prediction * timeframe_factor)
-            else:
-                # Fallback calculation
-                return self._calculate_fallback_cost_savings(features, timeframe_days)
-                
-        except Exception as e:
-            logger.error(f"Cost savings prediction failed: {e}")
-            raise
-
-    def _predict_waste_reduction(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Predict waste reduction"""
-        try:
-            if hasattr(self.waste_model, 'predict'):
-                # Scale features
-                features_scaled = self.scaler.transform(features)
-                
-                # Make prediction
-                base_prediction = self.waste_model.predict(features_scaled)[0]
-                
-                # Adjust for timeframe
-                timeframe_factor = timeframe_days / 365.0
-                
-                return max(0, base_prediction * timeframe_factor)
-            else:
-                # Fallback calculation
-                return self._calculate_fallback_waste_reduction(features, timeframe_days)
-                
-        except Exception as e:
-            logger.error(f"Waste reduction prediction failed: {e}")
-            raise
-
-    def _predict_energy_savings(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Predict energy savings"""
-        try:
-            if hasattr(self.energy_model, 'predict'):
-                # Scale features
-                features_scaled = self.scaler.transform(features)
-                
-                # Make prediction
-                base_prediction = self.energy_model.predict(features_scaled)[0]
-                
-                # Adjust for timeframe
-                timeframe_factor = timeframe_days / 365.0
-                
-                return max(0, base_prediction * timeframe_factor)
-            else:
-                # Fallback calculation
-                return self._calculate_fallback_energy_savings(features, timeframe_days)
-                
-        except Exception as e:
-            logger.error(f"Energy savings prediction failed: {e}")
-            raise
-
-    def _predict_water_savings(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Predict water savings"""
-        try:
-            # Simple calculation based on industry and size
-            industry_factor = features[0, 1]  # Industry encoding
-            size_factor = features[0, 0]  # Size factor
+                model = self.forecasting_models[model_id]
             
-            base_water_savings = 10000  # liters per year
-            timeframe_factor = timeframe_days / 365.0
+            # Validate time series data
+            validation_result = self.time_series_validator.validate_data(training_data, target_column)
+            if not validation_result['is_valid']:
+                raise ValueError(f"Invalid time series data: {validation_result['errors']}")
             
-            return base_water_savings * industry_factor * size_factor * timeframe_factor
-            
-        except Exception as e:
-            logger.error(f"Water savings prediction failed: {e}")
-            raise
-
-    def _calculate_environmental_score(self, carbon_reduction: float, 
-                                     waste_reduction: float, 
-                                     energy_savings: float) -> float:
-        """Calculate environmental impact score"""
-        try:
-            # Normalize values
-            carbon_score = min(carbon_reduction / 1000, 1.0)  # Normalize to 1000 kg CO2e
-            waste_score = min(waste_reduction / 10000, 1.0)  # Normalize to 10,000 kg
-            energy_score = min(energy_savings / 50000, 1.0)  # Normalize to 50,000 kWh
-            
-            # Weighted average
-            environmental_score = (0.4 * carbon_score + 0.3 * waste_score + 0.3 * energy_score)
-            
-            return min(1.0, max(0.0, environmental_score))
-            
-        except Exception as e:
-            logger.error(f"Environmental score calculation failed: {e}")
-            raise
-
-    def _calculate_economic_score(self, cost_savings: float) -> float:
-        """Calculate economic impact score"""
-        try:
-            # Normalize to $100,000 savings
-            economic_score = min(cost_savings / 100000, 1.0)
-            
-            return min(1.0, max(0.0, economic_score))
-            
-        except Exception as e:
-            logger.error(f"Economic score calculation failed: {e}")
-            raise
-
-    def _calculate_social_score(self, company_data: Dict[str, Any]) -> float:
-        """Calculate social impact score"""
-        try:
-            # Simple social impact calculation
-            employee_count = company_data.get('employee_count', 100)
-            industry = company_data.get('industry', 'manufacturing').lower()
-            
-            # Base social score
-            social_score = 0.5
-            
-            # Adjust for company size (more employees = more social impact)
-            if employee_count > 500:
-                social_score += 0.2
-            elif employee_count > 100:
-                social_score += 0.1
-            
-            # Adjust for industry
-            if industry in ['food', 'pharmaceutical']:
-                social_score += 0.1
-            
-            return min(1.0, max(0.0, social_score))
-            
-        except Exception as e:
-            logger.error(f"Social score calculation failed: {e}")
-            raise
-
-    def _calculate_confidence_level(self, features: np.ndarray) -> float:
-        """Calculate confidence level for forecast"""
-        try:
-            # Base confidence
-            confidence = 0.7
-            
-            # Adjust based on data quality
-            if features[0, 0] > 0.5:  # Good size data
-                confidence += 0.1
-            
-            if features[0, 1] > 0.7:  # Known industry
-                confidence += 0.1
-            
-            if features[0, 2] > 0.7:  # Good location data
-                confidence += 0.1
-            
-            return min(1.0, max(0.0, confidence))
-            
-        except Exception as e:
-            logger.error(f"Confidence calculation failed: {e}")
-            raise
-
-    def _generate_recommendations(self, company_data: Dict[str, Any], 
-                                carbon_reduction: float, 
-                                cost_savings: float) -> List[str]:
-        """Generate recommendations based on forecast"""
-        try:
-            recommendations = []
-            
-            # Carbon reduction recommendations
-            if carbon_reduction > 500:
-                recommendations.append("High carbon reduction potential - consider carbon credit trading")
-            
-            # Cost savings recommendations
-            if cost_savings > 50000:
-                recommendations.append("Significant cost savings potential - implement waste-to-resource programs")
-            
-            # Industry-specific recommendations
-            industry = company_data.get('industry', '').lower()
-            if industry == 'manufacturing':
-                recommendations.append("Optimize production processes for material efficiency")
-            elif industry == 'chemical':
-                recommendations.append("Implement closed-loop chemical recycling systems")
-            
-            return recommendations
-            
-        except Exception as e:
-            logger.error(f"Recommendation generation failed: {e}")
-            raise
-
-    def _identify_risks(self, company_data: Dict[str, Any], timeframe_days: int) -> List[str]:
-        """Identify potential risks"""
-        try:
-            risks = []
-            
-            # Regulatory risks
-            risks.append("Regulatory changes may affect forecast accuracy")
-            
-            # Market risks
-            risks.append("Market fluctuations may impact cost savings")
-            
-            # Technology risks
-            risks.append("Technology adoption delays may reduce impact")
-            
-            return risks
-            
-        except Exception as e:
-            logger.error(f"Risk identification failed: {e}")
-            raise
-
-    def _list_assumptions(self, company_data: Dict[str, Any], timeframe_days: int) -> List[str]:
-        """List forecast assumptions"""
-        try:
-            assumptions = [
-                "Stable regulatory environment",
-                "Consistent market conditions",
-                "Successful technology implementation",
-                f"Forecast period: {timeframe_days} days",
-                "Based on historical industry data"
-            ]
-            
-            return assumptions
-            
-        except Exception as e:
-            logger.error(f"Assumption listing failed: {e}")
-            raise
-
-    def _generate_carbon_forecast(self, company_data: Dict[str, Any], 
-                                timeframe_days: int) -> ImpactForecast:
-        """Generate carbon reduction forecast only"""
-        try:
-            features = self._extract_company_features(company_data)
-            carbon_reduction = self._predict_carbon_reduction(features, timeframe_days)
-            
-            return ImpactForecast(
-                forecast_id=f"carbon_{company_data.get('id', 'unknown')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                company_id=company_data.get('id', 'unknown'),
-                forecast_type='carbon_reduction',
-                timeframe=f"{timeframe_days} days",
-                carbon_reduction=carbon_reduction,
-                cost_savings=0.0,
-                waste_reduction=0.0,
-                energy_savings=0.0,
-                water_savings=0.0,
-                social_impact_score=0.0,
-                economic_impact_score=0.0,
-                environmental_impact_score=self._calculate_environmental_score(carbon_reduction, 0, 0),
-                confidence_level=self._calculate_confidence_level(features),
-                assumptions=self._list_assumptions(company_data, timeframe_days),
-                risks=self._identify_risks(company_data, timeframe_days),
-                recommendations=self._generate_recommendations(company_data, carbon_reduction, 0),
-                created_at=datetime.now()
+            # Prepare dataset
+            dataset = TimeSeriesDataset(
+                data=training_data,
+                target_column=target_column,
+                feature_columns=feature_columns,
+                sequence_length=self.forecasting_config['sequence_length'],
+                forecast_horizon=self.forecasting_config['forecast_horizon']
             )
             
-        except Exception as e:
-            logger.error(f"Carbon forecast generation failed: {e}")
-            raise
-
-    def _generate_cost_forecast(self, company_data: Dict[str, Any], 
-                              timeframe_days: int) -> ImpactForecast:
-        """Generate cost savings forecast only"""
-        try:
-            features = self._extract_company_features(company_data)
-            cost_savings = self._predict_cost_savings(features, timeframe_days)
+            # Split data
+            train_size = int(0.8aset))
+            val_size = len(dataset) - train_size
+            train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
             
-            return ImpactForecast(
-                forecast_id=f"cost_{company_data.get('id', 'unknown')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                company_id=company_data.get('id', 'unknown'),
-                forecast_type='cost_savings',
-                timeframe=f"{timeframe_days} days",
-                carbon_reduction=0.0,
-                cost_savings=cost_savings,
-                waste_reduction=0.0,
-                energy_savings=0.0,
-                water_savings=0.0,
-                social_impact_score=0.0,
-                economic_impact_score=self._calculate_economic_score(cost_savings),
-                environmental_impact_score=0.0,
-                confidence_level=self._calculate_confidence_level(features),
-                assumptions=self._list_assumptions(company_data, timeframe_days),
-                risks=self._identify_risks(company_data, timeframe_days),
-                recommendations=self._generate_recommendations(company_data, 0, cost_savings),
-                created_at=datetime.now()
+            # Create data loaders
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=self.forecasting_config['batch_size'],
+                shuffle=True,
+                num_workers=4
             )
             
-        except Exception as e:
-            logger.error(f"Cost forecast generation failed: {e}")
-            raise
-
-    def _generate_waste_forecast(self, company_data: Dict[str, Any], 
-                               timeframe_days: int) -> ImpactForecast:
-        """Generate waste reduction forecast only"""
-        try:
-            features = self._extract_company_features(company_data)
-            waste_reduction = self._predict_waste_reduction(features, timeframe_days)
-            
-            return ImpactForecast(
-                forecast_id=f"waste_{company_data.get('id', 'unknown')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                company_id=company_data.get('id', 'unknown'),
-                forecast_type='waste_reduction',
-                timeframe=f"{timeframe_days} days",
-                carbon_reduction=0.0,
-                cost_savings=0.0,
-                waste_reduction=waste_reduction,
-                energy_savings=0.0,
-                water_savings=0.0,
-                social_impact_score=0.0,
-                economic_impact_score=0.0,
-                environmental_impact_score=self._calculate_environmental_score(0, waste_reduction, 0),
-                confidence_level=self._calculate_confidence_level(features),
-                assumptions=self._list_assumptions(company_data, timeframe_days),
-                risks=self._identify_risks(company_data, timeframe_days),
-                recommendations=self._generate_recommendations(company_data, 0, 0),
-                created_at=datetime.now()
+            val_loader = DataLoader(
+                val_dataset,
+                batch_size=self.forecasting_config['batch_size'],
+                shuffle=False,
+                num_workers=4
             )
             
+            # Setup training
+            optimizer = torch.optim.AdamW(
+                model.parameters(),
+                lr=self.forecasting_config['learning_rate']
+            )
+            
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=self.forecasting_config['epochs']
+            )
+            
+            # Training loop
+            best_val_loss = float(inf          patience_counter = 0
+            training_history = []
+            
+            for epoch in range(self.forecasting_config['epochs']):
+                # Training phase
+                model.train()
+                train_loss = 0.0
+                
+                for batch_x, batch_y in train_loader:
+                    batch_x = batch_x.to(self.device)
+                    batch_y = batch_y.to(self.device)
+                    
+                    optimizer.zero_grad()
+                    
+                    # Forward pass
+                    if isinstance(model, AdvancedImpactForecastingModel):
+                        outputs = model(batch_x)
+                        forecast = outputs['forecast']
+            else:
+                        forecast, uncertainty = model(batch_x)
+                    
+                    # Calculate loss
+                    loss = F.mse_loss(forecast, batch_y)
+                    
+                    # Add uncertainty regularization if available
+                    if isinstance(model, AdvancedImpactForecastingModel):
+                        uncertainty_loss = torch.mean(outputs['uncertainty'])
+                        loss +=0.1* uncertainty_loss
+                    
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                    optimizer.step()
+                    
+                    train_loss += loss.item()
+                
+                scheduler.step()
+                
+                # Validation phase
+                val_loss = 00               val_predictions =                val_targets = []
+                
+                model.eval()
+                with torch.no_grad():
+                    for batch_x, batch_y in val_loader:
+                        batch_x = batch_x.to(self.device)
+                        batch_y = batch_y.to(self.device)
+                        
+                        if isinstance(model, AdvancedImpactForecastingModel):
+                            outputs = model(batch_x)
+                            forecast = outputs['forecast']
+            else:
+                            forecast, _ = model(batch_x)
+                        
+                        loss = F.mse_loss(forecast, batch_y)
+                        val_loss += loss.item()
+                        
+                        val_predictions.extend(forecast.cpu().numpy())
+                        val_targets.extend(batch_y.cpu().numpy())
+                
+                # Calculate metrics
+                val_predictions = np.array(val_predictions)
+                val_targets = np.array(val_targets)
+                
+                mse = mean_squared_error(val_targets.flatten(), val_predictions.flatten())
+                mae = mean_absolute_error(val_targets.flatten(), val_predictions.flatten())
+                r2 = r2_score(val_targets.flatten(), val_predictions.flatten())
+                
+                # Log metrics
+                epoch_metrics = {
+                  epoch': epoch,
+                 train_loss': train_loss / len(train_loader),
+                 val_loss': val_loss / len(val_loader),
+                 val_mse': mse,
+                 val_mae': mae,
+                 val_r2': r2,
+                 learning_rate': scheduler.get_last_lr()0                }
+                
+                training_history.append(epoch_metrics)
+                
+                # Early stopping
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    patience_counter = 0
+                    
+                    # Save best model
+                    torch.save(model.state_dict(), f{self.model_paths['forecasting']}/{model_id}_best.pth)              else:
+                    patience_counter += 1
+                
+                if patience_counter >= self.forecasting_config['early_stopping_patience']:
+                    self.logger.info(fEarly stopping at epoch {epoch}")
+                    break
+            
+            # Track metrics
+            self.metrics_tracker.record_forecasting_metrics({
+                model_id': model_id,
+                final_train_loss': train_loss / len(train_loader),
+                final_val_loss: best_val_loss,
+                final_val_mse': mse,
+                final_val_mae': mae,
+                final_val_r2': r2            epochs_trained': epoch +1  })
+            
+            return[object Object]             model_id': model_id,
+                training_history': training_history,
+                best_val_loss: best_val_loss,
+                final_metrics': [object Object]                 mse': mse,
+                 mae': mae,
+                 r2': r2
+                }
+            }
+            
         except Exception as e:
-            logger.error(f"Waste forecast generation failed: {e}")
+            self.logger.error(f"Error training forecasting model: {e}")
             raise
 
-    def _calculate_fallback_carbon_reduction(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Calculate fallback carbon reduction"""
+    async def forecast_impact(self,
+                            model_id: str,
+                            input_data: pd.DataFrame,
+                            target_column: str,
+                            feature_columns: List[str],
+                            forecast_periods: int = 7) -> Dict:
+     orecast impact using trained model"""
         try:
-            # Simple calculation based on company size and industry
-            size_factor = features[0, 0]
-            industry_factor = features[0, 1]
+            # Load model
+            if model_id not in self.forecasting_models:
+                model = await self._load_forecasting_model(model_id)
+            else:
+                model = self.forecasting_models[model_id]
             
-            base_carbon_reduction = 1000  # kg CO2e per year
-            timeframe_factor = timeframe_days / 365.0
+            # Prepare input data
+            processed_data = self.time_series_processor.process_for_forecasting(
+                input_data, target_column, feature_columns
+            )
             
-            return base_carbon_reduction * size_factor * industry_factor * timeframe_factor
+            # Create sequences for forecasting
+            sequences = self._create_forecast_sequences(
+                processed_data, feature_columns, forecast_periods
+            )
+            
+            # Generate forecasts
+            model.eval()
+            forecasts = []
+            uncertainties = []
+            impacts = []
+            confidences = []
+            
+            with torch.no_grad():
+                for sequence in sequences:
+                    sequence_tensor = torch.FloatTensor(sequence).unsqueeze(0).to(self.device)
+                    
+                    if isinstance(model, AdvancedImpactForecastingModel):
+                        outputs = model(sequence_tensor)
+                        forecast = outputs['forecast']
+                        uncertainty = outputs['uncertainty']
+                        impact = outputs['impact']
+                        confidence = outputs['confidence']
+                    else:
+                        forecast, uncertainty = model(sequence_tensor)
+                        impact = torch.zeros_like(forecast)
+                        confidence = torch.ones_like(forecast) * 0.5
+                    
+                    forecasts.append(forecast.cpu().numpy())
+                    uncertainties.append(uncertainty.cpu().numpy())
+                    impacts.append(impact.cpu().numpy())
+                    confidences.append(confidence.cpu().numpy())
+            
+            # Aggregate results
+            forecast_result = np.concatenate(forecasts, axis=0)
+            uncertainty_result = np.concatenate(uncertainties, axis=0)
+            impact_result = np.concatenate(impacts, axis=0)
+            confidence_result = np.concatenate(confidences, axis=0)
+            
+            # Generate forecast dates
+            last_date = input_data.index[-1] if hasattr(input_data, 'index') else datetime.now()
+            forecast_dates = pd.date_range(
+                start=last_date + timedelta(days=1),
+                periods=forecast_periods,
+                freq=D   )
+            
+            # Track forecasting metrics
+            self.forecasting_monitor.record_forecast_metrics({
+                model_id': model_id,
+                forecast_periods: forecast_periods,
+                avg_confidence': float(np.mean(confidence_result)),
+                avg_uncertainty': float(np.mean(uncertainty_result))
+            })
+            
+            return[object Object]             forecasts: forecast_result.tolist(),
+                uncertainties': uncertainty_result.tolist(),
+                impacts: impact_result.tolist(),
+                confidences': confidence_result.tolist(),
+                forecast_dates': forecast_dates.strftime(%Y-%m-%d').tolist(),
+                model_id': model_id,
+                forecast_metadata': [object Object]          forecast_periods: forecast_periods,
+                 confidence_threshold': self.forecasting_config['confidence_threshold'],
+                 generated_at:datetime.now().isoformat()
+                }
+            }
             
         except Exception as e:
-            logger.error(f"Fallback carbon calculation failed: {e}")
+            self.logger.error(fErrorforecasting impact: {e}")
             raise
 
-    def _calculate_fallback_cost_savings(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Calculate fallback cost savings"""
+    async def analyze_causal_impact(self,
+                                  data: pd.DataFrame,
+                                  treatment_column: str,
+                                  outcome_column: str,
+                                  feature_columns: List[str]) -> Dict:
+     lyze causal impact using advanced ML techniques"""
         try:
-            # Simple calculation based on company size and industry
-            size_factor = features[0, 0]
-            industry_factor = features[0, 1]
+            self.logger.info("Analyzing causal impact")
             
-            base_cost_savings = 50000  # USD per year
-            timeframe_factor = timeframe_days / 365.0
+            # Prepare data for causal analysis
+            treatment_data = data[treatment_column].values
+            outcome_data = data[outcome_column].values
+            feature_data = data[feature_columns].values
             
-            return base_cost_savings * size_factor * industry_factor * timeframe_factor
+            # Create causal model
+            causal_model = CausalImpactModel(
+                input_dim=len(feature_columns),
+                hidden_dim=128         ).to(self.device)
+            
+            # Prepare dataset
+            treatment_tensor = torch.FloatTensor(treatment_data).to(self.device)
+            outcome_tensor = torch.FloatTensor(outcome_data).to(self.device)
+            feature_tensor = torch.FloatTensor(feature_data).to(self.device)
+            
+            # Train causal model
+            optimizer = torch.optim.Adam(causal_model.parameters(), lr=1e-3)
+            
+            for epoch in range(100):
+                optimizer.zero_grad()
+                
+                # Forward pass
+                outcome_pred, treatment_effect, propensity = causal_model(feature_tensor, treatment_tensor)
+                
+                # Calculate losses
+                outcome_loss = F.mse_loss(outcome_pred.squeeze(), outcome_tensor)
+                propensity_loss = F.binary_cross_entropy(propensity.squeeze(), treatment_tensor)
+                
+                # Total loss
+                total_loss = outcome_loss + propensity_loss
+                
+                total_loss.backward()
+                optimizer.step()
+            
+            # Analyze causal effects
+            causal_model.eval()
+            with torch.no_grad():
+                # Predict counterfactuals
+                outcome_treatment, _, _ = causal_model(feature_tensor, torch.ones_like(treatment_tensor))
+                outcome_control, _, _ = causal_model(feature_tensor, torch.zeros_like(treatment_tensor))
+                
+                # Calculate treatment effects
+                treatment_effects = outcome_treatment - outcome_control
+                
+                # Calculate average treatment effect
+                ate = torch.mean(treatment_effects).item()
+                
+                # Calculate treatment effect on treated
+                treated_mask = treatment_tensor ==1                if treated_mask.sum() > 0:
+                    att = torch.mean(treatment_effects[treated_mask]).item()
+                else:
+                    att = ate
+                
+                # Calculate treatment effect on controls
+                control_mask = treatment_tensor ==0                if control_mask.sum() > 0:
+                    atc = torch.mean(treatment_effects[control_mask]).item()
+                else:
+                    atc = ate
+            
+            # Statistical significance testing
+            treatment_group = outcome_datatreatment_data == 1]
+            control_group = outcome_datatreatment_data == 0]
+            
+            if len(treatment_group) >0 len(control_group) > 0
+                t_stat, p_value = stats.ttest_ind(treatment_group, control_group)
+            else:
+                t_stat, p_value = 0      
+            return[object Object]             average_treatment_effect': ate,
+                treatment_effect_on_treated': att,
+                treatment_effect_on_controls': atc,
+                statistical_significance': [object Object]                 t_statistic: float(t_stat),
+                 p_value': float(p_value),
+                 significant: p_value < 0.5               },
+                treatment_effects': treatment_effects.cpu().numpy().tolist(),
+                model_performance': [object Object]           outcome_loss': float(outcome_loss),
+                 propensity_loss': float(propensity_loss)
+                }
+            }
             
         except Exception as e:
-            logger.error(f"Fallback cost calculation failed: {e}")
+            self.logger.error(f"Error analyzing causal impact: {e}")
             raise
 
-    def _calculate_fallback_waste_reduction(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Calculate fallback waste reduction"""
+    def _create_forecast_sequences(self,
+                                 data: pd.DataFrame,
+                                 feature_columns: List[str],
+                                 forecast_periods: int) -> List[np.ndarray]:
+     Create sequences for forecasting"""
+        sequences = []
+        
+        # Use last sequence_length data points
+        sequence_length = self.forecasting_config['sequence_length']
+        
+        if len(data) >= sequence_length:
+            last_sequence = data[feature_columns].iloc[-sequence_length:].values
+            sequences.append(last_sequence)
+        
+        return sequences
+    
+    async def _load_forecasting_model(self, model_id: str) -> nn.Module:
+      oad forecasting model from disk"""
         try:
-            # Simple calculation based on company size and industry
-            size_factor = features[0, 0]
-            industry_factor = features[0, 1]
+            model_path = f{self.model_paths['forecasting]}/{model_id}.pth"
+            metadata_path = f{self.model_paths['forecasting']}/{model_id}_metadata.json"
             
-            base_waste_reduction = 5000  # kg per year
-            timeframe_factor = timeframe_days / 365.0
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(fForecasting model not found: {model_path}")
             
-            return base_waste_reduction * size_factor * industry_factor * timeframe_factor
+            # Load metadata
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+            
+            # Create model
+            model_type = metadata['model_type']
+            config = metadata['config']
+            
+            if model_type == 'transformer:             model = TransformerForecastingModel(**config).to(self.device)
+            elif model_type == 'advanced:             model = AdvancedImpactForecastingModel(**config).to(self.device)
+            else:
+                raise ValueError(f"Unknown model type: {model_type}")
+            
+            # Load weights
+            model.load_state_dict(torch.load(model_path, map_location=self.device))
+            
+            return model
             
         except Exception as e:
-            logger.error(f"Fallback waste calculation failed: {e}")
+            self.logger.error(f"Error loading forecasting model: {e}")
             raise
 
-    def _calculate_fallback_energy_savings(self, features: np.ndarray, timeframe_days: int) -> float:
-        """Calculate fallback energy savings"""
+    async def get_system_health(self) -> Dict:
+   Get system health metrics"""
         try:
-            # Simple calculation based on company size and industry
-            size_factor = features[0, 0]
-            industry_factor = features[0, 1]
+            health_metrics =[object Object]            status': 'healthy,
+                device:str(self.device),
+                memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0            forecasting_models_loaded': len(self.forecasting_models),
+                causal_models_loaded: len(self.causal_models),
+                forecasting_monitor_status': self.forecasting_monitor.get_status(),
+                metrics_tracker_status': self.metrics_tracker.get_status(),
+                performance_metrics': {
+                    avg_forecast_time': self.forecasting_monitor.get_avg_forecast_time(),
+                    forecast_accuracy': self.metrics_tracker.get_forecast_accuracy(),
+                    causal_analysis_accuracy': self.metrics_tracker.get_causal_accuracy()
+                }
+            }
             
-            base_energy_savings = 25000  # kWh per year
-            timeframe_factor = timeframe_days / 365.0
-            
-            return base_energy_savings * size_factor * industry_factor * timeframe_factor
+            return health_metrics
             
         except Exception as e:
-            logger.error(f"Fallback energy calculation failed: {e}")
-            raise
+            self.logger.error(f"Error getting system health: {e}")
+            return[object Object]status:error', error': str(e)}
 
-    def get_forecast_statistics(self) -> Dict[str, Any]:
-        """Get forecasting statistics"""
-        return {
-            'total_forecasts': len(self.forecast_history),
-            'model_performance': self.model_performance,
-            'feature_importance': self.feature_importance,
-            'last_forecast': self.forecast_history[-1].created_at.isoformat() if self.forecast_history else None
-        }
-
-# Global impact forecasting engine instance
-impact_forecasting_engine = ImpactForecastingEngine() 
+# Initialize service
+impact_forecasting_service = ImpactForecastingService() 

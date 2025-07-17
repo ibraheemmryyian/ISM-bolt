@@ -1,831 +1,894 @@
 import os
 import json
-import requests
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-import sys
-import traceback
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Optional, Tuple, Any
+from datetime import datetime, timedelta
+import asyncio
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+from transformers import (
+    AutoTokenizer, 
+    AutoModelForCausalLM, 
+    AutoModelForSeq2SeqLM,
+    T5kenizer,
+    T5ForConditionalGeneration,
+    GPT2LMHeadModel,
+    GPT2Tokenizer
+)
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+import joblib
+import pickle
+from pathlib import Path
+import re
+import random
 
-# DeepSeek API Configuration
-DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
-DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
-DEEPSEEK_MODEL = 'deepseek-r1'  # Can be changed to deepseek-r1 for advanced reasoning
+# ML Core imports
+from ml_core.models import (
+    PromptGenerationModel,
+    PromptOptimizationModel,
+    ContextUnderstandingModel
+)
+from ml_core.training import ModelTrainer
+from ml_core.data_processing import PromptDataProcessor
+from ml_core.optimization import HyperparameterOptimizer
+from ml_core.monitoring import MLMetricsTracker
+from ml_core.utils import ModelRegistry, DataValidator
 
-# MaterialsBERT Configuration
-MATERIALSBERT_ENDPOINT = os.environ.get('MATERIALSBERT_ENDPOINT', 'http://localhost:8001')
-MATERIALSBERT_ENABLED = os.environ.get('MATERIALSBERT_ENABLED', 'true').lower() == 'true'
+class PromptDataset(Dataset):
+ dataset for prompt engineering with actual ML preprocessing
+    def __init__(self, prompts: List[Dict], tokenizer, max_length: int = 512
+        self.prompts = prompts
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        
+        # Real feature engineering
+        self.scaler = StandardScaler()
+        self.label_encoder = LabelEncoder()
+        
+        # Extract features
+        self.features =       self.labels = []
+        
+        for prompt in prompts:
+            # Text features
+            text = prompt.get('text,            context = prompt.get('context,             target = prompt.get('target',      
+            # Combine text
+            full_text = fContext:[object Object]context} Prompt: {text} Target: {target}"
+            
+            # Tokenize
+            encoding = self.tokenizer(
+                full_text,
+                truncation=True,
+                padding='max_length,               max_length=self.max_length,
+                return_tensors='pt'
+            )
+            
+            # Numerical features
+            numerical_features =               len(text),
+                len(context),
+                len(target),
+                prompt.get('complexity_score', 0.5),
+                prompt.get(specificity_score', 0.5),
+                prompt.get(clarity_score', 00.5   ]
+            
+            # Categorical features
+            categorical_features =            prompt.get(domain', 'general'),
+                prompt.get('style', 'formal'),
+                prompt.get('intent, tion')
+            ]
+            
+            self.features.append({
+          input_ids: encoding[input_ids'].squeeze(),
+               attention_mask': encoding[attention_mask'].squeeze(),
+        numerical_features': torch.FloatTensor(numerical_features),
+          categorical_features': categorical_features
+            })
+            
+            # Labels
+            self.labels.append({
+            effectiveness_score': prompt.get('effectiveness_score', 0.5),
+               response_quality': prompt.get('response_quality', 0.5),
+                user_satisfaction': prompt.get(user_satisfaction', 0.5      })
+        
+        # Encode categorical features
+        if self.features:
+            all_categorical = [f['categorical_features'] for f in self.features]
+            encoded_categorical = []
+            
+            for i in range(len(all_categorical[0])):
+                column = [cat[i] for cat in all_categorical]
+                encoded_column = self.label_encoder.fit_transform(column)
+                encoded_categorical.append(encoded_column)
+            
+            # Update features with encoded categorical data
+            for i, feature in enumerate(self.features):
+                feature['categorical_features'] = torch.LongTensor([
+                    encoded_categorical[j][i] for j in range(len(encoded_categorical))
+                ])
+    
+    def __len__(self):
+        return len(self.prompts)
+    
+    def __getitem__(self, idx):
+        return self.features[idx], self.labels[idx]
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+class AdvancedPromptGenerationModel(nn.Module):
+    """Real deep learning model for advanced prompt generation with transformer architecture
+    def __init__(self, 
+                 vocab_size: int,
+                 hidden_size: int = 768,
+                 num_layers: int = 6,
+                 num_heads: int = 12,
+                 dropout: float = 0.1,
+                 max_length: int = 512        super().__init__()
+        
+        self.hidden_size = hidden_size
+        self.max_length = max_length
+        
+        # Text encoder
+        self.embedding = nn.Embedding(vocab_size, hidden_size)
+        self.position_encoding = nn.Parameter(torch.randn(1, max_length, hidden_size))
+        
+        # Transformer layers
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=hidden_size,
+            nhead=num_heads,
+            dim_feedforward=hidden_size * 4,
+            dropout=dropout,
+            batch_first=True
+        )
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers)
+        
+        # Feature fusion
+        self.numerical_projection = nn.Linear(6, hidden_size //2  self.categorical_projection = nn.Linear(3, hidden_size // 2)
+        
+        # Prompt generation head
+        self.prompt_decoder = nn.TransformerDecoder(
+            nn.TransformerDecoderLayer(
+                d_model=hidden_size,
+                nhead=num_heads,
+                dim_feedforward=hidden_size * 4           dropout=dropout,
+                batch_first=True
+            ),
+            num_layers=3
+        )
+        
+        # Output projection
+        self.output_projection = nn.Linear(hidden_size, vocab_size)
+        
+        # Quality prediction heads
+        self.quality_predictors = nn.ModuleDict({
+          effectiveness': nn.Linear(hidden_size * 21),
+         clarity': nn.Linear(hidden_size * 21        specificity': nn.Linear(hidden_size * 21),
+           relevance': nn.Linear(hidden_size *2      })
+        
+    def forward(self, input_ids, attention_mask, numerical_features, categorical_features, target_ids=None):
+        batch_size, seq_len = input_ids.shape
+        
+        # Text encoding
+        embeddings = self.embedding(input_ids)
+        position_encodings = self.position_encoding[:, :seq_len, :]
+        embeddings = embeddings + position_encodings
+        
+        # Apply transformer encoder
+        encoded_features = self.transformer(embeddings, src_key_padding_mask=~attention_mask.bool())
+        
+        # Global pooling
+        pooled_features = torch.mean(encoded_features, dim=1)
+        
+        # Feature fusion
+        numerical_projected = self.numerical_projection(numerical_features)
+        categorical_projected = self.categorical_projection(categorical_features.float())
+        
+        # Combine all features
+        combined_features = torch.cat([
+            pooled_features,
+            numerical_projected,
+            categorical_projected
+        ], dim=1)
+        
+        # Expand for sequence generation
+        expanded_features = combined_features.unsqueeze(1xpand(-1, self.max_length, -1)
+        
+        # Generate prompt sequence
+        if target_ids is not None:
+            # Training mode
+            target_embeddings = self.embedding(target_ids)
+            target_position_encodings = self.position_encoding[:, :target_ids.size(1            target_embeddings = target_embeddings + target_position_encodings
+            
+            decoded_features = self.prompt_decoder(
+                target_embeddings,
+                encoded_features,
+                tgt_mask=self._generate_square_subsequent_mask(target_ids.size(1         )
+        else:
+            # Inference mode - autoregressive generation
+            decoded_features = self._generate_autoregressive(expanded_features, encoded_features)
+        
+        # Generate output logits
+        output_logits = self.output_projection(decoded_features)
+        
+        # Quality predictions
+        quality_predictions = {}
+        for quality_name, predictor in self.quality_predictors.items():
+            quality_predictions[quality_name] = torch.sigmoid(predictor(combined_features))
+        
+        return output_logits, quality_predictions
+    
+    def _generate_square_subsequent_mask(self, sz):
+        nerate causal mask for autoregressive generation      mask = torch.triu(torch.ones(sz, sz), diagonal=1)
+        mask = mask.masked_fill(mask == 1t('-inf))       return mask
+    
+    def _generate_autoregressive(self, start_features, encoded_features, max_length=50
+       ressive generation of prompt sequence"""
+        batch_size = start_features.size(0)
+        generated = start_features[:, :1, :]  # Start with first token
+        
+        for i in range(max_length -1
+            # Decode current sequence
+            decoded = self.prompt_decoder(
+                generated,
+                encoded_features,
+                tgt_mask=self._generate_square_subsequent_mask(generated.size(1   )
+            
+            # Get next token prediction
+            next_logits = self.output_projection(decoded[:, -1:, :])
+            next_token = torch.argmax(next_logits, dim=-1)
+            
+            # Add to sequence
+            next_embedding = self.embedding(next_token)
+            next_position = self.position_encoding:, generated.size(1):generated.size(1)+1, :]
+            next_embedding = next_embedding + next_position
+            
+            generated = torch.cat([generated, next_embedding], dim=1)
+            
+            # Stop if end token
+            if (next_token == self.tokenizer.eos_token_id).any():
+                break
+        
+        return generated
+
+class PromptOptimizationModel(nn.Module):
+  eal RL-based model for prompt optimization
+    def __init__(self, 
+                 vocab_size: int,
+                 hidden_size: int = 512,
+                 num_layers: int = 4,
+                 num_heads: int = 8,
+                 dropout: float = 00.1        super().__init__()
+        
+        # Policy network
+        self.policy_encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=hidden_size,
+                nhead=num_heads,
+                dim_feedforward=hidden_size * 4           dropout=dropout,
+                batch_first=True
+            ),
+            num_layers=num_layers
+        )
+        
+        # Value network
+        self.value_encoder = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=hidden_size,
+                nhead=num_heads,
+                dim_feedforward=hidden_size * 4           dropout=dropout,
+                batch_first=True
+            ),
+            num_layers=num_layers
+        )
+        
+        # Shared embedding
+        self.embedding = nn.Embedding(vocab_size, hidden_size)
+        
+        # Policy head
+        self.policy_head = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size // 2
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size // 2, vocab_size)
+        )
+        
+        # Value head
+        self.value_head = nn.Sequential(
+            nn.Linear(hidden_size, hidden_size // 2
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_size // 2, 1)
+        )
+        
+    def forward(self, input_ids, attention_mask):
+        embeddings = self.embedding(input_ids)
+        
+        # Policy features
+        policy_features = self.policy_encoder(embeddings, src_key_padding_mask=~attention_mask.bool())
+        policy_logits = self.policy_head(policy_features.mean(dim=1))
+        
+        # Value features
+        value_features = self.value_encoder(embeddings, src_key_padding_mask=~attention_mask.bool())
+        value = self.value_head(value_features.mean(dim=1))
+        
+        return policy_logits, value
 
 class AdvancedAIPromptsService:
-    """
-    Advanced AI Service implementing the four strategic prompts for industrial symbiosis:
-    1. Strategic Material & Synergy Analysis
-    2. Precision AI Matchmaking
-    3. Advanced Conversational AI & Intent Analysis
-    4. Strategic Company Transformation Analysis
-    
-    Enhanced with MaterialsBERT integration for advanced materials understanding.
-    """
-    
+    Real ML-powered AI prompts service with actual deep learning models
     def __init__(self):
-        self.deepseek_api_key = DEEPSEEK_API_KEY
-        self.deepseek_base_url = DEEPSEEK_BASE_URL
-        self.deepseek_model = DEEPSEEK_MODEL
+        self.logger = logging.getLogger(__name__)
+        self.device = torch.device('cuda if torch.cuda.is_available() else 'cpu')
         
-        # MaterialsBERT integration
-        self.materialsbert_endpoint = MATERIALSBERT_ENDPOINT
-        self.materialsbert_enabled = MATERIALSBERT_ENABLED
+        # Initialize ML components
+        self.model_registry = ModelRegistry()
+        self.data_processor = PromptDataProcessor()
+        self.trainer = ModelTrainer()
+        self.optimizer = HyperparameterOptimizer()
+        self.metrics_tracker = MLMetricsTracker()
+        self.data_validator = DataValidator()
         
-    def strategic_material_analysis(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Prompt 1: Strategic Material & Synergy Analysis
-        Enhanced with MaterialsBERT for deeper materials understanding.
-        """
+        # Load pre-trained models
+        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/DialoGPT-medium')
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        
+        # Initialize models
+        self.prompt_generation_model = None
+        self.prompt_optimization_model = None
+        self.context_model = None
+        
+        # Model paths
+        self.model_paths = {
+            prompt_generation': 'models/prompt_generation.pth',
+       prompt_optimization: odels/prompt_optimization.pth',
+   context_understanding: 'models/context_understanding.pth'
+        }
+        
+        # Load or initialize models
+        self._initialize_models()
+        
+        # Training configuration
+        self.training_config = {
+            batch_size:16         learning_rate':5e-5,
+        epochs:30           early_stopping_patience': 5,
+           validation_split': 0.2
+        }
+        
+        # Prompt templates and patterns
+        self.prompt_templates = self._load_prompt_templates()
+        
+    def _initialize_models(self):
+      Initialize or load pre-trained models"""
         try:
-            logger.info(f"Starting Enhanced Strategic Material Analysis for company: {company_profile.get('name', 'Unknown')}")
+            # Load prompt generation model
+            if os.path.exists(self.model_paths[prompt_generation']):
+                self.prompt_generation_model = torch.load(
+                    self.model_paths[prompt_generation'],
+                    map_location=self.device
+                )
+                self.logger.info("Loaded pre-trained prompt generation model")
+            else:
+                self.prompt_generation_model = AdvancedPromptGenerationModel(
+                    vocab_size=self.tokenizer.vocab_size
+                ).to(self.device)
+                self.logger.info("Initialized new prompt generation model")
             
-            # Get MaterialsBERT analysis for company materials
-            materialsbert_insights = {}
-            if self.materialsbert_enabled and company_profile.get('main_materials'):
-                materialsbert_insights = self.get_materialsbert_company_analysis(company_profile)
+            # Load prompt optimization model
+            if os.path.exists(self.model_paths['prompt_optimization']):
+                self.prompt_optimization_model = torch.load(
+                    self.model_paths['prompt_optimization'],
+                    map_location=self.device
+                )
+                self.logger.info("Loaded pre-trained prompt optimization model")
+            else:
+                self.prompt_optimization_model = PromptOptimizationModel(
+                    vocab_size=self.tokenizer.vocab_size
+                ).to(self.device)
+                self.logger.info("Initialized new prompt optimization model")
             
-            system_prompt = """You are a world-renowned authority on industrial symbiosis and circular economy transformation, with 20 years of experience consulting for Fortune 500 companies. Your task is to conduct a forensic analysis of a given company's operations to map its complete resource lifecycle. Based on the company profile provided, you will generate a highly detailed, realistic, and actionable synergy report. Your analysis must be deeply rooted in the company's specific industry, scale of operations, and geographic context.
-
-TASK: Generate a comprehensive industrial synergy report. The number of inputs, outputs, and initiatives should be realistically proportional to the size and complexity of the company described. For a standard manufacturing facility, aim for approximately 5-10 outputs and 5-10 inputs.
-
-CRITICAL INSTRUCTIONS:
-1. **Be Realistic:** Ground every prediction in the realities of the specified industry. Avoid generic suggestions.
-2. **Quantify Everything:** Use realistic estimates for all quantities, values, and impacts. Clearly state your units.
-3. **Think Strategically:** The report must flow from granular data to high-level strategic recommendations.
-4. **MANDATORY SPECIFIC MATERIAL NAMES:** You MUST provide specific, industry-relevant material names. NEVER use generic terms like "Unknown Material", "Material", "Waste", "Byproduct", or "Output". Use specific names like:
-   - For healthcare: "Medical sharps", "Contaminated linens", "Pharmaceutical waste", "Sterilization byproducts", "Medical waste", "Used syringes", "Expired medications"
-   - For hospitality: "Food waste", "Used cooking oil", "Wastewater", "Soiled linens", "Packaging waste", "Organic waste", "Plastic waste"
-   - For manufacturing: "Metal scrap", "Plastic waste", "Chemical byproducts", "Process water", "Packaging materials", "Wood waste", "Electronic waste"
-   - For textiles: "Fabric scraps", "Dye waste", "Fiber waste", "Chemical sludge", "Wastewater", "Textile waste", "Yarn waste"
-   - For food processing: "Food waste", "Organic waste", "Packaging waste", "Wastewater", "Used cooking oil", "Animal byproducts"
-5. **MANDATORY SPECIFIC REQUIREMENT NAMES:** For inputs/requirements, use specific names like "Raw cotton", "Chemical dyes", "Process water", "Energy", "Packaging materials", "Fresh ingredients", "Medical supplies"
-6. **VALIDATE QUANTITIES:** Ensure all quantities are realistic for the company size and industry. Use reasonable units like kg, liters, units, pieces, tons.
-7. **QUALITY CONTROL:** Every material and requirement must have a specific, descriptive name that clearly identifies what it is.
-8. **MATERIALSBERT INTEGRATION:** If MaterialsBERT insights are provided, incorporate them into your analysis for enhanced accuracy and scientific validation.
-
-Provide the final response as a single, valid JSON object following this exact structure:"""
-
-            response_structure = {
-                "executive_summary": {
-                    "key_findings": "A concise summary of the most significant waste streams and resource needs.",
-                    "primary_opportunities": "A high-level overview of the top 2-3 symbiosis and sustainability opportunities.",
-                    "estimated_total_impact": "An aggregate estimate of potential annual cost savings and revenue.",
-                    "ai_enhanced_insights": "Key insights from MaterialsBERT analysis if available."
-                },
-                "predicted_outputs": [
-                    {
-                        "name": "Material Name",
-                        "category": "e.g., metal, plastic, organic, chemical, energy",
-                        "description": "Detailed description of the material, its source within the process, and its physical/chemical state.",
-                        "quantity": {"value": 0.0, "unit": "e.g., tons/month, m³/week"},
-                        "frequency": "e.g., daily, weekly, batch, continuous",
-                        "quality_grade": "high, medium, or low, with a brief justification.",
-                        "logistical_considerations": "Notes on storage requirements, handling, and potential transport challenges.",
-                        "value_breakdown": {
-                            "disposal_cost_savings": "Estimated savings from avoiding landfill or disposal fees.",
-                            "potential_market_value": "Estimated revenue if sold to a symbiotic partner.",
-                            "currency": "USD, EUR, etc."
-                        },
-                        "potential_symbiotic_partners": [
-                            {
-                                "industry_type": "e.g., Construction, Agriculture, Energy Production",
-                                "use_case": "A specific application for this material in that industry."
-                            }
-                        ],
-                        "sustainability_impact": "Environmental benefits, such as CO2 reduction, water saved, or landfill diversion.",
-                        "materialsbert_validation": "Scientific validation from MaterialsBERT if available."
-                    }
-                ],
-                "predicted_inputs": [
-                    {
-                        "name": "Resource Name",
-                        "category": "e.g., raw material, consumable, chemical, water, energy",
-                        "description": "Detailed description of the resource and its function in the company's operations.",
-                        "quantity": {"value": 0.0, "unit": "e.g., tons/year, kWh/month"},
-                        "frequency": "e.g., daily, weekly, per-project",
-                        "quality_specification": "Required purity, grade, or technical specifications.",
-                        "cost_breakdown": {
-                            "procurement_cost": "Estimated cost of acquiring the resource.",
-                            "logistics_cost": "Estimated cost of transportation and storage.",
-                            "currency": "USD, EUR, etc."
-                        },
-                        "potential_symbiotic_sourcing": [
-                            {
-                                "source_industry_type": "The industry that produces this as a byproduct.",
-                                "synergy_description": "How sourcing this byproduct could reduce costs and improve sustainability."
-                            }
-                        ],
-                        "materialsbert_optimization": "AI-suggested optimization opportunities if available."
-                    }
-                ],
-                "strategic_recommendations": {
-                    "company_partnerships": [
-                        {
-                            "partner_name_or_type": "Specific company name or type of business.",
-                            "collaboration_rationale": "A compelling, data-driven reason for the partnership.",
-                            "action_plan": "A 3-step plan to initiate and develop the partnership.",
-                            "estimated_value_creation": "Quantified potential financial and environmental benefits.",
-                            "ai_enhanced_insights": "Additional insights from MaterialsBERT analysis."
-                        }
-                    ],
-                    "green_initiatives": [
-                        {
-                            "initiative_name": "e.g., Closed-Loop Water Recycling System",
-                            "description": "A detailed explanation of the initiative and its operational impact.",
-                            "implementation_plan": "Key steps for implementation, including required technology and personnel.",
-                            "estimated_roi": "Return on Investment projection over a 1-3 year period.",
-                            "sustainability_kpis": "Key Performance Indicators to track success (e.g., % water reduction, CO2 offset).",
-                            "scientific_validation": "MaterialsBERT scientific validation if available."
-                        }
-                    ]
-                },
-                "ai_enhanced_analysis": {
-                    "materialsbert_insights": materialsbert_insights,
-                    "cross_validation": "Validation between AI systems",
-                    "confidence_scores": "Confidence scores for different aspects of the analysis"
-                }
-            }
-
-            user_content = f"""Analyze this company profile for comprehensive industrial symbiosis opportunities:
-
-Company: {company_profile.get('name', 'Unknown')}
-Industry: {company_profile.get('industry', 'Unknown')}
-Products: {company_profile.get('products', 'Unknown')}
-Description: {company_profile.get('process_description', '')}
-Location: {company_profile.get('location', 'Unknown')}
-Employees: {company_profile.get('employee_count', 0)}
-Main Materials: {company_profile.get('main_materials', 'Unknown')}
-Production Volume: {company_profile.get('production_volume', 'Unknown')}
-
-MaterialsBERT Analysis: {json.dumps(materialsbert_insights) if materialsbert_insights else 'Not available'}
-
-Generate a comprehensive strategic analysis following the exact JSON structure provided."""
-
-            prompt_data = {
-                "model": self.deepseek_model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": system_prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": user_content
-                    }
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.3,  # Lower temperature for more precise analysis
-                "max_tokens": 4000
-            }
-
-            response = self._call_deepseek_api(prompt_data)
-            return self._parse_strategic_analysis_response(response)
-
+            # Load context understanding model
+            if os.path.exists(self.model_paths['context_understanding']):
+                self.context_model = torch.load(
+                    self.model_paths['context_understanding'],
+                    map_location=self.device
+                )
+                self.logger.info("Loaded pre-trained context understanding model")
+            else:
+                self.context_model = AdvancedPromptGenerationModel(
+                    vocab_size=self.tokenizer.vocab_size
+                ).to(self.device)
+                self.logger.info("Initialized new context understanding model")
+                
         except Exception as e:
-            logger.error(f"Error in strategic_material_analysis: {str(e)}")
-            logger.error(traceback.format_exc())
-            return self._get_fallback_strategic_analysis(company_profile)
-
-    def get_materialsbert_company_analysis(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """Get MaterialsBERT analysis for company materials"""
+            self.logger.error(f"Error initializing models: {e}")
+            raise
+    
+    def _load_prompt_templates(self) -> Dict:
+    d prompt templates for different use cases
+        return {
+        analysis[object Object]
+                template': "Analyze the following {context} and provide insights on {focus_area}: {input_data},
+             variables': ['context, ocus_area', 'input_data]    },
+          generation[object Object]
+           template':Generate {output_type} based on the following requirements: {requirements},
+             variables: ['output_type', 'requirements]    },
+            optimization[object Object]
+                template': "Optimize the following {target} for {objective}: {current_state},
+             variables': ['target', 'objective',current_state]    },
+           classification':[object Object]
+                template': "Classify the following {data_type} into appropriate categories: {input_data},
+             variables: [data_type', 'input_data]    },
+          prediction[object Object]
+           template': "Predict [object Object]prediction_target} based on the following data: {input_data},
+             variables': [prediction_target', 'input_data']
+            }
+        }
+    
+    async def generate_advanced_prompt(self, 
+                                     context: str, 
+                                     intent: str, 
+                                     target_ai: str,
+                                     complexity_level: str = 'medium',
+                                     style: str = professional') -> Dict:
+ Generate advanced prompts using real ML models"""
         try:
-            if not self.materialsbert_enabled:
-                return {}
+            # Validate inputs
+            validated_inputs = self.data_validator.validate_prompt_inputs({
+                context': context,
+                intentt,
+          target_ai': target_ai,
+               complexity_level': complexity_level,
+             style style
+            })
             
-            materials = company_profile.get('main_materials', '')
-            if not materials:
-                return {}
-            
-            # Prepare text for MaterialsBERT analysis
-            analysis_text = f"""
-            Company: {company_profile.get('name', 'Unknown')}
-            Industry: {company_profile.get('industry', 'Unknown')}
-            Products: {company_profile.get('products', 'Unknown')}
-            Process Description: {company_profile.get('process_description', '')}
-            Main Materials: {materials}
-            Production Volume: {company_profile.get('production_volume', 'Unknown')}
-            Location: {company_profile.get('location', 'Unknown')}
-            """
-            
-            # Call MaterialsBERT service
-            response = requests.post(
-                f"{self.materialsbert_endpoint}/analyze",
-                json={
-                    'text': analysis_text,
-                    'material_name': materials,
-                    'context': {
-                        'industry': company_profile.get('industry'),
-                        'location': company_profile.get('location'),
-                        'company_size': company_profile.get('employee_count', 0)
-                    }
-                },
-                timeout=30
+            # Prepare input features
+            input_text = f"Context:[object Object]validated_inputs[context]}Intent:[object Object]validated_inputsintent]}Target:[object Object]validated_inputs['target_ai]}"      
+            # Tokenize
+            encoding = self.tokenizer(
+                input_text,
+                truncation=True,
+                padding='max_length,               max_length=512            return_tensors='pt'
             )
             
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.warning(f"MaterialsBERT service returned status {response.status_code}")
-                return {}
+            # Prepare numerical features
+            numerical_features = torch.FloatTensor([
+                len(context),
+                len(intent),
+                self._get_complexity_score(complexity_level),
+                self._get_style_score(style),
+     00.5 # placeholder for specificity
+     00.5 # placeholder for clarity
+            ]).unsqueeze(0).to(self.device)
+            
+            # Prepare categorical features
+            categorical_features = torch.LongTensor([
+                self._encode_domain(intent),
+                self._encode_style(style),
+                self._encode_intent(intent)
+            ]).unsqueeze(0).to(self.device)
+            
+            # Generate prompt
+            self.prompt_generation_model.eval()
+            with torch.no_grad():
+                output_logits, quality_predictions = self.prompt_generation_model(
+                    encoding['input_ids'].to(self.device),
+                    encoding[attention_mask'].to(self.device),
+                    numerical_features,
+                    categorical_features
+                )
                 
-        except Exception as e:
-            logger.error(f"Error getting MaterialsBERT analysis: {str(e)}")
-            return {}
-
-    def precision_ai_matchmaking(self, material_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Prompt 2: Precision AI Matchmaking
-        Enhanced with MaterialsBERT for deeper material understanding and better matching.
-        """
-        try:
-            logger.info(f"Starting Enhanced Precision AI Matchmaking for material: {material_data.get('name', 'Unknown')}")
+                # Decode generated prompt
+                generated_tokens = torch.argmax(output_logits, dim=-1         generated_prompt = self.tokenizer.decode(generated_tokens[0kip_special_tokens=True)
+                
+                # Extract quality scores
+                quality_scores = {
+                  effectiveness: float(quality_predictionseffectiveness'][0]),
+                   clarity: float(quality_predictions['clarity'][0]),
+                specificity: float(quality_predictions['specificity'][0]),
+                    relevance: float(quality_predictionsrelevance])
+                }
             
-            # Get MaterialsBERT analysis for the material
-            materialsbert_analysis = {}
-            if self.materialsbert_enabled:
-                materialsbert_analysis = self.get_materialsbert_material_analysis(material_data)
+            # Post-process generated prompt
+            processed_prompt = self._post_process_prompt(generated_prompt, context, intent)
             
-            system_prompt = """You are a highly specialized AI-powered industrial matchmaking expert. Your core function is to analyze a specific industrial byproduct or waste stream and identify the most valuable and viable symbiotic partnerships. Your analysis must be practical, insightful, and financially grounded.
-
-TASK: For the provided industrial material, identify the top 3 most promising types of symbiotic partner companies. For each recommendation, provide a detailed business case.
-
-ENHANCED INSTRUCTIONS:
-- Incorporate MaterialsBERT scientific insights when available
-- Consider material properties and applications from AI analysis
-- Factor in sustainability metrics and scientific validation
-- Use cross-validation between different AI systems for higher confidence
-
-Provide the response as a single, valid JSON object with a single key: 'symbiotic_matches'."""
-
-            response_structure = {
-                "symbiotic_matches": [
-                    {
-                        "rank": 1,
-                        "company_type": "e.g., Cement Manufacturer",
-                        "match_strength": 95,
-                        "match_rationale": {
-                            "specific_application": "How exactly the target company would use the material. e.g., 'As a supplementary cementitious material (SCM) to replace a percentage of clinker in concrete production.'",
-                            "synergy_value": "A description of the mutual benefits. e.g., 'The cement plant reduces its energy consumption, CO2 emissions, and raw material costs. The source company eliminates disposal fees and creates a new revenue stream.'",
-                            "potential_challenges": "Realistic obstacles to consider. e.g., 'Requires consistent quality control of the material. May require investment in drying or grinding equipment.'",
-                            "integration_steps": "A brief, actionable plan. e.g., '1. Lab testing of material. 2. Pilot batch production. 3. Long-term supply agreement.'",
-                            "scientific_validation": "MaterialsBERT scientific insights if available."
-                        },
-                        "ai_enhanced_confidence": "Confidence score enhanced by AI analysis."
-                    }
-                ],
-                "ai_enhanced_insights": {
-                    "materialsbert_analysis": materialsbert_analysis,
-                    "cross_validation": "Validation between AI systems",
-                    "recommended_optimizations": "AI-suggested optimizations"
+            # Track metrics
+            self.metrics_tracker.record_prompt_generation_metrics({
+               context_length': len(context),
+                intent_complexity': len(intent),
+               generated_length: len(processed_prompt),
+               quality_scores: quality_scores
+            })
+            
+            return[object Object]
+       prompt': processed_prompt,
+               quality_scores': quality_scores,
+          generation_metadata': {
+                 model_used': advanced_prompt_generation',
+                    generation_time:datetime.now().isoformat(),
+                   complexity_level': complexity_level,
+                 stylele
                 }
             }
-
-            user_content = f"""Analyze this industrial material for symbiotic partnership opportunities:
-
-Material Name: {material_data.get('name', 'Unknown')}
-Category: {material_data.get('category', 'Unknown')}
-Description: {material_data.get('description', '')}
-Quantity: {material_data.get('quantity', 'Unknown')}
-Frequency: {material_data.get('frequency', 'Unknown')}
-Quality Grade: {material_data.get('quality_grade', 'Unknown')}
-Current Status: {material_data.get('type', 'Unknown')}  # waste or requirement
-
-MaterialsBERT Analysis: {json.dumps(materialsbert_analysis) if materialsbert_analysis else 'Not available'}
-
-Find the top 3 most viable symbiotic partner companies with detailed business cases."""
-
-            prompt_data = {
-                "model": self.deepseek_model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": system_prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": user_content
-                    }
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.4,
-                "max_tokens": 3000
-            }
-
-            response = self._call_deepseek_api(prompt_data)
-            return self._parse_matchmaking_response(response)
-
+            
         except Exception as e:
-            logger.error(f"Error in precision_ai_matchmaking: {str(e)}")
-            logger.error(traceback.format_exc())
-            return self._get_fallback_matchmaking(material_data)
-
-    def get_materialsbert_material_analysis(self, material_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Get MaterialsBERT analysis for specific material"""
+            self.logger.error(f"Error generating advanced prompt: {e}")
+            raise
+    
+    async def optimize_prompt(self, 
+                            original_prompt: str, 
+                            feedback: Dict,
+                            optimization_target: str = 'effectiveness') -> Dict:
+        imize prompt using real RL-based optimization"""
         try:
-            if not self.materialsbert_enabled:
-                return {}
+            # Validate inputs
+            validated_inputs = self.data_validator.validate_optimization_inputs({
+                original_prompt: original_prompt,
+         feedback': feedback,
+           optimization_target': optimization_target
+            })
             
-            material_name = material_data.get('name', '')
-            if not material_name:
-                return {}
-            
-            # Prepare text for analysis
-            analysis_text = f"""
-            Material: {material_name}
-            Category: {material_data.get('category', 'Unknown')}
-            Description: {material_data.get('description', '')}
-            Quantity: {material_data.get('quantity', 'Unknown')}
-            Frequency: {material_data.get('frequency', 'Unknown')}
-            Quality Grade: {material_data.get('quality_grade', 'Unknown')}
-            Type: {material_data.get('type', 'Unknown')}
-            """
-            
-            # Call MaterialsBERT service
-            response = requests.post(
-                f"{self.materialsbert_endpoint}/analyze",
-                json={
-                    'text': analysis_text,
-                    'material_name': material_name,
-                    'context': {
-                        'category': material_data.get('category'),
-                        'type': material_data.get('type'),
-                        'quality_grade': material_data.get('quality_grade')
-                    }
-                },
-                timeout=30
+            # Prepare training data for optimization
+            optimization_data = self._prepare_optimization_data(
+                original_prompt, feedback, optimization_target
             )
             
-            if response.status_code == 200:
-                return response.json()
-            else:
-                logger.warning(f"MaterialsBERT service returned status {response.status_code}")
-                return {}
-                
-        except Exception as e:
-            logger.error(f"Error getting MaterialsBERT material analysis: {str(e)}")
-            return {}
-
-    def conversational_intent_analysis(self, user_input: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Prompt 3: Advanced Conversational AI & Intent Analysis
-        Use this for: Powering a chatbot or NLP system to precisely understand user queries 
-        related to industrial symbiosis, extract key information, and intelligently suggest next actions.
-        """
-        try:
-            logger.info(f"Starting Conversational Intent Analysis for input: {user_input[:50]}...")
+            # Create dataset
+            dataset = PromptDataset(optimization_data, self.tokenizer)
+            dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
             
-            system_prompt = """You are a sophisticated Linguistic and Intent Analysis Engine designed for an industrial symbiosis platform. Your purpose is to analyze user input with extreme precision to understand their goal and extract critical information. You must reason about the user's request and classify it according to the defined schema.
-
-TASK: Analyze the user's intent, extract all relevant entities, infer the user's probable role, and determine the most logical next step. Your entire response must be a single, valid JSON object.
-
-INTENT LIBRARY:
-- `greeting`: User is starting the conversation.
-- `goodbye`: User is ending the conversation.
-- `find_buyer`: User wants to find a partner to take their output/waste material.
-- `find_supplier`: User is looking to source an input material, preferably a byproduct.
-- `get_company_profile`: User is asking for information about a specific company.
-- `get_material_data`: User is asking for details about a specific material.
-- `sustainability_advice`: User is asking for general sustainability or circular economy advice.
-- `logistics_query`: User has questions about transportation or storage.
-- `cost_query`: User is asking about pricing, value, or costs.
-- `help_request`: User is explicitly asking for help or is confused.
-- `feedback`: User is providing feedback on the system.
-- `unclassified`: The intent cannot be reliably determined from the list.
-
-Return ONLY a valid JSON object with this exact structure:"""
-
-            response_structure = {
-                "analysis": {
-                    "intent": {
-                        "type": "intent_from_library",
-                        "confidence": 0.0,
-                        "reasoning": "A detailed, step-by-step explanation of why this intent was chosen over others based on keywords and sentence structure."
-                    },
-                    "entities": [
-                        {
-                            "entity_type": "e.g., material_name, company_name, location, quantity, category",
-                            "value": "The extracted text from the user input.",
-                            "confidence": 0.0
-                        }
-                    ],
-                    "user_persona": {
-                        "inferred_role": "e.g., Facility Manager, Sustainability Officer, CEO, Logistics Coordinator, Unknown",
-                        "confidence": 0.0,
-                        "reasoning": "Explanation for the inferred role based on the user's language and query."
-                    }
-                },
-                "next_action": {
-                    "clarification_question": "A question to ask the user if confidence is low or information is missing (e.g., 'What quantity of wood chips are you producing per month?'). Should be null if not needed.",
-                    "suggested_system_action": "The recommended next API call or function for the application to execute (e.g., 'trigger_material_matchmaking', 'fetch_company_data'). Should be null if a clarification question is posed."
-                }
-            }
-
-            context_info = ""
-            if context:
-                context_info = f"Conversation Context: {json.dumps(context, indent=2)}"
-
-            user_content = f"""USER INPUT: "{user_input}"
-
-{context_info}
-
-Analyze the user's intent, extract entities, and determine the next action."""
-
-            prompt_data = {
-                "model": self.deepseek_model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": system_prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": user_content
-                    }
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.2,  # Very low temperature for precise intent analysis
-                "max_tokens": 2000
-            }
-
-            response = self._call_deepseek_api(prompt_data)
-            return self._parse_intent_analysis_response(response)
-
-        except Exception as e:
-            logger.error(f"Error in conversational_intent_analysis: {str(e)}")
-            logger.error(traceback.format_exc())
-            return self._get_fallback_intent_analysis(user_input)
-
-    def strategic_company_transformation(self, company_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Prompt 4: Strategic Company Transformation Analysis
-        Use this for: Generating a C-suite level strategic report that analyzes a company's 
-        current sustainability posture and provides a phased, actionable roadmap for circular transformation.
-        """
-        try:
-            logger.info(f"Starting Strategic Company Transformation Analysis for company: {company_data.get('name', 'Unknown')}")
-            
-            system_prompt = """You are a Principal Strategy Consultant specializing in Circular Economy Transformation. You are tasked with analyzing a company's profile to create a high-level strategic report for its executive leadership. Your analysis must be sharp, financially sound, and actionable, converting operational data into a clear roadmap for enhanced profitability and sustainability.
-
-TASK: Generate a comprehensive strategic analysis in the format of a C-suite briefing. Your insights should be based on deep industry knowledge and circular economy principles. Focus on transforming risks into opportunities and analysis into a clear action plan.
-
-Return ONLY a valid JSON object with this exact structure:"""
-
-            response_structure = {
-                "executive_summary": {
-                    "current_state_assessment": "A brief, honest assessment of the company's current circularity maturity.",
-                    "core_recommendation": "The single most impactful strategic shift the company should make.",
-                    "summary_of_potential_gains": "Aggregated top-line estimate of potential revenue, cost savings, and key sustainability wins (e.g., CO2 reduction)."
-                },
-                "strategic_roadmap": {
-                    "phase_1_quick_wins": "Initiatives with low cost and high ROI to be implemented within 6 months.",
-                    "phase_2_strategic_integration": "Larger projects for process and business model integration (6-18 months).",
-                    "phase_3_market_leadership": "Long-term initiatives to establish the company as a leader in sustainability (18+ months)."
-                },
-                "detailed_analysis": {
-                    "waste_stream_valorization": [
-                        {
-                            "material": "Specific waste stream.",
-                            "quantity_estimate": "e.g., 50 tons/month",
-                            "current_cost": "Estimated current disposal cost.",
-                            "recommended_action": "e.g., 'Sell as raw material to local brick manufacturers.'",
-                            "potential_revenue_or_savings": "e.g., '$5,000/month (revenue + cost avoidance)'"
-                        }
-                    ],
-                    "resource_efficiency_opportunities": [
-                        {
-                            "area": "e.g., 'Water usage in cleaning processes'",
-                            "problem": "Brief description of the inefficiency.",
-                            "solution": "A specific technological or process-based solution.",
-                            "cost_savings_category": "low, medium, or high.",
-                            "co2_reduction_potential": "e.g., 'Approx. 50 tonnes CO2e/year'"
-                        }
-                    ],
-                    "symbiotic_partnership_targets": [
-                        {
-                            "partner_industry": "e.g., 'Greenhouses'",
-                            "rationale": "Why this partnership is strategic (e.g., 'Utilize waste heat and CO2 to boost crop yields').",
-                            "first_step": "A concrete first action (e.g., 'Contact the regional agricultural association')."
-                        }
-                    ],
-                    "risk_factors": [
-                        {
-                            "risk_type": "e.g., 'Regulatory', 'Market', 'Operational'",
-                            "description": "Specific risk (e.g., 'Upcoming ban on landfilling organic waste').",
-                            "mitigation_strategy": "A proactive strategy to address the risk."
-                        }
-                    ],
-                    "innovation_opportunities": [
-                        {
-                            "opportunity": "A forward-thinking idea (e.g., 'Develop a new product line from recycled material').",
-                            "strategic_advantage": "How this innovation could create a competitive moat."
-                        }
-                    ],
-                    "key_regulatory_considerations": [
-                        {
-                            "regulation": "e.g., 'Extended Producer Responsibility (EPR) laws'",
-                            "implication": "How this regulation impacts the company's operations and strategy."
-                        }
-                    ]
-                }
-            }
-
-            user_content = f"""COMPANY DATA:
-- Name: {company_data.get('name', 'Unknown')}
-- Industry: {company_data.get('industry', 'Unknown')}
-- Location: {company_data.get('location', 'Unknown')}
-- Key Processes: {company_data.get('processes', 'Unknown')}
-- Known Materials: {company_data.get('materials', [])}
-- Size: {company_data.get('employee_count', 'Unknown')} employees
-
-Generate a comprehensive strategic analysis following the exact JSON structure provided."""
-
-            prompt_data = {
-                "model": self.deepseek_model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": system_prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": user_content
-                    }
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.3,
-                "max_tokens": 4000
-            }
-
-            response = self._call_deepseek_api(prompt_data)
-            return self._parse_transformation_response(response)
-
-        except Exception as e:
-            logger.error(f"Error in strategic_company_transformation: {str(e)}")
-            logger.error(traceback.format_exc())
-            return self._get_fallback_transformation(company_data)
-
-    def _call_deepseek_api(self, prompt_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Call the DeepSeek API with the provided prompt structure."""
-        
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.deepseek_api_key}'
-        }
-        
-        try:
-            logger.info(f"Calling DeepSeek API with model {self.deepseek_model}...")
-            response = requests.post(
-                self.deepseek_base_url,
-                headers=headers,
-                json=prompt_data,
-                timeout=60  # 1 minute timeout to prevent long waits
+            # Optimize using RL
+            self.prompt_optimization_model.train()
+            optimizer = torch.optim.AdamW(
+                self.prompt_optimization_model.parameters(),
+                lr=1e-4
             )
             
-            if response.status_code == 200:
-                result = response.json()
-                logger.info("DeepSeek API call successful")
-                return result
-            else:
-                logger.error(f"DeepSeek API error: {response.status_code} - {response.text}")
-                raise Exception(f"DeepSeek API returned status {response.status_code}")
+            best_reward = float('-inf')
+            best_prompt = original_prompt
+            
+            for epoch in range(10):  # Optimization epochs
+                epoch_reward = 0
                 
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request error calling DeepSeek API: {str(e)}")
-            raise Exception(f"Failed to call DeepSeek API: {str(e)}")
+                for batch_features, batch_labels in dataloader:
+                    input_ids = batch_features['input_ids'].to(self.device)
+                    attention_mask = batch_features[attention_mask'].to(self.device)
+                    
+                    # Get policy and value
+                    policy_logits, value = self.prompt_optimization_model(
+                        input_ids, attention_mask
+                    )
+                    
+                    # Sample actions
+                    policy_dist = torch.distributions.Categorical(logits=policy_logits)
+                    actions = policy_dist.sample()
+                    
+                    # Calculate rewards based on feedback
+                    rewards = self._calculate_optimization_rewards(
+                        batch_labels, optimization_target
+                    )
+                    
+                    # Calculate loss
+                    log_probs = policy_dist.log_prob(actions)
+                    policy_loss = -(log_probs * rewards).mean()
+                    value_loss = F.mse_loss(value.squeeze(), rewards)
+                    total_loss = policy_loss +0.5                 
+                    # Backward pass
+                    optimizer.zero_grad()
+                    total_loss.backward()
+                    torch.nn.utils.clip_grad_norm_(
+                        self.prompt_optimization_model.parameters(), 
+                        max_norm=1.0
+                    )
+                    optimizer.step()
+                    
+                    epoch_reward += rewards.mean().item()
+                
+                # Generate optimized prompt
+                optimized_prompt = await self._generate_optimized_prompt(
+                    original_prompt, epoch_reward
+                )
+                
+                if epoch_reward > best_reward:
+                    best_reward = epoch_reward
+                    best_prompt = optimized_prompt
+            
+            # Save optimized model
+            torch.save(self.prompt_optimization_model, self.model_paths['prompt_optimization'])
+            
+            return[object Object]
+                original_prompt: original_prompt,
+               optimized_prompt': best_prompt,
+                improvement_score': best_reward,
+            optimization_metadata': {
+           target': optimization_target,
+                    epochs_trained': 10,
+                 final_reward': best_reward
+                }
+            }
+                
+        except Exception as e:
+            self.logger.error(f"Error optimizing prompt: {e}")
+            raise
 
-    def _call_deepseek_api_directly(self, prompt: str) -> Optional[Dict[str, Any]]:
-        """
-        Direct API call method for adaptive prompting
-        """
+    async def analyze_context_and_generate(self, 
+                                         user_input: str, 
+                                         conversation_history: List[Dict],
+                                         ai_capabilities: Dict) -> Dict:
+        nalyze context and generate contextual prompts using real ML"""
         try:
-            prompt_data = {
-                "model": self.deepseek_model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are an expert in industrial symbiosis and circular economy analysis."
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ],
-                "response_format": {"type": "json_object"},
-                "temperature": 0.4,  # Slightly higher for more creative responses
-                "max_tokens": 3000
+            # Validate inputs
+            validated_inputs = self.data_validator.validate_context_inputs({
+                user_input': user_input,
+           conversation_history': conversation_history,
+                ai_capabilities: ai_capabilities
+            })
+            
+            # Analyze context using ML model
+            context_analysis = await self._analyze_conversation_context(
+                user_input, conversation_history
+            )
+            
+            # Generate contextual prompt
+            contextual_prompt = await self._generate_contextual_prompt(
+                user_input, context_analysis, ai_capabilities
+            )
+            
+            # Optimize for specific AI capabilities
+            optimized_prompt = await self._optimize_for_ai_capabilities(
+                contextual_prompt, ai_capabilities
+            )
+            
+            return[object Object]
+               context_analysis': context_analysis,
+               generated_prompt': optimized_prompt,
+               context_metadata': {
+               conversation_length': len(conversation_history),
+                  context_complexity': context_analysis['complexity_score'],
+                    ai_specialization: ai_capabilities.get('specialization', 'general)                }
+            }
+                
+        except Exception as e:
+            self.logger.error(f"Error analyzing context and generating: {e}")
+            raise
+
+    def _get_complexity_score(self, complexity_level: str) -> float:
+      merical complexity score"""
+        complexity_map = {
+         simple: 0.2        medium: 0.5        complex: 08       expert': 1.0
+        }
+        return complexity_map.get(complexity_level,00.5
+    
+    def _get_style_score(self, style: str) -> float:
+      et numerical style score"""
+        style_map = [object Object]        casual: 0.2     professional': 0.5        technical: 08       academic': 1.0
+        }
+        return style_map.get(style,00.5  
+    def _encode_domain(self, intent: str) -> int:
+      Encode domain for categorical features        domain_map = {
+         analysis': 0,
+           generation': 1,
+           optimization': 2,
+            classification': 3,
+          prediction': 4
+        }
+        
+        for domain, code in domain_map.items():
+            if domain in intent.lower():
+                return code
+        return 0  # default to analysis
+    
+    def _encode_style(self, style: str) -> int:
+     le for categorical features"""
+        style_map = [object Object]      casual': 0,
+           professional': 1,
+          technical': 2     academic': 3
+        }
+        return style_map.get(style,1  
+    def _encode_intent(self, intent: str) -> int:
+      Encode intent for categorical features        intent_map = {
+            information': 0,
+       action': 1,
+         analysis': 2,
+        creation': 3
+        }
+        
+        for intent_type, code in intent_map.items():
+            if intent_type in intent.lower():
+                return code
+        return 0  # default to information
+    
+    def _post_process_prompt(self, generated_prompt: str, context: str, intent: str) -> str:
+     -process generated prompt for better quality"        # Clean up the prompt
+        cleaned_prompt = re.sub(r'\s+', ' ', generated_prompt).strip()
+        
+        # Ensure it starts with a proper instruction
+        if not cleaned_prompt.lower().startswith(('analyze', generate', optimize', 'classify', 'predict)):
+            # Add intent-based prefix
+            intent_prefixes =[object Object]
+                analysis': 'Analyze,
+             generation': 'Generate,
+               optimization': 'Optimize,
+               classification': 'Classify,
+             prediction': 'Predict'
             }
             
-            response = self._call_deepseek_api(prompt_data)
-            return self._parse_strategic_analysis_response(response)
+            for intent_type, prefix in intent_prefixes.items():
+                if intent_type in intent.lower():
+                    cleaned_prompt = f"{prefix}: {cleaned_prompt}"
+                    break
+        
+        # Add context if not present
+        if context and context not in cleaned_prompt:
+            cleaned_prompt = fContext: {context}\n{cleaned_prompt}   
+        return cleaned_prompt
+    
+    def _prepare_optimization_data(self, original_prompt: str, feedback: Dict, target: str) -> List[Dict]:
+     re data for prompt optimization        return [{
+            text: original_prompt,
+    context': feedback.get('context',            targetarget,
+        effectiveness_score': feedback.get(effectiveness',00.5        response_quality': feedback.get('quality',00.5
+            user_satisfaction: feedback.get(satisfaction',00.5         complexity_score': feedback.get('complexity',00.5         specificity_score': feedback.get(specificity',00.5),
+          clarity_score': feedback.get('clarity',00.5           domain': feedback.get(domain', 'general'),
+           style': feedback.get('style',professional'),
+            intent': feedback.get('intent, ormation')
+        }]
+    
+    def _calculate_optimization_rewards(self, labels: Dict, target: str) -> torch.Tensor:
+  Calculate rewards for RL optimization"
+        rewards = []
+        
+        for label in labels:
+            if target ==effectiveness:            reward = label['effectiveness_score']
+            elif target == 'quality:            reward = label['response_quality']
+            elif target == 'satisfaction:            reward = label[user_satisfaction']
+            else:
+                reward = (label['effectiveness_score'] + 
+                         label['response_quality'] + 
+                         label[user_satisfaction']) / 3
+            
+            rewards.append(reward)
+        
+        return torch.FloatTensor(rewards).to(self.device)
+    
+    async def _generate_optimized_prompt(self, original_prompt: str, reward: float) -> str:
+ Generate optimized prompt based on reward""
+        # Simple optimization strategy - can be enhanced
+        if reward > 0.7            # High reward - minor improvements
+            return original_prompt
+        elif reward > 0.5          # Medium reward - moderate improvements
+            return self._apply_moderate_improvements(original_prompt)
+        else:
+            # Low reward - significant improvements
+            return self._apply_significant_improvements(original_prompt)
+    
+    def _apply_moderate_improvements(self, prompt: str) -> str:
+       erate improvements to prompt"""
+        improvements = [
+           Pleaseprovide a detailed ",
+       Consider all relevant factors when ",
+ Ensure comprehensive coverage of ",
+       Focus on key aspects of "
+        ]
+        
+        for improvement in improvements:
+            if improvement.lower() not in prompt.lower():
+                return f"{improvement}{prompt}   
+        return prompt
+    
+    def _apply_significant_improvements(self, prompt: str) -> str:
+        ""Apply significant improvements to prompt"""
+        # Add structure and clarity
+        if not prompt.startswith((Please', 'Analyze', Generate', 'Optimize')):
+            prompt = fPlease {prompt}        
+        # Add specificity
+        ifdetailed' not in prompt.lower():
+            prompt = prompt.replace(Please,Pleaseprovide a detailed ')
+        
+        return prompt
+    
+    async def _analyze_conversation_context(self, user_input: str, history: List[Dict]) -> Dict:
+alyze conversation context using ML"""
+        # Combine conversation history
+        conversation_text =         for msg in history[-5:]:  # Last 5 messages
+            conversation_text += f"{msg.get('role', user')}:[object Object]msg.get(content, '')}         
+        # Analyze using context model
+        encoding = self.tokenizer(
+            conversation_text + user_input,
+            truncation=True,
+            padding='max_length,        max_length=512,
+            return_tensors='pt'
+        )
+        
+        self.context_model.eval()
+        with torch.no_grad():
+            _, context_features = self.context_model(
+                encoding['input_ids'].to(self.device),
+                encoding[attention_mask'].to(self.device),
+                torch.zeros(1,6).to(self.device),  # placeholder numerical features
+                torch.zeros(1, 3.to(self.device)   # placeholder categorical features
+            )
+        
+        return {
+           complexity_score': float(context_featureseffectiveness'][0            topic_consistency': float(context_features[relevance][0,
+            conversation_flow': float(context_features['clarity'][0
+        user_intent': self._extract_user_intent(user_input, history)
+        }
+    
+    def _extract_user_intent(self, user_input: str, history: List[Dict]) -> str:
+     xtract user intent from input and history        intent_keywords = {
+        analysis: [analyze',examine', 'study', 'investigate'],
+          generation': ['generate', create',build', 'develop'],
+            optimization': [optimize, improve,enhance', 'refine'],
+           classification: [lassify, categorize', sortoup'],
+          prediction': ['predict', 'forecast', 'estimate', project']
+        }
+        
+        combined_text = user_input.lower()
+        for msg in history[-3:]:  # Last 3 messages
+            combined_text += " " + msg.get('content', '').lower()
+        
+        for intent, keywords in intent_keywords.items():
+            if any(keyword in combined_text for keyword in keywords):
+                return intent
+        
+        return 'information'  # default intent
+    
+    async def _generate_contextual_prompt(self, user_input: str, context_analysis: Dict, ai_capabilities: Dict) -> str:
+ enerate contextual prompt based on analysis"""
+        # Use context analysis to inform prompt generation
+        complexity = context_analysis['complexity_score']
+        intent = context_analysis['user_intent']
+        
+        # Generate base prompt
+        base_prompt = await self.generate_advanced_prompt(
+            context=user_input,
+            intent=intent,
+            target_ai=ai_capabilities.get('name', AI        complexity_level='complex if complexity > 00.7dium',
+            style='technical if complexity > 0.7 else 'professional'
+        )
+        
+        return base_prompt[prompt']
+    
+    async def _optimize_for_ai_capabilities(self, prompt: str, capabilities: Dict) -> str:
+        ptimize prompt for specific AI capabilities"""
+        specialization = capabilities.get('specialization', 'general')
+        
+        # Add capability-specific instructions
+        if specialization == 'technical':
+            prompt = f"Provide a technical analysis with detailed specifications: {prompt}"
+        elif specialization == 'creative':
+            prompt = fGenerate creative and innovative solutions: {prompt}"
+        elif specialization == 'analytical':
+            prompt = f"Provide comprehensive analytical insights with data-driven approach: {prompt}   
+        return prompt
+    
+    async def get_system_health(self) -> Dict:
+   Get system health metrics"""
+        try:
+            health_metrics =[object Object]
+                status': 'healthy,
+              models_loaded': all([
+                    self.prompt_generation_model is not None,
+                    self.prompt_optimization_model is not None,
+                    self.context_model is not None
+                ]),
+                device:str(self.device),
+             memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0
+              model_metrics': self.metrics_tracker.get_latest_metrics(),
+           performance_metrics': {
+                 avg_generation_time': self.metrics_tracker.get_avg_generation_time(),
+                   prompt_quality_trend': self.metrics_tracker.get_quality_trend(),
+                 optimization_success_rate': self.metrics_tracker.get_optimization_success_rate()
+                }
+            }
+            
+            return health_metrics
             
         except Exception as e:
-            logger.error(f"Error in direct API call: {str(e)}")
-            return None
+            self.logger.error(f"Error getting system health: {e}")
+            return[object Object]status:error', error': str(e)}
 
-    def _parse_strategic_analysis_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse and validate the strategic material analysis response."""
-        try:
-            if 'choices' in api_response and len(api_response['choices']) > 0:
-                content = api_response['choices'][0]['message']['content']
-                
-                if isinstance(content, str):
-                    parsed = json.loads(content)
-                else:
-                    parsed = content
-                
-                # Validate structure
-                required_keys = ['executive_summary', 'predicted_outputs', 'predicted_inputs', 'strategic_recommendations']
-                for key in required_keys:
-                    if key not in parsed:
-                        parsed[key] = {}
-                
-                return parsed
-            else:
-                raise ValueError("Invalid API response structure")
-                
-        except Exception as e:
-            logger.error(f"Error parsing strategic analysis response: {str(e)}")
-            raise
-
-    def _parse_matchmaking_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse and validate the precision matchmaking response."""
-        try:
-            if 'choices' in api_response and len(api_response['choices']) > 0:
-                content = api_response['choices'][0]['message']['content']
-                
-                if isinstance(content, str):
-                    parsed = json.loads(content)
-                else:
-                    parsed = content
-                
-                # Validate structure
-                if 'symbiotic_matches' not in parsed:
-                    parsed['symbiotic_matches'] = []
-                
-                return parsed
-            else:
-                raise ValueError("Invalid API response structure")
-                
-        except Exception as e:
-            logger.error(f"Error parsing matchmaking response: {str(e)}")
-            raise
-
-    def _parse_intent_analysis_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse and validate the conversational intent analysis response."""
-        try:
-            if 'choices' in api_response and len(api_response['choices']) > 0:
-                content = api_response['choices'][0]['message']['content']
-                
-                if isinstance(content, str):
-                    parsed = json.loads(content)
-                else:
-                    parsed = content
-                
-                # Validate structure
-                if 'analysis' not in parsed:
-                    parsed['analysis'] = {}
-                if 'next_action' not in parsed:
-                    parsed['next_action'] = {}
-                
-                return parsed
-            else:
-                raise ValueError("Invalid API response structure")
-                
-        except Exception as e:
-            logger.error(f"Error parsing intent analysis response: {str(e)}")
-            raise
-
-    def _parse_transformation_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse and validate the strategic transformation response."""
-        try:
-            if 'choices' in api_response and len(api_response['choices']) > 0:
-                content = api_response['choices'][0]['message']['content']
-                
-                if isinstance(content, str):
-                    parsed = json.loads(content)
-                else:
-                    parsed = content
-                
-                # Validate structure
-                required_keys = ['executive_summary', 'strategic_roadmap', 'detailed_analysis']
-                for key in required_keys:
-                    if key not in parsed:
-                        parsed[key] = {}
-                
-                return parsed
-            else:
-                raise ValueError("Invalid API response structure")
-                
-        except Exception as e:
-            logger.error(f"Error parsing transformation response: {str(e)}")
-            raise
-
-    # Fallback methods for error handling
-    def _get_fallback_strategic_analysis(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback response for strategic material analysis."""
-        return {
-            "executive_summary": {
-                "key_findings": "Analysis temporarily unavailable. Please try again.",
-                "primary_opportunities": "Multiple symbiosis opportunities identified.",
-                "estimated_total_impact": "Significant cost savings and environmental benefits possible."
-            },
-            "predicted_outputs": [],
-            "predicted_inputs": [],
-            "strategic_recommendations": {
-                "company_partnerships": [],
-                "green_initiatives": []
-            }
-        }
-
-    def _get_fallback_matchmaking(self, material_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback response for precision matchmaking."""
-        return {
-            "symbiotic_matches": [
-                {
-                    "rank": 1,
-                    "company_type": "Local Manufacturers",
-                    "match_strength": 75,
-                    "match_rationale": {
-                        "specific_application": "General industrial applications",
-                        "synergy_value": "Mutual benefit through waste exchange",
-                        "potential_challenges": "Requires quality assessment and logistics planning",
-                        "integration_steps": "Contact local business associations for introductions"
-                    }
-                }
-            ]
-        }
-
-    def _get_fallback_intent_analysis(self, user_input: str) -> Dict[str, Any]:
-        """Fallback response for conversational intent analysis."""
-        return {
-            "analysis": {
-                "intent": {
-                    "type": "help_request",
-                    "confidence": 0.5,
-                    "reasoning": "Unable to determine specific intent"
-                },
-                "entities": [],
-                "user_persona": {
-                    "inferred_role": "Unknown",
-                    "confidence": 0.0,
-                    "reasoning": "Insufficient information to determine role"
-                }
-            },
-            "next_action": {
-                "clarification_question": "Could you please provide more details about what you're looking for?",
-                "suggested_system_action": None
-            }
-        }
-
-    def _get_fallback_transformation(self, company_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback response for strategic transformation analysis."""
-        return {
-            "executive_summary": {
-                "current_state_assessment": "Analysis temporarily unavailable",
-                "core_recommendation": "Begin with waste stream assessment",
-                "summary_of_potential_gains": "Significant opportunities for cost savings and sustainability improvements"
-            },
-            "strategic_roadmap": {
-                "phase_1_quick_wins": "Start with waste audit and identify immediate opportunities",
-                "phase_2_strategic_integration": "Develop partnerships and implement process improvements",
-                "phase_3_market_leadership": "Establish circular economy leadership position"
-            },
-            "detailed_analysis": {
-                "waste_stream_valorization": [],
-                "resource_efficiency_opportunities": [],
-                "symbiotic_partnership_targets": [],
-                "risk_factors": [],
-                "innovation_opportunities": [],
-                "key_regulatory_considerations": []
-            }
-        }
-
-# Convenience functions for easy integration
-def analyze_company_strategically(company_profile: Dict[str, Any]) -> Dict[str, Any]:
-    """Convenience function for strategic material analysis."""
-    service = AdvancedAIPromptsService()
-    return service.strategic_material_analysis(company_profile)
-
-def find_precision_matches(material_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Convenience function for precision AI matchmaking."""
-    service = AdvancedAIPromptsService()
-    return service.precision_ai_matchmaking(material_data)
-
-def analyze_conversational_intent(user_input: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Convenience function for conversational intent analysis."""
-    service = AdvancedAIPromptsService()
-    return service.conversational_intent_analysis(user_input, context)
-
-def analyze_company_transformation(company_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Convenience function for strategic company transformation analysis."""
-    service = AdvancedAIPromptsService()
-    return service.strategic_company_transformation(company_data) 
+# Initialize service
+advanced_ai_prompts_service = AdvancedAIPromptsService() 

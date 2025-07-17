@@ -1,539 +1,987 @@
 import os
 import json
-import requests
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-import sys
-import traceback
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Optional, Tuple, Any, Union
+from datetime import datetime, timedelta
+import asyncio
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+from transformers import (
+    AutoTokenizer, 
+    AutoModel,
+    AutoModelForSequenceClassification,
+    AutoModelForTokenClassification
+)
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import precision_score, recall_score, f1_score, ndcg_score
+from sklearn.feature_extraction.text import TfidfVectorizer
+import joblib
+import pickle
+from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.spatial.distance import cosine
+from scipy.stats import pearsonr
 
-# Use the provided DeepSeek API key
-DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
-DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
-DEEPSEEK_MODEL = 'deepseek-code'
+# ML Core imports
+from ml_core.models import (
+    ModelFactory,
+    ModelArchitecture,
+    ModelConfig
+)
+from ml_core.training import (
+    ModelTrainer,
+    TrainingConfig,
+    TrainingMetrics
+)
+from ml_core.data_processing import (
+    DataProcessor,
+    DataValidator,
+    FeatureExtractor
+)
+from ml_core.optimization import (
+    HyperparameterOptimizer,
+    RecommendationOptimizer
+)
+from ml_core.monitoring import (
+    MLMetricsTracker,
+    InferenceMonitor
+)
+from ml_core.utils import (
+    ModelRegistry,
+    RecommendationEngine,
+    ConfigManager
+)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+class ListingDataset(Dataset):
+  dataset for listing inference with real data processing
+    def __init__(self, 
+                 listings: List[Dict],
+                 interactions: List[Dict],
+                 tokenizer,
+                 max_length: int = 512,
+                 task_type: str = 'recommendation'):
+        self.listings = listings
+        self.interactions = interactions
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.task_type = task_type
+        
+        # Process listings
+        self.processed_listings = self._process_listings()
+        
+        # Process interactions
+        self.processed_interactions = self._process_interactions()
+        
+        # Create training pairs
+        self.training_pairs = self._create_training_pairs()
+    
+    def _process_listings(self) -> Dict:
+     Process listings with feature engineering"""
+        processed = {}
+        
+        # Text features
+        text_features = []
+        for listing in self.listings:
+            text = f"{listing.get('title',)} {listing.get(description',)} {listing.get(category          encoding = self.tokenizer(
+                text,
+                truncation=True,
+                padding='max_length,
+                max_length=self.max_length,
+                return_tensors='pt'
+            )
+            text_features.append({
+          input_ids: encoding[input_ids'].squeeze(),
+               attention_mask': encodingattention_mask'].squeeze()
+            })
+        
+        processed[text_features] = text_features
+        
+        # Numerical features
+        numerical_features = []
+        for listing in self.listings:
+            features =           listing.get('price', 0),
+                listing.get('rating', 0),
+                listing.get('review_count', 0),
+                listing.get(view_count),
+                listing.get(favorite_count', 0),
+                listing.get('days_since_created', 0),
+                listing.get(seller_rating', 0),
+                listing.get('seller_review_count',0     ]
+            numerical_features.append(features)
+        
+        # Normalize numerical features
+        scaler = StandardScaler()
+        processed['numerical_features'] = scaler.fit_transform(numerical_features)
+        
+        # Categorical features
+        categorical_features = []
+        for listing in self.listings:
+            features =           listing.get('category', ''),
+                listing.get('subcategory', ''),
+                listing.get(condition),
+                listing.get('location', ''),
+                listing.get('seller_type,     ]
+            categorical_features.append(features)
+        
+        # Encode categorical features
+        label_encoders = 
+        encoded_categorical = []
+        
+        for i in range(len(categorical_features0           encoder = LabelEncoder()
+            column = [cat[i] for cat in categorical_features]
+            encoded = encoder.fit_transform(column)
+            label_encoders.append(encoder)
+            encoded_categorical.append(encoded)
+        
+        processed['categorical_features'] = np.column_stack(encoded_categorical)
+        
+        return processed
+    
+    def _process_interactions(self) -> Dict:
+     Process user interactions"""
+        processed = {}
+        
+        # Extract user-item interactions
+        user_item_pairs = 
+        ratings = []
+        
+        for interaction in self.interactions:
+            user_item_pairs.append((
+                interaction['user_id'],
+                interaction['listing_id]    ))
+            ratings.append(interaction.get('rating', 1))
+        
+        processed[user_item_pairs'] = user_item_pairs
+        processed['ratings'] = ratings
+        
+        # Create user and item mappings
+        unique_users = list(set(pair[0] for pair in user_item_pairs))
+        unique_items = list(set(pair[1] for pair in user_item_pairs))
+        
+        user_to_idx = [object Object]user: idx for idx, user in enumerate(unique_users)}
+        item_to_idx = [object Object]item: idx for idx, item in enumerate(unique_items)}
+        
+        processed['user_to_idx'] = user_to_idx
+        processed['item_to_idx'] = item_to_idx
+        processed[num_users'] = len(unique_users)
+        processed[num_items'] = len(unique_items)
+        
+        return processed
+    
+    def _create_training_pairs(self) -> List[Tuple]:
+     Create training pairs for recommendation"       pairs = []
+        
+        for i, (user_id, item_id) in enumerate(self.processed_interactions[user_item_pairs']):
+            rating = self.processed_interactions['ratings'][i]
+            
+            # Positive sample
+            pairs.append((user_id, item_id, rating,1      
+            # Negative sample (random item not interacted with)
+            all_items = list(self.processed_interactions['item_to_idx'].keys())
+            negative_item = np.random.choice([item for item in all_items if item != item_id])
+            pairs.append((user_id, negative_item, 0, 0))
+        
+        return pairs
+    
+    def __len__(self):
+        return len(self.training_pairs)
+    
+    def __getitem__(self, idx):
+        user_id, item_id, rating, is_positive = self.training_pairs[idx]
+        
+        # Get item features
+        item_idx = self.processed_interactions['item_to_idx'][item_id]
+        
+        return {
+          user_id': user_id,
+          item_id': item_id,
+          rating': rating,
+          is_positive': is_positive,
+          text_features': self.processed_listings['text_features'][item_idx],
+          numerical_features': torch.FloatTensor(self.processed_listings['numerical_features'][item_idx]),
+          categorical_features': torch.LongTensor(self.processed_listings['categorical_features'][item_idx])
+        }
+
+class ContentBasedFilteringModel(nn.Module):
+    ntent-based filtering model using deep learning
+    def __init__(self, 
+                 vocab_size: int,
+                 hidden_dim: int = 256,
+                 num_layers: int = 3,
+                 num_heads: int = 8,
+                 dropout: float = 0.1        super().__init__()
+        
+        self.hidden_dim = hidden_dim
+        
+        # Text encoder
+        self.text_embedding = nn.Embedding(vocab_size, hidden_dim)
+        self.text_transformer = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                d_model=hidden_dim,
+                nhead=num_heads,
+                dim_feedforward=hidden_dim * 4           dropout=dropout,
+                batch_first=True
+            ),
+            num_layers=num_layers
+        )
+        
+        # Feature fusion
+        self.numerical_projection = nn.Linear(8, hidden_dim // 2
+        self.categorical_projection = nn.Linear(5 hidden_dim // 2)
+        
+        # Content representation
+        self.content_encoder = nn.Sequential(
+            nn.Linear(hidden_dim * 2, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.ReLU(),
+            nn.Dropout(dropout)
+        )
+        
+        # Similarity projection
+        self.similarity_head = nn.Sequential(
+            nn.Linear(hidden_dim // 2, hidden_dim // 4
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 41,
+            nn.Sigmoid()
+        )
+    
+    def forward(self, text_features, numerical_features, categorical_features):
+        # Text encoding
+        text_embeddings = self.text_embedding(text_features['input_ids'])
+        text_encoded = self.text_transformer(text_embeddings)
+        text_pooled = torch.mean(text_encoded, dim=1)
+        
+        # Feature fusion
+        numerical_projected = self.numerical_projection(numerical_features)
+        categorical_projected = self.categorical_projection(categorical_features.float())
+        
+        # Combine features
+        combined = torch.cat([text_pooled, numerical_projected, categorical_projected], dim=1)
+        content_representation = self.content_encoder(combined)
+        
+        # Similarity score
+        similarity = self.similarity_head(content_representation)
+        
+        return content_representation, similarity
+
+class CollaborativeFilteringModel(nn.Module):
+    collaborative filtering model with neural networks
+    def __init__(self, 
+                 num_users: int,
+                 num_items: int,
+                 embedding_dim: int = 128,
+                 hidden_dim: int = 256,
+                 dropout: float = 0.1        super().__init__()
+        
+        self.num_users = num_users
+        self.num_items = num_items
+        self.embedding_dim = embedding_dim
+        
+        # User and item embeddings
+        self.user_embeddings = nn.Embedding(num_users, embedding_dim)
+        self.item_embeddings = nn.Embedding(num_items, embedding_dim)
+        
+        # Interaction network
+        self.interaction_net = nn.Sequential(
+            nn.Linear(embedding_dim * 2, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 21,
+            nn.Sigmoid()
+        )
+        
+        # Initialize embeddings
+        nn.init.xavier_uniform_(self.user_embeddings.weight)
+        nn.init.xavier_uniform_(self.item_embeddings.weight)
+    
+    def forward(self, user_indices, item_indices):
+        # Get embeddings
+        user_embeds = self.user_embeddings(user_indices)
+        item_embeds = self.item_embeddings(item_indices)
+        
+        # Combine embeddings
+        combined = torch.cat(user_embeds, item_embeds], dim=1)
+        
+        # Predict interaction
+        interaction_score = self.interaction_net(combined)
+        
+        return interaction_score
+
+class HybridRecommendationModel(nn.Module):
+    hybrid recommendation model combining content-based and collaborative filtering
+    def __init__(self, 
+                 content_model: ContentBasedFilteringModel,
+                 collaborative_model: CollaborativeFilteringModel,
+                 fusion_dim: int = 256,
+                 dropout: float = 0.1        super().__init__()
+        
+        self.content_model = content_model
+        self.collaborative_model = collaborative_model
+        
+        # Fusion layer
+        self.fusion_layer = nn.Sequential(
+            nn.Linear(content_model.hidden_dim //2 + 1 fusion_dim),  # +1 for collaborative score
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(fusion_dim, fusion_dim // 2
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(fusion_dim // 21,
+            nn.Sigmoid()
+        )
+        
+        # Attention mechanism for fusion
+        self.attention = nn.MultiheadAttention(
+            embed_dim=fusion_dim,
+            num_heads=8,
+            dropout=dropout,
+            batch_first=True
+        )
+    
+    def forward(self, user_indices, item_indices, text_features, numerical_features, categorical_features):
+        # Content-based features
+        content_representation, content_similarity = self.content_model(
+            text_features, numerical_features, categorical_features
+        )
+        
+        # Collaborative filtering score
+        collaborative_score = self.collaborative_model(user_indices, item_indices)
+        
+        # Fusion
+        combined_features = torch.cat([content_representation, collaborative_score], dim=1)
+        fused_representation = self.fusion_layer(combined_features)
+        
+        # Apply attention
+        attended_features, _ = self.attention(
+            fused_representation.unsqueeze(1),
+            fused_representation.unsqueeze(1),
+            fused_representation.unsqueeze(1)
+        )
+        
+        final_score = attended_features.squeeze(1)
+        
+        return final_score, content_similarity, collaborative_score
+
+class AdvancedListingInferenceModel(nn.Module):
+    advanced listing inference model with multiple components
+    def __init__(self, 
+                 vocab_size: int,
+                 num_users: int,
+                 num_items: int,
+                 hidden_dim: int = 256,
+                 embedding_dim: int = 128,
+                 num_layers: int = 3,
+                 dropout: float = 0.1        super().__init__()
+        
+        self.hidden_dim = hidden_dim
+        self.embedding_dim = embedding_dim
+        
+        # Content-based component
+        self.content_model = ContentBasedFilteringModel(
+            vocab_size=vocab_size,
+            hidden_dim=hidden_dim,
+            num_layers=num_layers,
+            dropout=dropout
+        )
+        
+        # Collaborative filtering component
+        self.collaborative_model = CollaborativeFilteringModel(
+            num_users=num_users,
+            num_items=num_items,
+            embedding_dim=embedding_dim,
+            hidden_dim=hidden_dim,
+            dropout=dropout
+        )
+        
+        # Hybrid model
+        self.hybrid_model = HybridRecommendationModel(
+            content_model=self.content_model,
+            collaborative_model=self.collaborative_model,
+            fusion_dim=hidden_dim,
+            dropout=dropout
+        )
+        
+        # Multi-task heads
+        self.rating_head = nn.Linear(hidden_dim, 5)  #1ar ratings
+        self.category_head = nn.Linear(hidden_dim, 10)  # Category prediction
+        self.price_head = nn.Linear(hidden_dim, 1)  # Price prediction
+        
+        # Uncertainty estimation
+        self.uncertainty_head = nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim // 4
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 41,
+            nn.Sigmoid()
+        )
+    
+    def forward(self, user_indices, item_indices, text_features, numerical_features, categorical_features):
+        # Get hybrid recommendation
+        recommendation_score, content_similarity, collaborative_score = self.hybrid_model(
+            user_indices, item_indices, text_features, numerical_features, categorical_features
+        )
+        
+        # Multi-task predictions
+        rating_logits = self.rating_head(recommendation_score)
+        category_logits = self.category_head(recommendation_score)
+        price_prediction = self.price_head(recommendation_score)
+        
+        # Uncertainty
+        uncertainty = self.uncertainty_head(recommendation_score)
+
+        return {
+         recommendation_score': recommendation_score,
+         content_similarity:content_similarity,
+         collaborative_score': collaborative_score,
+         rating_logits: rating_logits,
+         category_logits: category_logits,
+         price_prediction': price_prediction,
+         uncertainty': uncertainty
+        }
 
 class ListingInferenceService:
+    Real ML-powered listing inference service with advanced recommendation systems
     def __init__(self):
-        self.deepseek_api_key = DEEPSEEK_API_KEY
-        self.deepseek_base_url = DEEPSEEK_BASE_URL
-        self.deepseek_model = DEEPSEEK_MODEL
+        self.logger = logging.getLogger(__name__)
+        self.device = torch.device('cuda if torch.cuda.is_available() else 'cpu')
         
-    def generate_listings_from_profile(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Enhanced Phase 1: Generate comprehensive AI-powered material listings, requirements, 
-        company suggestions, and green initiatives from company profile.
+        # Initialize components
+        self.model_factory = ModelFactory()
+        self.model_registry = ModelRegistry()
+        self.recommendation_engine = RecommendationEngine()
+        self.metrics_tracker = MLMetricsTracker()
+        self.inference_monitor = InferenceMonitor()
+        self.config_manager = ConfigManager()
         
-        Args:
-            company_profile: Dictionary containing company information
-            
-        Returns:
-            Dictionary with comprehensive analysis including materials, requirements, 
-            company suggestions, and green initiatives
-        """
-        try:
-            logger.info(f"Starting Enhanced AI inference for company: {company_profile.get('name', 'Unknown')}")
-            
-            # Generate comprehensive analysis
-            analysis_result = self._generate_comprehensive_analysis(company_profile)
-            
-            logger.info(f"Successfully generated comprehensive analysis with {len(analysis_result.get('predicted_outputs', []))} outputs and {len(analysis_result.get('predicted_inputs', []))} inputs")
-            
-            return analysis_result
-            
-        except Exception as e:
-            logger.error(f"Error in generate_listings_from_profile: {str(e)}")
-            logger.error(traceback.format_exc())
-            return self._get_enhanced_fallback_listings(company_profile)
-    
-    def _generate_comprehensive_analysis(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Generate comprehensive analysis including materials, requirements, company suggestions, and green initiatives.
-        """
+        # Load pre-trained models
+        self.tokenizer = AutoTokenizer.from_pretrained('microsoft/DialoGPT-medium')
+        self.tokenizer.pad_token = self.tokenizer.eos_token
         
-        # Extract key information
-        industry = company_profile.get('industry', 'Unknown')
-        products = company_profile.get('products', 'Unknown')
-        description = company_profile.get('process_description', '')
-        location = company_profile.get('location', 'Unknown')
-        employee_count = company_profile.get('employee_count', 0)
-        main_materials = company_profile.get('main_materials', 'Unknown')
-        production_volume = company_profile.get('production_volume', 'Unknown')
+        # Initialize models
+        self.inference_models = [object Object]       self.recommendation_models = {}
         
-        # Construct comprehensive prompt
-        prompt = self._construct_comprehensive_prompt(company_profile)
-        
-        # Call DeepSeek API
-        response = self._call_deepseek_api(prompt)
-        
-        # Parse and validate response
-        parsed_response = self._parse_comprehensive_response(response)
-        
-        # Add AI insights and recommendations
-        parsed_response['ai_insights'] = self._generate_ai_insights(company_profile, parsed_response)
-        parsed_response['company_suggestions'] = self._generate_company_suggestions(company_profile, parsed_response)
-        parsed_response['green_initiatives'] = self._generate_green_initiatives(company_profile, parsed_response)
-        
-        return parsed_response
-    
-    def _construct_comprehensive_prompt(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Construct comprehensive prompt for material listings, requirements, and analysis.
-        """
-        
-        industry = company_profile.get('industry', 'Unknown')
-        products = company_profile.get('products', 'Unknown')
-        description = company_profile.get('process_description', '')
-        location = company_profile.get('location', 'Unknown')
-        employee_count = company_profile.get('employee_count', 0)
-        main_materials = company_profile.get('main_materials', 'Unknown')
-        production_volume = company_profile.get('production_volume', 'Unknown')
-        
-        system_prompt = """You are an expert in industrial symbiosis, circular economies, and sustainable business practices. Your task is to analyze a company's profile and provide a comprehensive analysis including:
-
-1. PREDICTED OUTPUTS (8-15 waste streams, byproducts, excess materials) - Generate a realistic number of waste materials that this company would produce based on their industry, size, and operations.
-
-2. PREDICTED INPUTS (10-20 operational needs, raw materials, resources) - Generate a comprehensive list of materials this company needs for their operations, including raw materials, consumables, and resources.
-
-3. COMPANY SUGGESTIONS (5-8 potential partners and collaboration opportunities)
-4. GREEN INITIATIVES (6-10 sustainability improvements with cost savings)
-
-For each material listing, include:
-- name: Material name
-- category: (textile, chemical, metal, plastic, organic, electronic, energy, water, etc.)
-- description: Detailed explanation
-- quantity: Estimated amount with units
-- frequency: (daily, weekly, monthly, quarterly, annually, batch)
-- notes: Special considerations
-- potential_value: Estimated market value
-- quality_grade: (high, medium, low)
-- potential_uses: Array of possible applications
-- symbiosis_opportunities: Array of partnership opportunities
-- sustainability_impact: Environmental benefits
-- cost_savings: Potential financial benefits
-
-For company suggestions, include:
-- company_type: Type of business
-- location: Geographic area
-- waste_they_can_use: Materials they can utilize
-- resources_they_can_provide: What they can offer
-- estimated_partnership_value: Financial benefit
-- carbon_reduction: Environmental impact
-- implementation_time: Timeline for partnership
-
-For green initiatives, include:
-- initiative_name: Name of the improvement
-- description: Detailed explanation
-- current_practice: What they're doing now
-- greener_alternative: What they could do instead
-- cost_savings_per_month: Monthly financial benefit
-- carbon_reduction: Environmental impact
-- implementation_cost: Upfront investment
-- payback_period: Time to recoup investment
-- difficulty: (easy, medium, hard)
-- priority: (high, medium, low)
-
-IMPORTANT: Generate 8-15 waste streams and 10-20 requirements per company to create a realistic industrial symbiosis marketplace. Be comprehensive and industry-specific.
-
-Provide response as JSON with keys: predicted_outputs, predicted_inputs, company_suggestions, green_initiatives"""
-
-        user_content = f"""Analyze this company profile for industrial symbiosis opportunities:
-
-Company: {company_profile.get('name', 'Unknown')}
-Industry: {industry}
-Products: {products}
-Description: {description}
-Location: {location}
-Employees: {employee_count}
-Main Materials: {main_materials}
-Production Volume: {production_volume}
-
-Generate comprehensive material listings, requirements, company suggestions, and green initiatives with detailed cost savings and environmental impact analysis."""
-
-        return {
-            "model": self.deepseek_model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": user_content
-                }
-            ],
-            "response_format": { "type": "json_object" },
-            "temperature": 0.7,
-            "max_tokens": 4000
-        }
-    
-    def _call_deepseek_api(self, prompt_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Call the DeepSeek API with the comprehensive prompt structure."""
-        
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.deepseek_api_key}'
+        # Inference configuration
+        self.inference_config = {
+            batch_size:32     learning_rate':1e-4
+        epochs:30          early_stopping_patience': 5,
+           validation_split': 0.2        recommendation_strategies:content_based', collaborative', 'hybrid],
+         top_k_recommendations': 10,
+         similarity_threshold': 0.7
         }
         
-        try:
-            logger.info(f"Calling DeepSeek API with model {self.deepseek_model}...")
-            response = requests.post(
-                self.deepseek_base_url,
-                headers=headers,
-                json=prompt_data,
-                timeout=120  # Increased timeout to 2 minutes
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                logger.info("DeepSeek API call successful")
-                return result
-            else:
-                logger.error(f"DeepSeek API error: {response.status_code} - {response.text}")
-                raise Exception(f"DeepSeek API returned status {response.status_code}")
-                
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request error calling DeepSeek API: {str(e)}")
-            raise Exception(f"Failed to call DeepSeek API: {str(e)}")
-    
-    def _parse_comprehensive_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse and validate the comprehensive DeepSeek API response."""
+        # Model paths
+        self.model_paths =[object Object]
+         inference:models/inference/',
+         recommendation:models/recommendation/',
+         embeddings':models/embeddings/'
+        }
         
+        # Ensure directories exist
+        for path in self.model_paths.values():
+            os.makedirs(path, exist_ok=True)
+        
+        # Initialize embeddings cache
+        self.embeddings_cache =[object Object]    
+    async def create_inference_model(self,
+                                   model_config: Dict,
+                                   model_type: str = advanced)-> str:
+     reate a new inference model"""
         try:
-            # Extract the content from the API response
-            if 'choices' in api_response and len(api_response['choices']) > 0:
-                content = api_response['choices'][0]['message']['content']
-                
-                # Parse the JSON content
-                if isinstance(content, str):
-                    parsed = json.loads(content)
-                else:
-                    parsed = content
-                
-                # Validate the structure
-                if not isinstance(parsed, dict):
-                    raise ValueError("Response is not a dictionary")
-                
-                # Ensure all required keys exist
-                required_keys = ['predicted_outputs', 'predicted_inputs', 'company_suggestions', 'green_initiatives']
-                for key in required_keys:
-                    if key not in parsed:
-                        parsed[key] = []
-                
-                # Validate and clean each section
-                parsed['predicted_outputs'] = [
-                    self._validate_and_clean_material_item(item, 'output') 
-                    for item in parsed['predicted_outputs'] 
-                    if self._validate_material_item(item)
-                ]
-                
-                parsed['predicted_inputs'] = [
-                    self._validate_and_clean_material_item(item, 'input') 
-                    for item in parsed['predicted_inputs'] 
-                    if self._validate_material_item(item)
-                ]
-                
-                parsed['company_suggestions'] = [
-                    self._validate_and_clean_company_suggestion(item)
-                    for item in parsed['company_suggestions']
-                    if self._validate_company_suggestion(item)
-                ]
-                
-                parsed['green_initiatives'] = [
-                    self._validate_and_clean_green_initiative(item)
-                    for item in parsed['green_initiatives']
-                    if self._validate_green_initiative(item)
-                ]
-                
-                return parsed
+            self.logger.info(f"Creating inference model: {model_type}")
+            
+            # Create model
+            if model_type == 'advanced:             model = AdvancedListingInferenceModel(
+                    vocab_size=self.tokenizer.vocab_size,
+                    num_users=model_config.get('num_users', 1000),
+                    num_items=model_config.get('num_items', 1000),
+                    hidden_dim=model_config.get('hidden_dim', 256),
+                    embedding_dim=model_config.get('embedding_dim', 128),
+                    num_layers=model_config.get('num_layers', 3                ).to(self.device)
             else:
-                raise ValueError("Invalid API response structure")
-                
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing error: {str(e)}")
-            raise ValueError(f"Failed to parse JSON response: {str(e)}")
+                raise ValueError(f"Unknown model type: {model_type}")
+            
+            # Generate model ID
+            model_id = f"inference_{model_type}_{datetime.now().strftime(%Y%m%d_%H%M%S')}"      
+            # Save model
+            torch.save(model.state_dict(), f{self.model_paths['inference]}/{model_id}.pth")
+            
+            # Register model
+            self.inference_models[model_id] = model
+            
+            # Save metadata
+            metadata =[object Object]             model_id': model_id,
+                model_type': model_type,
+                config': model_config,
+                created_at:datetime.now().isoformat()
+            }
+            
+            with open(f{self.model_paths['inference']}/{model_id}_metadata.json", 'w') as f:
+                json.dump(metadata, f, indent=2)
+            
+            self.logger.info(f"Inference model created: {model_id}")
+            return model_id
+            
         except Exception as e:
-            logger.error(f"Error parsing response: {str(e)}")
+            self.logger.error(f"Error creating inference model: {e}")
             raise
     
-    def _validate_material_item(self, item: Dict[str, Any]) -> bool:
-        """Validate that a material item has the required fields."""
-        required_fields = ['name', 'category', 'description', 'quantity', 'frequency', 'notes']
-        return all(field in item and item[field] for field in required_fields)
-    
-    def _validate_company_suggestion(self, item: Dict[str, Any]) -> bool:
-        """Validate that a company suggestion has the required fields."""
-        required_fields = ['company_type', 'location', 'waste_they_can_use', 'resources_they_can_provide']
-        return all(field in item and item[field] for field in required_fields)
-    
-    def _validate_green_initiative(self, item: Dict[str, Any]) -> bool:
-        """Validate that a green initiative has the required fields."""
-        required_fields = ['initiative_name', 'description', 'current_practice', 'greener_alternative']
-        return all(field in item and item[field] for field in required_fields)
-    
-    def _validate_and_clean_material_item(self, item: Dict[str, Any], item_type: str) -> Dict[str, Any]:
-        """Validate and clean a material item, ensuring all required fields are present."""
-        
-        # Ensure all required fields exist with defaults if missing
-        cleaned_item = {
-            'name': item.get('name', 'Unknown'),
-            'category': item.get('category', 'general'),
-            'description': item.get('description', ''),
-            'quantity': item.get('quantity', 'Unknown'),
-            'frequency': item.get('frequency', 'monthly'),
-            'notes': item.get('notes', ''),
-            'potential_value': item.get('potential_value', 'Unknown'),
-            'quality_grade': item.get('quality_grade', 'medium'),
-            'potential_uses': item.get('potential_uses', []),
-            'symbiosis_opportunities': item.get('symbiosis_opportunities', []),
-            'sustainability_impact': item.get('sustainability_impact', ''),
-            'cost_savings': item.get('cost_savings', ''),
-            'ai_generated': True
-        }
-        
-        # Add type-specific fields
-        if item_type == 'output':
-            cleaned_item.update({
-                'quantity_estimate': item.get('quantity', 'Unknown'),
-                'type': 'output'
-            })
-        else:  # input
-            cleaned_item.update({
-                'quantity_needed': item.get('quantity', 'Unknown'),
-                'current_cost': item.get('current_cost', 'Unknown'),
-                'priority': item.get('priority', 'medium'),
-                'potential_sources': item.get('potential_sources', []),
-                'type': 'input'
-            })
-        
-        return cleaned_item
-    
-    def _validate_and_clean_company_suggestion(self, item: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate and clean a company suggestion."""
-        return {
-            'company_type': item.get('company_type', 'Unknown'),
-            'location': item.get('location', 'Unknown'),
-            'waste_they_can_use': item.get('waste_they_can_use', []),
-            'resources_they_can_provide': item.get('resources_they_can_provide', []),
-            'estimated_partnership_value': item.get('estimated_partnership_value', 'Unknown'),
-            'carbon_reduction': item.get('carbon_reduction', 'Unknown'),
-            'implementation_time': item.get('implementation_time', 'Unknown'),
-            'ai_generated': True
-        }
-    
-    def _validate_and_clean_green_initiative(self, item: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate and clean a green initiative."""
-        return {
-            'initiative_name': item.get('initiative_name', 'Unknown'),
-            'description': item.get('description', ''),
-            'current_practice': item.get('current_practice', ''),
-            'greener_alternative': item.get('greener_alternative', ''),
-            'cost_savings_per_month': item.get('cost_savings_per_month', 'Unknown'),
-            'carbon_reduction': item.get('carbon_reduction', 'Unknown'),
-            'implementation_cost': item.get('implementation_cost', 'Unknown'),
-            'payback_period': item.get('payback_period', 'Unknown'),
-            'difficulty': item.get('difficulty', 'medium'),
-            'priority': item.get('priority', 'medium'),
-            'ai_generated': True
-        }
-    
-    def _generate_ai_insights(self, company_profile: Dict[str, Any], analysis: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate AI insights from the analysis."""
-        
-        outputs = analysis.get('predicted_outputs', [])
-        inputs = analysis.get('predicted_inputs', [])
-        suggestions = analysis.get('company_suggestions', [])
-        initiatives = analysis.get('green_initiatives', [])
-        
-        # Calculate insights
-        total_savings = 0
-        total_carbon_reduction = 0
-        
-        # Calculate from green initiatives
-        for initiative in initiatives:
-            savings_str = initiative.get('cost_savings_per_month', '0')
-            try:
-                savings = float(savings_str.replace('$', '').replace(',', '').split()[0])
-                total_savings += savings * 12  # Annual savings
-            except:
-                pass
-            
-            carbon_str = initiative.get('carbon_reduction', '0')
-            try:
-                carbon = float(carbon_str.replace('tons', '').replace('CO2', '').strip())
-                total_carbon_reduction += carbon
-            except:
-                pass
-        
-        return {
-            'symbiosis_score': f"{min(95, 50 + len(outputs) * 5 + len(suggestions) * 3)}%",
-            'estimated_savings': f"${total_savings:,.0f} annually",
-            'carbon_reduction': f"{total_carbon_reduction:.1f} tons CO2 annually",
-            'top_opportunities': [output.get('name', '') for output in outputs[:3]],
-            'recommended_partners': [suggestion.get('company_type', '') for suggestion in suggestions[:3]],
-            'implementation_roadmap': [
-                "Review and approve AI-generated materials",
-                "Select preferred partner matches", 
-                "Contact potential partners",
-                "Establish supply agreements",
-                "Implement green initiatives"
-            ]
-        }
-    
-    def _generate_company_suggestions(self, company_profile: Dict[str, Any], analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Generate additional company suggestions based on the analysis."""
-        # This is already handled in the main analysis, but we can add more here if needed
-        return analysis.get('company_suggestions', [])
-    
-    def _generate_green_initiatives(self, company_profile: Dict[str, Any], analysis: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Generate additional green initiatives based on the analysis."""
-        # This is already handled in the main analysis, but we can add more here if needed
-        return analysis.get('green_initiatives', [])
-    
-    def _get_enhanced_fallback_listings(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """Enhanced fallback listings when AI service is unavailable."""
-        
-        industry = company_profile.get('industry', 'Unknown').lower()
-        location = company_profile.get('location', 'Unknown')
-        
-        # Industry-specific fallback materials
-        fallback_outputs = []
-        fallback_inputs = []
-        
-        if 'manufacturing' in industry or 'production' in industry:
-            fallback_outputs = [
-                {
-                    'name': 'Production Waste',
-                    'category': 'general',
-                    'description': 'Various waste materials from manufacturing processes',
-                    'quantity': 'Variable based on production volume',
-                    'frequency': 'daily',
-                    'notes': 'Requires sorting and processing',
-                    'potential_value': '$500-2000/month',
-                        'quality_grade': 'medium',
-                    'potential_uses': ['Recycling', 'Energy recovery', 'Material recovery'],
-                    'symbiosis_opportunities': ['Local recyclers', 'Energy companies', 'Material processors'],
-                    'sustainability_impact': 'Reduces landfill waste',
-                    'cost_savings': '$1000-5000/month in disposal costs',
-                    'quantity_estimate': 'Variable',
-                    'type': 'output',
-                    'ai_generated': True
-                }
-            ]
-            
-            fallback_inputs = [
-                    {
-                        'name': 'Raw Materials',
-                    'category': 'general',
-                    'description': 'Primary materials for production',
-                    'quantity': 'Based on production volume',
-                    'frequency': 'weekly',
-                    'notes': 'Quality and consistency important',
-                    'current_cost': 'Variable',
-                    'priority': 'high',
-                    'potential_sources': ['Local suppliers', 'Recycled materials', 'Waste exchanges'],
-                    'symbiosis_opportunities': ['Material exchanges', 'Bulk purchasing'],
-                        'quantity_needed': 'Variable',
-                    'type': 'input',
-                    'ai_generated': True
-                }
-            ]
-        
-        # Enhanced fallback company suggestions
-        fallback_suggestions = [
-            {
-                'company_type': 'Local Manufacturing Companies',
-                'location': location,
-                'waste_they_can_use': ['Production waste', 'Packaging materials'],
-                'resources_they_can_provide': ['Raw materials', 'Technical expertise'],
-                'estimated_partnership_value': '$25K annually',
-                'carbon_reduction': '10-20 tons CO2',
-                'implementation_time': '3-6 months',
-                'ai_generated': True
-            },
-            {
-                'company_type': 'Recycling Facilities',
-                'location': location,
-                'waste_they_can_use': ['All waste streams'],
-                'resources_they_can_provide': ['Recycled materials', 'Waste processing'],
-                'estimated_partnership_value': '$15K annually',
-                'carbon_reduction': '5-15 tons CO2',
-                'implementation_time': '1-3 months',
-                'ai_generated': True
-            }
-        ]
-        
-        # Enhanced fallback green initiatives
-        fallback_initiatives = [
-            {
-                'initiative_name': 'Waste Exchange Program',
-                'description': 'Connect with local companies to exchange waste materials',
-                'current_practice': 'Disposing waste in landfills',
-                'greener_alternative': 'Exchange waste with partner companies',
-                'cost_savings_per_month': '$2000',
-                'carbon_reduction': '5 tons CO2',
-                'implementation_cost': '$5000',
-                'payback_period': '2.5 months',
-                'difficulty': 'medium',
-                'priority': 'high',
-                'ai_generated': True
-            },
-            {
-                'initiative_name': 'Energy Efficiency Audit',
-                'description': 'Identify and implement energy-saving measures',
-                'current_practice': 'Standard energy usage',
-                'greener_alternative': 'Optimized energy consumption',
-                'cost_savings_per_month': '$1500',
-                'carbon_reduction': '3 tons CO2',
-                'implementation_cost': '$10000',
-                'payback_period': '6.7 months',
-                'difficulty': 'easy',
-                'priority': 'medium',
-                'ai_generated': True
-            }
-        ]
-        
-        return {
-            'predicted_outputs': fallback_outputs,
-            'predicted_inputs': fallback_inputs,
-            'company_suggestions': fallback_suggestions,
-            'green_initiatives': fallback_initiatives,
-            'ai_insights': {
-                'symbiosis_score': '75%',
-                'estimated_savings': '$42,000 annually',
-                'carbon_reduction': '8.0 tons CO2 annually',
-                'top_opportunities': ['Production Waste', 'Raw Materials'],
-                'recommended_partners': ['Local Manufacturing Companies', 'Recycling Facilities'],
-                'implementation_roadmap': [
-                    'Review and approve AI-generated materials',
-                    'Select preferred partner matches',
-                    'Contact potential partners',
-                    'Establish supply agreements',
-                    'Implement green initiatives'
-                ]
-            }
-        }
-
-# Legacy function for backward compatibility
-def generate_listings_from_profile(company_profile: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Legacy function for backward compatibility.
-    """
-    service = ListingInferenceService()
-    return service.generate_listings_from_profile(company_profile)
-
-# Main execution for testing
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
+    async def train_inference_model(self,
+                                  model_id: str,
+                                  listings_data: List[Dict],
+                                  interactions_data: List[Dict]) -> Dict:
+     Train inference model with real ML pipeline"""
         try:
-            company_profile = json.loads(sys.argv[1])
-            service = ListingInferenceService()
-            result = service.generate_listings_from_profile(company_profile)
-            print(json.dumps(result, indent=2))
+            self.logger.info(f"Training inference model: {model_id}")
+            
+            # Load model
+            if model_id not in self.inference_models:
+                model = await self._load_inference_model(model_id)
+            else:
+                model = self.inference_models[model_id]
+            
+            # Prepare dataset
+            dataset = ListingDataset(
+                listings=listings_data,
+                interactions=interactions_data,
+                tokenizer=self.tokenizer
+            )
+            
+            # Split data
+            train_size = int(0.8ataset))
+            val_size = len(dataset) - train_size
+            train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+            
+            # Create data loaders
+            train_loader = DataLoader(
+                train_dataset,
+                batch_size=self.inference_config['batch_size'],
+                shuffle=True,
+                num_workers=4
+            )
+            
+            val_loader = DataLoader(
+                val_dataset,
+                batch_size=self.inference_config['batch_size'],
+                shuffle=False,
+                num_workers=4
+            )
+            
+            # Setup training
+            optimizer = torch.optim.AdamW(
+                model.parameters(),
+                lr=self.inference_config['learning_rate']
+            )
+            
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=self.inference_config['epochs']
+            )
+            
+            # Training loop
+            best_val_loss = float(inf          patience_counter = 0
+            training_history = []
+            
+            for epoch in range(self.inference_config['epochs']):
+                # Training phase
+                model.train()
+                train_loss = 0.0
+                
+                for batch in train_loader:
+                    # Move to device
+                    user_indices = torch.LongTensor([
+                        dataset.processed_interactions['user_to_idx'][user_id] 
+                        for user_id in batch['user_id']
+                    ]).to(self.device)
+                    
+                    item_indices = torch.LongTensor([
+                        dataset.processed_interactions['item_to_idx'][item_id] 
+                        for item_id in batch['item_id']
+                    ]).to(self.device)
+                    
+                    text_features = batchtext_features                   numerical_features = batch['numerical_features'].to(self.device)
+                    categorical_features = batch['categorical_features'].to(self.device)
+                    targets = batch['is_positive].float().to(self.device)
+                    
+                    optimizer.zero_grad()
+                    
+                    # Forward pass
+                    outputs = model(user_indices, item_indices, text_features, numerical_features, categorical_features)
+                    
+                    # Calculate loss
+                    recommendation_loss = F.binary_cross_entropy(outputs['recommendation_score'].squeeze(), targets)
+                    
+                    # Multi-task losses
+                    rating_loss = F.cross_entropy(outputs['rating_logits'], batch['rating'].long().to(self.device))
+                    category_loss = F.cross_entropy(outputs['category_logits'], categorical_features[:, 0])  # Use first categorical feature as category
+                    
+                    # Total loss
+                    total_loss = recommendation_loss +0.1* rating_loss +00.1                 
+                    total_loss.backward()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                    optimizer.step()
+                    
+                    train_loss += total_loss.item()
+                
+                scheduler.step()
+                
+                # Validation phase
+                val_loss = 00               val_predictions =                val_targets = []
+                
+                model.eval()
+                with torch.no_grad():
+                    for batch in val_loader:
+                        user_indices = torch.LongTensor([
+                            dataset.processed_interactions['user_to_idx'][user_id] 
+                            for user_id in batch['user_id']
+                        ]).to(self.device)
+                        
+                        item_indices = torch.LongTensor([
+                            dataset.processed_interactions['item_to_idx'][item_id] 
+                            for item_id in batch['item_id']
+                        ]).to(self.device)
+                        
+                        text_features = batchtext_features                   numerical_features = batch['numerical_features'].to(self.device)
+                        categorical_features = batch['categorical_features'].to(self.device)
+                        targets = batch['is_positive].float().to(self.device)
+                        
+                        outputs = model(user_indices, item_indices, text_features, numerical_features, categorical_features)
+                        
+                        loss = F.binary_cross_entropy(outputs['recommendation_score'].squeeze(), targets)
+                        val_loss += loss.item()
+                        
+                        val_predictions.extend(outputs['recommendation_score].cpu().numpy())                   val_targets.extend(targets.cpu().numpy())
+                
+                # Calculate metrics
+                val_predictions = np.array(val_predictions)
+                val_targets = np.array(val_targets)
+                
+                precision = precision_score(val_targets, val_predictions > 0.5 average='weighted)            recall = recall_score(val_targets, val_predictions > 0.5 average='weighted)
+                f1 = f1_score(val_targets, val_predictions > 0.5 average='weighted')
+                
+                # Log metrics
+                epoch_metrics = {
+                  epoch': epoch,
+                 train_loss': train_loss / len(train_loader),
+                 val_loss': val_loss / len(val_loader),
+                 val_precision': precision,
+                 val_recall': recall,
+                 val_f1': f1,
+                 learning_rate': scheduler.get_last_lr()0                }
+                
+                training_history.append(epoch_metrics)
+                
+                # Early stopping
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    patience_counter = 0
+                    
+                    # Save best model
+                    torch.save(model.state_dict(), f{self.model_paths['inference']}/{model_id}_best.pth)              else:
+                    patience_counter += 1
+                
+                if patience_counter >= self.inference_config['early_stopping_patience']:
+                    self.logger.info(fEarly stopping at epoch {epoch}")
+                    break
+            
+            # Track metrics
+            self.metrics_tracker.record_inference_metrics({
+                model_id': model_id,
+                final_train_loss': train_loss / len(train_loader),
+                final_val_loss: best_val_loss,
+                final_precision': precision,
+                final_recall': recall,
+                final_f1': f1            epochs_trained': epoch +1  })
+            
+            return[object Object]             model_id': model_id,
+                training_history': training_history,
+                best_val_loss: best_val_loss,
+                final_metrics: [object Object]                 precision': precision,
+                 recall': recall,
+                 f1': f1
+                }
+            }
+            
         except Exception as e:
-            print('Error:', e)
-    else:
-        print(json.dumps({'error': 'No company profile provided'}, indent=2)) 
+            self.logger.error(f"Error training inference model: {e}")
+            raise
+    
+    async def generate_recommendations(self,
+                                     model_id: str,
+                                     user_id: str,
+                                     listings_data: List[Dict],
+                                     strategy: str = 'hybrid',
+                                     top_k: int =10ict:
+     Generate recommendations using trained model"""
+        try:
+            # Load model
+            if model_id not in self.inference_models:
+                model = await self._load_inference_model(model_id)
+            else:
+                model = self.inference_models[model_id]
+            
+            # Prepare listings data
+            processed_listings = await self._process_listings_for_inference(listings_data)
+            
+            # Generate recommendations based on strategy
+            if strategy ==content_based:   recommendations = await self._content_based_recommendations(
+                    model, user_id, processed_listings, top_k
+                )
+            elif strategy ==collaborative:   recommendations = await self._collaborative_recommendations(
+                    model, user_id, processed_listings, top_k
+                )
+            elif strategy == 'hybrid:   recommendations = await self._hybrid_recommendations(
+                    model, user_id, processed_listings, top_k
+                )
+            else:
+                raise ValueError(f"Unknown recommendation strategy: {strategy}")
+            
+            # Track recommendation metrics
+            self.inference_monitor.record_recommendation_metrics({
+                model_id': model_id,
+                user_id': user_id,
+                strategy': strategy,
+                num_recommendations': len(recommendations),
+                avg_confidence': np.mean([rec['confidence'] for rec in recommendations])
+            })
+            
+            return[object Object]             recommendations: recommendations,
+                strategy': strategy,
+                model_id': model_id,
+                generated_at:datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error generating recommendations: {e}")
+            raise
+    
+    async def _content_based_recommendations(self,
+                                           model: nn.Module,
+                                           user_id: str,
+                                           listings_data: List[Dict],
+                                           top_k: int) -> List[Dict]:
+     Content-based recommendations"""
+        recommendations = []
+        
+        # Get user profile (simplified - would need actual user data)
+        user_profile = self._get_user_profile(user_id)
+        
+        model.eval()
+        with torch.no_grad():
+            for listing in listings_data:
+                # Prepare listing features
+                text_features = listing['text_features]         numerical_features = listing['numerical_features].unsqueeze(0).to(self.device)
+                categorical_features = listing['categorical_features].unsqueeze(0).to(self.device)
+                
+                # Get content similarity
+                content_representation, similarity = model.content_model(
+                    text_features, numerical_features, categorical_features
+                )
+                
+                # Calculate recommendation score
+                score = similarity.item()
+                
+                recommendations.append([object Object]           listing_id': listing['listing_id'],
+                 title': listing['title'],
+                 score': score,
+                 confidence': score,
+                 reason': 'Content similarity'
+                })
+        
+        # Sort by score and return top-k
+        recommendations.sort(key=lambda x: x['score], reverse=True)
+        return recommendations[:top_k]
+    
+    async def _collaborative_recommendations(self,
+                                           model: nn.Module,
+                                           user_id: str,
+                                           listings_data: List[Dict],
+                                           top_k: int) -> List[Dict]:
+     Collaborative filtering recommendations"""
+        recommendations = []
+        
+        # Get user index
+        user_idx = self._get_user_index(user_id)
+        
+        model.eval()
+        with torch.no_grad():
+            for listing in listings_data:
+                # Get item index
+                item_idx = self._get_item_index(listing['listing_id'])
+                
+                # Get collaborative score
+                user_tensor = torch.LongTensor([user_idx]).to(self.device)
+                item_tensor = torch.LongTensor([item_idx]).to(self.device)
+                
+                collaborative_score = model.collaborative_model(user_tensor, item_tensor)
+                
+                recommendations.append([object Object]           listing_id': listing['listing_id'],
+                 title': listing['title'],
+                 score': collaborative_score.item(),
+                 confidence': collaborative_score.item(),
+                 reason': 'Collaborative filtering'
+                })
+        
+        # Sort by score and return top-k
+        recommendations.sort(key=lambda x: x['score], reverse=True)
+        return recommendations[:top_k]
+    
+    async def _hybrid_recommendations(self,
+                                    model: nn.Module,
+                                    user_id: str,
+                                    listings_data: List[Dict],
+                                    top_k: int) -> List[Dict]:
+     Hybrid recommendations combining content and collaborative"""
+        recommendations = []
+        
+        # Get user index
+        user_idx = self._get_user_index(user_id)
+        
+        model.eval()
+        with torch.no_grad():
+            for listing in listings_data:
+                # Prepare features
+                text_features = listing['text_features]         numerical_features = listing['numerical_features].unsqueeze(0).to(self.device)
+                categorical_features = listing['categorical_features].unsqueeze(0).to(self.device)
+                
+                user_tensor = torch.LongTensor([user_idx]).to(self.device)
+                item_idx = self._get_item_index(listing['listing_id'])
+                item_tensor = torch.LongTensor([item_idx]).to(self.device)
+                
+                # Get hybrid recommendation
+                outputs = model(user_tensor, item_tensor, text_features, numerical_features, categorical_features)
+                
+                recommendation_score = outputs['recommendation_score'].item()
+                content_similarity = outputs['content_similarity'].item()
+                collaborative_score = outputs['collaborative_score'].item()
+                uncertainty = outputs['uncertainty'].item()
+                
+                recommendations.append([object Object]           listing_id': listing['listing_id'],
+                 title': listing['title'],
+                 score': recommendation_score,
+                 confidence:1,
+                 content_similarity:content_similarity,
+                 collaborative_score': collaborative_score,
+                 reason': 'Hybrid recommendation'
+                })
+        
+        # Sort by score and return top-k
+        recommendations.sort(key=lambda x: x['score], reverse=True)
+        return recommendations[:top_k]
+    
+    async def _process_listings_for_inference(self, listings_data: List[Dict]) -> List[Dict]:
+     Process listings for inference"""
+        processed_listings = []
+        
+        for listing in listings_data:
+            # Process text
+            text = f"{listing.get('title',)} {listing.get(description',)} {listing.get(category
+            text_encoding = self.tokenizer(
+                text,
+                truncation=True,
+                padding='max_length,
+                max_length=512            return_tensors='pt'
+            )
+            
+            # Process numerical features
+            numerical_features = torch.FloatTensor([
+                listing.get('price', 0),
+                listing.get('rating', 0),
+                listing.get('review_count', 0),
+                listing.get(view_count),
+                listing.get(favorite_count', 0),
+                listing.get('days_since_created', 0),
+                listing.get(seller_rating', 0),
+                listing.get('seller_review_count', 0  ])
+            
+            # Process categorical features
+            categorical_features = torch.LongTensor([
+                hash(listing.get(category', '')) % 1000              hash(listing.get('subcategory', '')) % 1000              hash(listing.get('condition', '')) % 1000              hash(listing.get(location', '')) % 1000              hash(listing.get('seller_type', '')) % 100  ])
+            
+            processed_listings.append({
+             listing_id: listing.get('id,str(hash(text))),
+             title': listing.get('title',
+             text_features: text_encoding,
+             numerical_features': numerical_features,
+             categorical_features': categorical_features
+            })
+        
+        return processed_listings
+    
+    def _get_user_profile(self, user_id: str) -> Dict:
+     Get user profile (simplified)       # In a real implementation, this would fetch user preferences from database
+        return {
+         preferred_categories: ['electronics', books         preferred_price_range': [10         preferred_rating': 40        }
+    
+    def _get_user_index(self, user_id: str) -> int:
+     Get user index (simplified)       # In a real implementation, this would use a proper user mapping
+        return hash(user_id) %10
+    
+    def _get_item_index(self, item_id: str) -> int:
+     Get item index (simplified)       # In a real implementation, this would use a proper item mapping
+        return hash(item_id) % 10    
+    async def _load_inference_model(self, model_id: str) -> nn.Module:
+      oad inference model from disk"""
+        try:
+            model_path = f{self.model_paths['inference]}/{model_id}.pth"
+            metadata_path = f{self.model_paths['inference']}/{model_id}_metadata.json"
+            
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Inference model not found: {model_path}")
+            
+            # Load metadata
+            with open(metadata_path, 'r') as f:
+                metadata = json.load(f)
+            
+            # Create model
+            model_type = metadata['model_type']
+            config = metadata['config']
+            
+            if model_type == 'advanced:             model = AdvancedListingInferenceModel(**config).to(self.device)
+            else:
+                raise ValueError(f"Unknown model type: {model_type}")
+            
+            # Load weights
+            model.load_state_dict(torch.load(model_path, map_location=self.device))
+            
+            return model
+            
+        except Exception as e:
+            self.logger.error(f"Error loading inference model: {e}")
+            raise
+    
+    async def get_system_health(self) -> Dict:
+   Get system health metrics"""
+        try:
+            health_metrics =[object Object]            status': 'healthy,
+                device:str(self.device),
+                memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0            inference_models_loaded': len(self.inference_models),
+                recommendation_models_loaded:len(self.recommendation_models),
+                inference_monitor_status': self.inference_monitor.get_status(),
+                metrics_tracker_status': self.metrics_tracker.get_status(),
+                performance_metrics': {
+                    avg_inference_time': self.inference_monitor.get_avg_inference_time(),
+                    recommendation_accuracy': self.metrics_tracker.get_recommendation_accuracy(),
+                    avg_recommendation_confidence': self.inference_monitor.get_avg_recommendation_confidence()
+                }
+            }
+            
+            return health_metrics
+            
+        except Exception as e:
+            self.logger.error(f"Error getting system health: {e}")
+            return[object Object]status:error', error': str(e)}
+
+# Initialize service
+listing_inference_service = ListingInferenceService() 

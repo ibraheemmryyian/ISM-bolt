@@ -1,381 +1,197 @@
 import os
 import json
-import requests
-import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime
-import sys
-import traceback
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import DataLoader, TensorDataset
+from torch_geometric.nn import GCNConv, GATConv
+from flask import Flask, request, jsonify
+from flask_restx import Api, Resource, fields
+import shap
+from ml_core.models import ModelFactory
+from ml_core.utils import ModelRegistry
+from ml_core.monitoring import MLMetricsTracker
+from ml_core.optimization import HyperparameterOptimizer
+from backend.utils.distributed_logger import DistributedLogger
+from backend.utils.advanced_data_validator import AdvancedDataValidator
 
-# Use the provided DeepSeek API key
-DEEPSEEK_API_KEY = 'sk-7ce79f30332d45d5b3acb8968b052132'
-DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1/chat/completions'
-DEEPSEEK_MODEL = 'deepseek-coder'
+app = Flask(__name__)
+api = Api(app, version='1.0', title='AI Matchmaking Service', description='Insanely Advanced Modular ML Matchmaking', doc='/docs')
 
-# Configure logging first
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = DistributedLogger('AIMatchmakingService', log_file='logs/ai_matchmaking_service.log')
+model_registry = ModelRegistry()
+metrics_tracker = MLMetricsTracker()
+optimizer = HyperparameterOptimizer()
+data_validator = AdvancedDataValidator(logger=logger)
 
-# Import pricing integration (commented out to avoid circular imports)
-# try:
-#     from ai_pricing_integration import (
-#         validate_match_pricing_requirement_integrated,
-#         get_material_pricing_data_integrated,
-#         enforce_pricing_validation_decorator
-#     )
-#     PRICING_INTEGRATION_AVAILABLE = True
-# except ImportError:
-#     PRICING_INTEGRATION_AVAILABLE = False
-#     logger.warning("Pricing integration not available")
+def get_model(model_id):
+    model_info = model_registry.get_model(model_id)
+    if not model_info:
+        logger.error(f"Model {model_id} not found in registry")
+        raise ValueError(f"Model {model_id} not found in registry")
+    model = model_info['model_class'](**model_info['model_params'])
+    model.load_state_dict(torch.load(model_info['model_path'], map_location='cpu'))
+    return model.eval()
 
-PRICING_INTEGRATION_AVAILABLE = False
-logger.warning("Pricing integration temporarily disabled to avoid circular imports")
+match_input = api.model('MatchInput', {
+    'model_id': fields.String(required=True, description='Model identifier'),
+    'input_data': fields.Raw(required=True, description='Input data for matchmaking (graph or features)')
+})
 
-class AIMatchmakingService:
-    def __init__(self):
-        self.deepseek_api_key = DEEPSEEK_API_KEY
-        self.deepseek_base_url = DEEPSEEK_BASE_URL
-        self.deepseek_model = DEEPSEEK_MODEL
-        
-    def find_partner_companies(self, company_id: str, material_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        Phase 2: Find partner companies for a specific material using DeepSeek API.
-        Uses the exact DeepSeek API prompt structure as specified in the master directive.
-        
-        Args:
-            company_id: ID of the company that owns the material
-            material_data: Dictionary containing material information
-            
-        Returns:
-            List of recommended partner companies with match reasons
-        """
+@api.route('/match')
+class Match(Resource):
+    @api.expect(match_input)
+    @api.response(200, 'Success')
+    @api.response(400, 'Invalid input data')
+    @api.response(500, 'Internal error')
+    def post(self):
         try:
-            logger.info(f"Starting Phase 2 AI matchmaking for company {company_id}, material: {material_data.get('name', 'Unknown')}")
-            
-            # Construct the exact prompt as specified in the master directive
-            prompt = self._construct_deepseek_prompt(material_data)
-            
-            # Call DeepSeek API with exact structure
-            response = self._call_deepseek_api(prompt)
-            
-            # Parse and validate response
-            parsed_response = self._parse_response(response)
-            
-            # Find actual companies in database that match the recommendations
-            partner_companies = self._find_matching_companies(parsed_response.get('recommendations', []))
-            
-            logger.info(f"Successfully found {len(partner_companies)} partner companies")
-            
-            return partner_companies
-            
-        except Exception as e:
-            logger.error(f"Error in find_partner_companies: {str(e)}")
-            logger.error(traceback.format_exc())
-            return []
-    
-    def _construct_deepseek_prompt(self, material_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Construct the exact DeepSeek prompt structure as specified in the master directive.
-        """
-        
-        # Extract material information
-        material_name = material_data.get('name', 'Unknown')
-        material_description = material_data.get('description', '')
-        material_category = material_data.get('category', 'general')
-        material_quantity = material_data.get('quantity', 'Unknown')
-        material_frequency = material_data.get('frequency', 'monthly')
-        material_notes = material_data.get('notes', '')
-        
-        # Determine if it's an output/waste or input/requirement
-        material_type = "Output/Waste" if material_data.get('type') == 'waste' else "Input/Requirement"
-        
-        # Construct the exact prompt structure from the master directive
-        user_content = f"Find the best company matches for the following material. Material -- Type: '{material_type}', Name: '{material_name}', Description: '{material_description}'"
-        
-        return {
-            "model": self.deepseek_model,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are an AI-powered industrial matchmaking expert. Your task is to analyze a specific industrial material and recommend the top 3 types of companies that would be ideal symbiotic partners for it. Provide the response as a JSON object with a single key: 'recommendations'. This key should contain a list of objects, with each object having two fields: 'company_type' (the type of company, e.g., 'Cement Manufacturer') and 'match_reason' (a concise explanation of why it's a good match)."
+            data = request.json
+            model_id = data.get('model_id')
+            input_data = data.get('input_data')
+            # Schema-based validation
+            schema = {
+                'type': 'object',
+                'properties': {
+                    'features': {'type': 'array'},
+                    'graph': {'type': 'object'}
                 },
-                {
-                    "role": "user",
-                    "content": user_content
-                }
-            ],
-            "response_format": { "type": "json_object" }
-        }
-    
-    def _call_deepseek_api(self, prompt_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Call the DeepSeek API with the exact prompt structure."""
-        
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.deepseek_api_key}'
-        }
-        
-        try:
-            logger.info(f"Calling DeepSeek API with model {self.deepseek_model}...")
-            response = requests.post(
-                self.deepseek_base_url,
-                headers=headers,
-                json=prompt_data,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                logger.info("DeepSeek API call successful")
-                return result
-            else:
-                logger.error(f"DeepSeek API error: {response.status_code} - {response.text}")
-                raise Exception(f"DeepSeek API returned status {response.status_code}")
-                
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request error calling DeepSeek API: {str(e)}")
-            raise Exception(f"Failed to call DeepSeek API: {str(e)}")
-    
-    def _parse_response(self, api_response: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse and validate the DeepSeek API response."""
-        
-        try:
-            # Extract the content from the API response
-            if 'choices' in api_response and len(api_response['choices']) > 0:
-                content = api_response['choices'][0]['message']['content']
-                
-                # Parse the JSON content
-                if isinstance(content, str):
-                    parsed = json.loads(content)
-                else:
-                    parsed = content
-                
-                # Validate the structure
-                if not isinstance(parsed, dict):
-                    raise ValueError("Response is not a dictionary")
-                
-                # Ensure required keys exist
-                if 'recommendations' not in parsed:
-                    parsed['recommendations'] = []
-                
-                # Validate and clean each recommendation
-                parsed['recommendations'] = [
-                    self._validate_and_clean_recommendation(rec) 
-                    for rec in parsed['recommendations'] 
-                    if self._validate_recommendation(rec)
+                'anyOf': [
+                    {'required': ['features']},
+                    {'required': ['graph']}
                 ]
-                
-                return parsed
+            }
+            data_validator.set_schema(schema)
+            if not data_validator.validate(input_data):
+                logger.error("Input data failed schema validation.")
+                return {'error': 'Invalid input data'}, 400
+            model = get_model(model_id)
+            # Use GNN if graph, else transformer/MLP
+            if 'graph' in input_data:
+                # Assume input_data['graph'] is a torch_geometric.data.Data object
+                graph_data = input_data['graph']
+                with torch.no_grad():
+                    output = model(graph_data)
             else:
-                raise ValueError("Invalid API response structure")
-                
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing error: {str(e)}")
-            raise ValueError(f"Failed to parse JSON response: {str(e)}")
+                features = torch.FloatTensor(input_data['features']).unsqueeze(0)
+                with torch.no_grad():
+                    output = model(features)
+            metrics_tracker.record_inference_metrics({'model_id': model_id, 'success': True})
+            logger.info(f"Matchmaking successful for model {model_id}")
+            return {'match_result': output.cpu().numpy().tolist()}
         except Exception as e:
-            logger.error(f"Error parsing response: {str(e)}")
-            raise
-    
-    def _validate_recommendation(self, rec: Dict[str, Any]) -> bool:
-        """Validate that a recommendation has the required fields."""
-        required_fields = ['company_type', 'match_reason']
-        return all(field in rec and rec[field] for field in required_fields)
-    
-    def _validate_and_clean_recommendation(self, rec: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate and clean a recommendation, ensuring all required fields are present."""
-        
-        return {
-            'company_type': rec.get('company_type', 'Unknown'),
-            'match_reason': rec.get('match_reason', 'No reason provided'),
-            'confidence_score': rec.get('confidence_score', 0.8),
-            'ai_generated': True
-        }
-    
-    def _find_matching_companies(self, recommendations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Find actual companies in the database that match the AI recommendations.
-        This is a simplified version - in production, you'd query the actual database.
-        """
-        
-        partner_companies = []
-        
-        for rec in recommendations:
-            company_type = rec.get('company_type', '').lower()
-            match_reason = rec.get('match_reason', '')
-            
-            # Simulate database query for companies matching the type
-            # In production, this would be a real database query
-            matching_companies = self._query_companies_by_type(company_type)
-            
-            for company in matching_companies:
-                partner_companies.append({
-                    'company_id': company.get('id'),
-                    'company_name': company.get('name'),
-                    'company_type': company_type,
-                    'industry': company.get('industry'),
-                    'match_reason': match_reason,
-                    'match_score': rec.get('confidence_score', 0.8),
-                    'ai_generated': True
-                })
-        
-        return partner_companies
-    
-    def _query_companies_by_type(self, company_type: str) -> List[Dict[str, Any]]:
-        """
-        Simulate database query for companies matching a specific type.
-        In production, this would query the actual database.
-        """
-        
-        # This is a mock implementation - replace with actual database queries
-        mock_companies = {
-            'cattle farm': [
-                {'id': 'farm_001', 'name': 'Green Valley Cattle Farm', 'industry': 'Agriculture'},
-                {'id': 'farm_002', 'name': 'Sunset Ranch', 'industry': 'Agriculture'}
-            ],
-            'cement manufacturer': [
-                {'id': 'cement_001', 'name': 'Portland Cement Co', 'industry': 'Construction Materials'},
-                {'id': 'cement_002', 'name': 'Concrete Solutions Inc', 'industry': 'Construction Materials'}
-            ],
-            'textile manufacturer': [
-                {'id': 'textile_001', 'name': 'Fabric World Ltd', 'industry': 'Textiles'},
-                {'id': 'textile_002', 'name': 'Cotton Mills International', 'industry': 'Textiles'}
-            ],
-            'paper mill': [
-                {'id': 'paper_001', 'name': 'Green Paper Products', 'industry': 'Paper Manufacturing'},
-                {'id': 'paper_002', 'name': 'Recycled Paper Co', 'industry': 'Paper Manufacturing'}
-            ],
-            'chemical manufacturer': [
-                {'id': 'chem_001', 'name': 'Industrial Chemicals Ltd', 'industry': 'Chemical Manufacturing'},
-                {'id': 'chem_002', 'name': 'Green Chemistry Solutions', 'industry': 'Chemical Manufacturing'}
-            ]
-        }
-        
-        # Find companies that match the type (case-insensitive partial matching)
-        matching_companies = []
-        for key, companies in mock_companies.items():
-            if company_type in key or key in company_type:
-                matching_companies.extend(companies)
-        
-        # If no exact matches, return some general companies
-        if not matching_companies:
-            matching_companies = [
-                {'id': 'general_001', 'name': 'General Manufacturing Co', 'industry': 'Manufacturing'},
-                {'id': 'general_002', 'name': 'Industrial Solutions Inc', 'industry': 'Manufacturing'}
-            ]
-        
-        return matching_companies
-    
-    # @enforce_pricing_validation_decorator  # Temporarily disabled
-    async def create_matches_in_database(self, company_id: str, partner_companies: List[Dict[str, Any]], material_name: str) -> List[Dict[str, Any]]:
-        """
-        Create match records in the database for the partner companies.
-        Now includes mandatory pricing validation before creating matches.
-        """
-        
-        created_matches = []
-        
-        for partner in partner_companies:
-            try:
-                # Get pricing data for validation
-                if PRICING_INTEGRATION_AVAILABLE:
-                    pricing_data = await get_material_pricing_data_integrated(material_name)
-                    if pricing_data:
-                        # Create match data for pricing validation
-                        match_data = {
-                            "material": material_name,
-                            "quantity": partner.get("quantity", 1000.0),
-                            "quality": partner.get("quality", "clean"),
-                            "source_location": partner.get("location", "unknown"),
-                            "destination_location": "unknown",
-                            "price": pricing_data.recycled_price,
-                            "company_id": company_id,
-                            "partner_company_id": partner.get("company_id")
-                        }
-                        
-                        # Validate pricing before creating match
-                        is_valid = await validate_match_pricing_requirement_integrated(
-                            match_data["material"],
-                            match_data["quantity"],
-                            match_data["quality"],
-                            match_data["source_location"],
-                            match_data["destination_location"],
-                            match_data["price"]
-                        )
-                        
-                        if not is_valid:
-                            logger.warning(f"Pricing validation failed for match: {company_id} -> {partner.get('company_id')}")
-                            continue
-                
-                # Create match record
-                match_record = {
-                    'id': f"match_{company_id}_{partner['company_id']}_{datetime.now().timestamp()}",
-                    'company_id': company_id,
-                    'partner_company_id': partner['company_id'],
-                    'match_score': partner['match_score'],
-                    'match_reason': partner['match_reason'],
-                    'materials_involved': [material_name],
-                    'status': 'pending',
-                    'created_at': datetime.now().isoformat(),
-                    'ai_generated': True,
-                    'pricing_validated': True,
-                    'pricing_timestamp': datetime.now().isoformat()
-                }
-                
-                # Add pricing data if available
-                if PRICING_INTEGRATION_AVAILABLE and pricing_data:
-                    match_record['pricing_data'] = {
-                        'virgin_price': pricing_data.virgin_price,
-                        'recycled_price': pricing_data.recycled_price,
-                        'savings_percentage': pricing_data.savings_percentage,
-                        'profit_margin': pricing_data.profit_margin,
-                        'risk_level': pricing_data.risk_level
-                    }
-                
-                created_matches.append(match_record)
-                logger.info(f"Created pricing-validated match: {company_id} -> {partner['company_id']} for material: {material_name}")
-                
-            except Exception as e:
-                logger.error(f"Error creating match for partner {partner.get('company_id')}: {e}")
-                continue
-        
-        return created_matches
+            logger.error(f"Matchmaking error: {e}")
+            metrics_tracker.record_inference_metrics({'model_id': request.json.get('model_id', 'unknown'), 'success': False, 'error': str(e)})
+            return {'error': str(e)}, 500
 
-# Global instance for easy access
-ai_matchmaking_service = AIMatchmakingService()
-
-def find_partner_companies(company_id: str, material_data: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Convenience function to find partner companies for a material."""
-    return ai_matchmaking_service.find_partner_companies(company_id, material_data)
-
-def create_matches_in_database(company_id: str, partner_companies: List[Dict[str, Any]], material_name: str) -> List[Dict[str, Any]]:
-    """Convenience function to create matches in the database."""
-    return ai_matchmaking_service.create_matches_in_database(company_id, partner_companies, material_name)
-
-if __name__ == "__main__":
-    import sys
-    import json
-    
-    try:
-        # Read input from command line arguments
-        if len(sys.argv) > 1:
-            input_data = json.loads(sys.argv[1])
-            action = input_data.get('action', 'find_partner_companies')
-            
-            if action == 'find_partner_companies':
-                company_id = input_data.get('company_id', '')
-                material_data = input_data.get('material_data', {})
-                result = find_partner_companies(company_id, material_data)
-                print(json.dumps(result))
-            elif action == 'create_matches_in_database':
-                company_id = input_data.get('company_id', '')
-                partner_companies = input_data.get('partner_companies', [])
-                material_name = input_data.get('material_name', '')
-                result = create_matches_in_database(company_id, partner_companies, material_name)
-                print(json.dumps(result))
+@api.route('/explain')
+class Explain(Resource):
+    @api.expect(match_input)
+    @api.response(200, 'Success')
+    @api.response(400, 'Invalid input data')
+    @api.response(500, 'Internal error')
+    def post(self):
+        try:
+            data = request.json
+            model_id = data.get('model_id')
+            input_data = data.get('input_data')
+            schema = {
+                'type': 'object',
+                'properties': {
+                    'features': {'type': 'array'},
+                    'graph': {'type': 'object'}
+                },
+                'anyOf': [
+                    {'required': ['features']},
+                    {'required': ['graph']}
+                ]
+            }
+            data_validator.set_schema(schema)
+            if not data_validator.validate(input_data):
+                logger.error("Input data failed schema validation.")
+                return {'error': 'Invalid input data'}, 400
+            model = get_model(model_id)
+            if 'features' in input_data:
+                features = torch.FloatTensor(input_data['features']).unsqueeze(0)
+                explainer = shap.Explainer(model, features)
+                shap_values = explainer(features)
+                logger.info(f"Explanation generated for model {model_id}")
+                return {'shap_values': shap_values.values.tolist(), 'base_values': shap_values.base_values.tolist()}
             else:
-                print(json.dumps({'error': f'Unknown action: {action}'}))
-        else:
-            print(json.dumps({'error': 'No input data provided'}))
-            
-    except Exception as e:
-        print(json.dumps({'error': str(e)})) 
+                return {'error': 'Explainability for GNN graphs not yet implemented'}, 400
+        except Exception as e:
+            logger.error(f"Explainability error: {e}")
+            return {'error': str(e)}, 500
+
+@api.route('/train')
+class Train(Resource):
+    @api.expect(match_input)
+    @api.response(200, 'Training started')
+    @api.response(500, 'Error')
+    def post(self):
+        try:
+            data = request.json
+            model_id = data.get('model_id')
+            input_data = data.get('input_data')
+            # Assume input_data contains 'features' and 'labels' or 'graph' and 'labels'
+            model = get_model(model_id)
+            if 'features' in input_data:
+                features = torch.FloatTensor(input_data['features'])
+                labels = torch.FloatTensor(input_data['labels'])
+                dataset = TensorDataset(features, labels)
+                loader = DataLoader(dataset, batch_size=32, shuffle=True)
+                optimizer_ = torch.optim.Adam(model.parameters(), lr=0.001)
+                criterion = nn.BCEWithLogitsLoss()
+                for epoch in range(10):
+                    for X, y in loader:
+                        optimizer_.zero_grad()
+                        output = model(X)
+                        loss = criterion(output, y)
+                        loss.backward()
+                        optimizer_.step()
+                logger.info(f"Training completed for model {model_id}")
+            elif 'graph' in input_data:
+                # Placeholder for GNN training
+                logger.info(f"GNN training for model {model_id} (not implemented in this stub)")
+            return {'status': 'training started', 'model_id': model_id}
+        except Exception as e:
+            logger.error(f"Training error: {e}")
+            return {'error': str(e)}, 500
+
+@api.route('/optimize')
+class Optimize(Resource):
+    @api.expect(match_input)
+    @api.response(200, 'Optimization started')
+    @api.response(500, 'Error')
+    def post(self):
+        try:
+            data = request.json
+            model_id = data.get('model_id')
+            input_data = data.get('input_data')
+            logger.info(f"Optimization requested for model {model_id}")
+            model_info = model_registry.get_model(model_id)
+            optimizer.optimize_hyperparameters(
+                model_type=model_info['model_type'],
+                training_data=input_data.get('training_data'),
+                validation_data=input_data.get('validation_data'),
+                optimization_strategy='bayesian'
+            )
+            return {'status': 'optimization started', 'model_id': model_id}
+            except Exception as e:
+            logger.error(f"Optimization error: {e}")
+            return {'error': str(e)}, 500
+
+@api.route('/health')
+class Health(Resource):
+    @api.response(200, 'Healthy')
+    @api.response(500, 'Error')
+    def get(self):
+        try:
+            return {'status': 'healthy'}
+        except Exception as e:
+            logger.error(f"Health check error: {e}")
+            return {'status': 'error', 'error': str(e)}, 500
+
+if __name__ == '__main__':
+    logger.info("Starting AI Matchmaking Service...")
+    app.run(host='0.0.0.0', port=8020, debug=False) 

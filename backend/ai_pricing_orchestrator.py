@@ -24,10 +24,39 @@ import requests
 from bs4 import BeautifulSoup
 import schedule
 import queue
+import torch
+from backend.ml_core.models import BaseNN, BaseRLAgent
+from backend.ml_core.training import train_supervised, train_rl
+from backend.ml_core.inference import predict_supervised
+from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from torch.utils.data import DataLoader, TensorDataset
+import os
+import torch.nn as nn
+import torch.nn.functional as F
+from flask import Flask, request, jsonify
+from flask_restx import Api, Resource, fields
+import shap
+from ml_core.models import ModelFactory
+from ml_core.utils import ModelRegistry
+from ml_core.monitoring import MLMetricsTracker
+from ml_core.optimization import HyperparameterOptimizer
+from backend.utils.distributed_logger import DistributedLogger
+from backend.utils.advanced_data_validator import AdvancedDataValidator
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+api = Api(app, version='1.0', title='AI Pricing Orchestrator', description='Insanely Advanced Modular ML Pricing', doc='/docs')
+
+logger = DistributedLogger('AIPricingOrchestrator', log_file='logs/ai_pricing_orchestrator.log')
+model_registry = ModelRegistry()
+metrics_tracker = MLMetricsTracker()
+optimizer = HyperparameterOptimizer()
+data_validator = AdvancedDataValidator(logger=logger)
 
 class PriceSource(Enum):
     COMMODITY_API = "commodity_api"
@@ -573,6 +602,33 @@ class RefiningCalculator:
         
         return cost
 
+class PricingMLModel:
+    def __init__(self, input_dim=8, output_dim=1, model_type="regression", model_dir="pricing_models"):
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.model_type = model_type
+        self.model_dir = model_dir
+        if model_type == "regression":
+            self.model = BaseNN(input_dim, output_dim)
+        elif model_type == "rl":
+            self.model = BaseRLAgent(input_dim, output_dim)
+        else:
+            raise ValueError("Unknown model type")
+    def train(self, X, y, epochs=20):
+        dataset = TensorDataset(torch.tensor(X, dtype=torch.float), torch.tensor(y, dtype=torch.float))
+        loader = DataLoader(dataset, batch_size=32, shuffle=True)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01)
+        criterion = torch.nn.MSELoss()
+        train_supervised(self.model, loader, optimizer, criterion, epochs=epochs)
+        save_checkpoint(self.model, optimizer, epochs, os.path.join(self.model_dir, f"{self.model_type}_model.pt"))
+    def predict(self, X):
+        return predict_supervised(self.model, torch.tensor(X, dtype=torch.float)).detach().cpu().numpy()
+    def simulate_customer_behavior(self, n=100):
+        # Simulate customer features and price responses
+        X = np.random.randn(n, self.input_dim)
+        y = np.random.randn(n, self.output_dim)
+        return X, y
+
 class AI_PricingOrchestrator:
     """
     World-Class AI Pricing Orchestrator
@@ -959,28 +1015,143 @@ def get_material_pricing_data(material: str) -> Optional[PricingResult]:
         logger.error(f"Error getting pricing data for {material}: {e}")
         return None
 
-if __name__ == "__main__":
-    # Test the pricing orchestrator
-    async def test_pricing():
-        await pricing_orchestrator.start()
-        
-        # Test price fetching
-        price = await pricing_orchestrator.get_material_price("gold")
-        print(f"Gold price: {price}")
-        
-        # Test pricing calculation
-        pricing = pricing_orchestrator.calculate_match_pricing(
-            "gold", 100.0, "clean", "New York", "Los Angeles"
-        )
-        print(f"Pricing result: {pricing}")
-        
-        # Test validation
-        validation = pricing_orchestrator.validate_match_pricing(
-            "gold", 100.0, "clean", "New York", "Los Angeles", 1800.0
-        )
-        print(f"Validation: {validation}")
-        
-        await asyncio.sleep(5)
-        pricing_orchestrator.stop()
-    
-    asyncio.run(test_pricing()) 
+pricing_input = api.model('PricingInput', {
+    'model_id': fields.String(required=True, description='Model identifier'),
+    'input_data': fields.Raw(required=True, description='Input data for pricing (features, context, etc.)')
+})
+
+@api.route('/predict')
+class Predict(Resource):
+    @api.expect(pricing_input)
+    @api.response(200, 'Success')
+    @api.response(400, 'Invalid input data')
+    @api.response(500, 'Internal error')
+    def post(self):
+        try:
+            data = request.json
+            model_id = data.get('model_id')
+            input_data = data.get('input_data')
+            # Schema-based validation
+            schema = {
+                'type': 'object',
+                'properties': {
+                    'features': {'type': 'array'}
+                },
+                'required': ['features']
+            }
+            data_validator.set_schema(schema)
+            if not data_validator.validate(input_data):
+                logger.error("Input data failed schema validation.")
+                return {'error': 'Invalid input data'}, 400
+            model = get_model(model_id)
+            features = torch.FloatTensor(input_data['features']).unsqueeze(0)
+            with torch.no_grad():
+                output = model(features)
+            metrics_tracker.record_inference_metrics({'model_id': model_id, 'success': True})
+            logger.info(f"Pricing prediction successful for model {model_id}")
+            return {'price_prediction': output.cpu().numpy().tolist()}
+        except Exception as e:
+            logger.error(f"Pricing prediction error: {e}")
+            metrics_tracker.record_inference_metrics({'model_id': request.json.get('model_id', 'unknown'), 'success': False, 'error': str(e)})
+            return {'error': str(e)}, 500
+
+@api.route('/explain')
+class Explain(Resource):
+    @api.expect(pricing_input)
+    @api.response(200, 'Success')
+    @api.response(400, 'Invalid input data')
+    @api.response(500, 'Internal error')
+    def post(self):
+        try:
+            data = request.json
+            model_id = data.get('model_id')
+            input_data = data.get('input_data')
+            schema = {
+                'type': 'object',
+                'properties': {
+                    'features': {'type': 'array'}
+                },
+                'required': ['features']
+            }
+            data_validator.set_schema(schema)
+            if not data_validator.validate(input_data):
+                logger.error("Input data failed schema validation.")
+                return {'error': 'Invalid input data'}, 400
+            model = get_model(model_id)
+            features = torch.FloatTensor(input_data['features']).unsqueeze(0)
+            explainer = shap.Explainer(model, features)
+            shap_values = explainer(features)
+            logger.info(f"Explanation generated for model {model_id}")
+            return {'shap_values': shap_values.values.tolist(), 'base_values': shap_values.base_values.tolist()}
+        except Exception as e:
+            logger.error(f"Explainability error: {e}")
+            return {'error': str(e)}, 500
+
+@api.route('/train')
+class Train(Resource):
+    @api.expect(pricing_input)
+    @api.response(200, 'Training started')
+    @api.response(500, 'Error')
+    def post(self):
+        try:
+            data = request.json
+            model_id = data.get('model_id')
+            input_data = data.get('input_data')
+            # Assume input_data contains 'features' and 'labels'
+            model = get_model(model_id)
+            features = torch.FloatTensor(input_data['features'])
+            labels = torch.FloatTensor(input_data['labels'])
+            dataset = TensorDataset(features, labels)
+            loader = DataLoader(dataset, batch_size=32, shuffle=True)
+            optimizer_ = torch.optim.Adam(model.parameters(), lr=0.001)
+            criterion = nn.MSELoss()
+            for epoch in range(10):
+                for X, y in loader:
+                    optimizer_.zero_grad()
+                    output = model(X)
+                    loss = criterion(output, y)
+                    loss.backward()
+                    optimizer_.step()
+            logger.info(f"Training completed for model {model_id}")
+            return {'status': 'training started', 'model_id': model_id}
+        except Exception as e:
+            logger.error(f"Training error: {e}")
+            return {'error': str(e)}, 500
+
+@api.route('/optimize')
+class Optimize(Resource):
+    @api.expect(pricing_input)
+    @api.response(200, 'Optimization started')
+    @api.response(500, 'Error')
+    def post(self):
+        try:
+            data = request.json
+            model_id = data.get('model_id')
+            input_data = data.get('input_data')
+            logger.info(f"Optimization requested for model {model_id}")
+            model_info = model_registry.get_model(model_id)
+            optimizer.optimize_hyperparameters(
+                model_type=model_info['model_type'],
+                training_data=input_data.get('training_data'),
+                validation_data=input_data.get('validation_data'),
+                optimization_strategy='bayesian'
+            )
+            return {'status': 'optimization started', 'model_id': model_id}
+        except Exception as e:
+            logger.error(f"Optimization error: {e}")
+            return {'error': str(e)}, 500
+
+@api.route('/health')
+class Health(Resource):
+    @api.response(200, 'Healthy')
+    @api.response(500, 'Error')
+    def get(self):
+        try:
+            return {'status': 'healthy'}
+        except Exception as e:
+            logger.error(f"Health check error: {e}")
+            return {'status': 'error', 'error': str(e)}, 500
+
+if __name__ == '__main__':
+    logger.info("Starting AI Pricing Orchestrator...")
+    app.run(host='0.0.0.0', port=8030, debug=False) 

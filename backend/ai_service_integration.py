@@ -1,370 +1,909 @@
-import logging
-import threading
-import time
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime
+import os
 import json
+import logging
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Optional, Tuple, Any, Union
+from datetime import datetime, timedelta
 import asyncio
-from pathlib import Path
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+import grpc
+import grpc.aio
+from grpc import RpcError
+import kubernetes
+from kubernetes import client, config
+import docker
+from docker.errors import DockerException
+import consul
+import redis
+import prometheus_client
+from prometheus_client import Counter, Histogram, Gauge
+import circuitbreaker
+from circuitbreaker import circuit
+import jwt
+import hashlib
+import hmac
+import base64
+from dataclasses import dataclass
+from enum import Enum
+import yaml
+import subprocess
+import signal
+import threading
+import queue
+import time
+from collections import deque
 
-# Import all required AI components directly, fail if missing
-from backend.knowledge_graph import knowledge_graph
-from backend.federated_meta_learning import federated_learner
-from backend.gnn_reasoning_engine import gnn_reasoning_engine
-from revolutionary_ai_matching import RevolutionaryAIMatching
-from model_persistence_manager import model_persistence_manager
+# ML Core imports
+from ml_core.models import (
+    ModelFactory,
+    ModelArchitecture,
+    ModelConfig
+)
+from ml_core.training import (
+    ModelTrainer,
+    TrainingConfig,
+    TrainingMetrics
+)
+from ml_core.data_processing import (
+    DataProcessor,
+    DataValidator
+)
+from ml_core.optimization import (
+    HyperparameterOptimizer,
+    ServiceOptimizer
+)
+from ml_core.monitoring import (
+    MLMetricsTracker,
+    ServiceMonitor
+)
+from ml_core.utils import (
+    ModelRegistry,
+    ServiceRegistry,
+    ConfigManager
+)
 
-logger = logging.getLogger(__name__)
+class ServiceStatus(Enum):
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+    OFFLINE = "offline"
 
-class AIServiceIntegration:
-    """
-    Unified AI Service Integration Layer for ISM Platform
-    Coordinates all AI components with persistent model management
-    Features:
-    - Centralized AI service management
-    - Model persistence and versioning
-    - Real-time AI pipeline orchestration
-    - Performance monitoring and optimization
-    - Fault tolerance and recovery (no fallbacks)
-    """
+class ServiceType(Enum):
+    ML_MODEL = "ml_model"
+    DATA_PROCESSING = "data_processing"
+    INFERENCE = "inference"
+    TRAINING = "training"
+    MONITORING = "monitoring"
+
+@dataclass
+class ServiceEndpoint:
+    service_id: str
+    service_type: ServiceType
+    url: str
+    port: int
+    health_check_url: str
+    status: ServiceStatus
+    load_balancer_weight: float
+    last_health_check: datetime
+    response_time: float
+    error_rate: float
+
+class ServiceDiscovery:
+    """Service discovery with health checking and load balancing"""
+    def __init__(self, consul_host: str = "localhost", consul_port: int = 8500):
+        self.consul_host = consul_host
+        self.consul_port = consul_port
+        
+        try:
+            self.consul_client = consul.Consul(host=consul_host, port=consul_port)
+        except Exception as e:
+            logging.warning(f"Consul not available: {e}")
+            self.consul_client = None
+        
+        # Service registry
+        self.services = {}
+        
+        # Health check configuration
+        self.health_check_interval = 30  # seconds
+        self.health_check_timeout = 5    # seconds
+        
+        # Start health checking
+        self._start_health_checking()
     
-    def __init__(self):
-        # Initialize services (no fallbacks)
-        self.services = {
-            'knowledge_graph': knowledge_graph,
-            'federated_learning': federated_learner,
-            'gnn_reasoning': gnn_reasoning_engine,
-            'advanced_matching': RevolutionaryAIMatching(),
-            'model_persistence': model_persistence_manager
-        }
-        
-        # Service status tracking
-        self.service_status = {}
-        self.performance_metrics = {}
-        self.error_log = []
-        
-        # Threading for concurrent operations
-        self.lock = threading.Lock()
-        
-        # Initialize all services
-        self._initialize_services()
-        
-        # Start monitoring
-        self._start_monitoring()
-        
-        logger.info("AI Service Integration Layer initialized (no fallbacks)")
+    def register_service(self, service_endpoint: ServiceEndpoint):
+        """Register a service endpoint"""
+        try:
+            self.services[service_endpoint.service_id] = service_endpoint
+            
+            # Register with Consul if available
+            if self.consul_client:
+                self.consul_client.agent.service.register(
+                    name=service_endpoint.service_id,
+                    service_id=service_endpoint.service_id,
+                    address=service_endpoint.url,
+                    port=service_endpoint.port,
+                    check=consul.Check.http(
+                        url=f"http://{service_endpoint.url}:{service_endpoint.port}{service_endpoint.health_check_url}",
+                        interval=f"{self.health_check_interval}s",
+                        timeout=f"{self.health_check_timeout}s"
+                    )
+                )
+            
+            logging.info(f"Registered service: {service_endpoint.service_id}")
+            
+        except Exception as e:
+            logging.error(f"Error registering service: {e}")
     
-    def _initialize_services(self):
-        """Initialize all AI services"""
-        for service_name, service in self.services.items():
-            try:
-                self.service_status[service_name] = {
-                    'status': 'active',
-                    'last_health_check': datetime.now(),
-                    'error_count': 0,
-                    'performance': {}
-                }
-                logger.info(f"✅ {service_name} initialized successfully")
+    def discover_service(self, service_type: ServiceType) -> List[ServiceEndpoint]:
+        """Discover services of a specific type"""
+        try:
+            if self.consul_client:
+                # Query Consul
+                _, services = self.consul_client.health.service(service_type.value, passing=True)
+                return [self._consul_service_to_endpoint(s) for s in services]
+            else:
+                # Use local registry
+                return [service for service in self.services.values() 
+                       if service.service_type == service_type and service.status == ServiceStatus.HEALTHY]
+                
             except Exception as e:
-                logger.error(f"❌ Failed to initialize {service_name}: {e}")
-                self.service_status[service_name] = {
-                    'status': 'error',
-                    'last_health_check': datetime.now(),
-                    'error_count': 1,
-                    'error_message': str(e)
-                }
+            logging.error(f"Error discovering services: {e}")
+            return []
     
-    def _start_monitoring(self):
-        """Start background monitoring of services"""
-        def monitor_services():
+    def _consul_service_to_endpoint(self, consul_service) -> ServiceEndpoint:
+        """Convert Consul service to endpoint"""
+        service = consul_service['Service']
+        checks = consul_service['Checks']
+        
+        # Determine status from health checks
+        status = ServiceStatus.HEALTHY
+        for check in checks:
+            if check['Status'] != 'passing':
+                status = ServiceStatus.UNHEALTHY
+                break
+        
+        return ServiceEndpoint(
+            service_id=service['ID'],
+            service_type=ServiceType(service['Service']),
+            url=service['Address'],
+            port=service['Port'],
+            health_check_url='/health',
+            status=status,
+            load_balancer_weight=1.0,
+            last_health_check=datetime.now(),
+            response_time=0.0,
+            error_rate=0.0
+        )
+    
+    def _start_health_checking(self):
+        """Start health checking thread"""
+        def health_checker():
             while True:
                 try:
-                    self._update_performance_metrics()
-                    time.sleep(60)  # Check every minute
+                    for service_id, service in self.services.items():
+                        self._check_service_health(service)
+                    time.sleep(self.health_check_interval)
                 except Exception as e:
-                    logger.error(f"Error in service monitoring: {e}")
-                    time.sleep(300)  # Wait 5 minutes on error
+                    logging.error(f"Health checking error: {e}")
+                    time.sleep(60)  # Wait longer on error
         
-        monitor_thread = threading.Thread(target=monitor_services, daemon=True)
-        monitor_thread.start()
-        logger.info("Service monitoring started")
+        thread = threading.Thread(target=health_checker, daemon=True)
+        thread.start()
     
-    def _update_performance_metrics(self):
-        """Update performance metrics for all services"""
-        for service_name, service in self.services.items():
-            try:
-                self._update_performance_metrics_for_service(service_name, service)
-            except Exception as e:
-                logger.error(f"Error updating metrics for {service_name}: {e}")
-                self.service_status[service_name]['error_count'] += 1
-    
-    def _update_performance_metrics_for_service(self, service_name: str, service: Any):
-        """Update performance metrics for a specific service"""
+    def _check_service_health(self, service: ServiceEndpoint):
+        """Check health of a service endpoint"""
         try:
-            if service_name == 'knowledge_graph':
-                stats = service.get_graph_statistics()
-                self.service_status[service_name]['performance'] = {
-                    'nodes': stats.get('nodes', 0),
-                    'edges': stats.get('edges', 0),
-                    'embeddings_available': stats.get('embeddings_available', False)
-                }
+            start_time = time.time()
             
-            elif service_name == 'federated_learning':
-                stats = service.get_learning_statistics()
-                self.service_status[service_name]['performance'] = {
-                    'total_clients': stats.get('total_clients', 0),
-                    'active_clients': stats.get('active_clients', 0),
-                    'current_round': stats.get('current_round', 0)
-                }
+            # Make health check request
+            response = requests.get(
+                f"http://{service.url}:{service.port}{service.health_check_url}",
+                timeout=self.health_check_timeout
+            )
             
-            elif service_name == 'gnn_reasoning':
-                stats = service.get_inference_statistics()
-                self.service_status[service_name]['performance'] = {
-                    'total_inferences': stats.get('total_inferences', 0),
-                    'average_inference_time': stats.get('average_inference_time', 0)
-                }
+            response_time = time.time() - start_time
             
-            elif service_name == 'advanced_matching':
-                stats = service.get_matching_statistics()
-                self.service_status[service_name]['performance'] = {
-                    'total_matches': stats.get('total_matches', 0),
-                    'average_matching_time': stats.get('average_matching_time', 0)
-                }
+            # Update service status
+            service.last_health_check = datetime.now()
+            service.response_time = response_time
             
-            elif service_name == 'model_persistence':
-                self.service_status[service_name]['performance'] = {
-                    'models_stored': len(getattr(service, 'models', {})),
-                    'last_backup': datetime.now().isoformat()
-                }
-            
-            # Update health check timestamp
-            self.service_status[service_name]['last_health_check'] = datetime.now()
-            
-        except Exception as e:
-            logger.error(f"Error updating performance metrics for {service_name}: {e}")
-            self.service_status[service_name]['error_count'] += 1
-    
-    def get_service_status(self) -> Dict[str, Any]:
-        """Get status of all services"""
-        return self.service_status
-    
-    def get_service_health(self) -> Dict[str, str]:
-        """Get health status of all services"""
-        health = {}
-        for service_name, status in self.service_status.items():
-            if status['error_count'] > 5:
-                health[service_name] = 'critical'
-            elif status['error_count'] > 2:
-                health[service_name] = 'warning'
+            if response.status_code == 200:
+                service.status = ServiceStatus.HEALTHY
+                service.error_rate = max(0, service.error_rate - 0.1) # Reduce error rate
             else:
-                health[service_name] = 'healthy'
-        return health
-    
-    def execute_ai_pipeline(self, pipeline_config: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute AI pipeline (no fallback)"""
-        try:
-            results = {}
-            
-            # Execute each step in the pipeline
-            for step_name, step_config in pipeline_config.items():
-                step_result = self._execute_pipeline_step(step_name, step_config)
-                results[step_name] = {
-                    'success': True,
-                    'data': step_result
-                }
-            
-            return {
-                'pipeline_id': pipeline_config.get('pipeline_id', 'unknown'),
-                'timestamp': datetime.now().isoformat(),
-                'overall_success': all(r.get('success', False) for r in results.values()),
-                'steps': results
-            }
-            
-        except Exception as e:
-            logger.error(f"AI pipeline execution failed: {e}")
-            return {
-                'pipeline_id': pipeline_config.get('pipeline_id', 'unknown'),
-                'timestamp': datetime.now().isoformat(),
-                'overall_success': False,
-                'error': str(e)
-            }
-    
-    def _execute_pipeline_step(self, step_name: str, step_config: Dict[str, Any]) -> Any:
-        """Execute a single pipeline step"""
-        if step_name == 'matching':
-            return self._execute_matching_pipeline(step_config)
-        elif step_name == 'analysis':
-            return self._execute_analysis_pipeline(step_config)
-        elif step_name == 'forecasting':
-            return self._execute_forecasting_pipeline(step_config)
-        else:
-            raise ValueError(f"Unknown pipeline step: {step_name}")
-    
-    def _execute_matching_pipeline(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute advanced matching pipeline"""
-        try:
-            results = {}
-            
-            # Train models if requested
-            if config.get('train_semantic', False):
-                training_data = config.get('semantic_training_data', [])
-                if training_data:
-                    semantic_result = self.services['advanced_matching'].train_semantic_model(training_data)
-                    results['semantic_training'] = semantic_result
-            
-            if config.get('train_numerical', False):
-                training_data = config.get('numerical_training_data', [])
-                if training_data:
-                    numerical_result = self.services['advanced_matching'].train_numerical_model(training_data)
-                    results['numerical_training'] = numerical_result
-            
-            # Perform matching if requested
-            if config.get('find_matches', False):
-                query_company = config.get('query_company')
-                candidate_companies = config.get('candidate_companies', [])
-                algorithm = config.get('algorithm', 'ensemble')
-                top_k = config.get('top_k', 10)
+                service.status = ServiceStatus.UNHEALTHY
+                service.error_rate = min(1.0, service.error_rate + 0.2) # Increase error rate
                 
-                if query_company and candidate_companies:
-                    matching_result = self.services['advanced_matching'].find_matches(
-                        query_company, candidate_companies, algorithm, top_k
-                    )
-                    results['matching'] = {
-                        'candidates_found': matching_result.total_candidates,
-                        'matching_time': matching_result.matching_time,
-                        'algorithm_used': matching_result.algorithm_used
-                    }
+        except Exception as e:
+            service.status = ServiceStatus.OFFLINE
+            service.error_rate = min(1.0, service.error_rate + 0.3)
+            logging.warning(f"Health check failed for {service.service_id}: {e}")
+
+class LoadBalancer:
+    """Intelligent load balancer with ML-based routing"""
+    def __init__(self, strategy: str = "weighted_round_robin"):
+        self.strategy = strategy
+        self.service_weights = {}
+        self.request_counts = {}
+        
+        # ML-based routing model
+        self.routing_model = self._create_routing_model()
+    
+    def _create_routing_model(self) -> nn.Module:
+        """Create ML routing model"""
+        return nn.Sequential(
+            nn.Linear(10, 64),  # 10 features: service load, response time, error rate, etc.
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+            nn.Sigmoid()
+        )
+    
+    def select_service(self, services: List[ServiceEndpoint], request_context: Dict = None) -> ServiceEndpoint:
+        """Select service using load balancing strategy"""
+        if not services:
+            raise ValueError("No services available")
+        
+        if self.strategy == "weighted_round_robin":
+            return self._weighted_round_robin(services)
+        elif self.strategy == "least_connections":
+            return self._least_connections(services)
+        elif self.strategy == "ml_based":
+            return self._ml_based_routing(services, request_context)
+        else:
+            return self._round_robin(services)
+    
+    def _weighted_round_robin(self, services: List[ServiceEndpoint]) -> ServiceEndpoint:
+        """Weighted round-robin selection"""
+        # Calculate total weight
+        total_weight = sum(service.load_balancer_weight for service in services)
+        
+        # Select based on weights
+        random_value = np.random.uniform(0, total_weight)
+        current_weight = 0      
+        for service in services:
+            current_weight += service.load_balancer_weight
+            if random_value <= current_weight:
+                return service
+        
+        return services[0]  # Fallback
+    
+    def _least_connections(self, services: List[ServiceEndpoint]) -> ServiceEndpoint:
+        """Least connections selection"""
+        return min(services, key=lambda s: self.request_counts.get(s.service_id, 0))
+    
+    def _ml_based_routing(self, services: List[ServiceEndpoint], request_context: Dict) -> ServiceEndpoint:
+        """ML-based routing selection"""
+        try:
+            # Prepare features for each service
+            service_features = []
+            for service in services:
+                features = [
+                    service.response_time,
+                    service.error_rate,
+                    self.request_counts.get(service.service_id, 0),
+                    service.load_balancer_weight,
+                    request_context.get('request_size', 1),
+                    request_context.get('priority', 1),
+                    request_context.get('user_tier', 1),
+                    time.time() % 86400,  # Time of day (normalized)
+                    request_context.get('complexity', 1),
+                    request_context.get('urgency', 1)
+                ]
+                service_features.append(features)
             
-            # Get statistics
-            stats = self.services['advanced_matching'].get_matching_statistics()
-            results['statistics'] = stats
+            # Get ML predictions
+            features_tensor = torch.FloatTensor(service_features)
+            with torch.no_grad():
+                scores = self.routing_model(features_tensor).squeeze()
             
-            return results
+            # Select service with highest score
+            best_service_idx = torch.argmax(scores).item()
+            return services[best_service_idx]
+            
+            except Exception as e:
+            logging.error(f"ML routing error: {e}")
+            return self._round_robin(services)
+    
+    def _round_robin(self, services: List[ServiceEndpoint]) -> ServiceEndpoint:
+        """Simple round-robin selection"""
+        service_id = services[0].service_id
+        self.request_counts[service_id] = self.request_counts.get(service_id, 0) + 1
+        return services[0]
+
+class CircuitBreaker:
+    """Circuit breaker pattern implementation"""
+    def __init__(self, 
+                 failure_threshold: int = 5,
+                 recovery_timeout: int = 60,
+                 expected_exception: type = Exception):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.expected_exception = expected_exception
+        
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.state = "closed"  # "closed", "open", "half-open"
+    
+    def call(self, func, *args, **kwargs):
+        """Execute function with circuit breaker protection"""
+        if self.state == "open":
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = "half-open"
+            else:
+                raise Exception("Circuit breaker is open")
+        
+        try:
+            result = func(*args, **kwargs)
+            self._on_success()
+            return result
+        except self.expected_exception as e:
+            self._on_failure()
+            raise e
+    
+    def _on_success(self):
+        """Handle successful call"""
+        self.failure_count = 0    
+        if self.state == "half-open":
+            self.state = "closed"
+    
+    def _on_failure(self):
+        """Handle failed call"""
+        self.failure_count += 1
+        self.last_failure_time = time.time()
+        
+        if self.failure_count >= self.failure_threshold:
+            self.state = "open"
+
+class APIGateway:
+    """API Gateway with authentication, rate limiting, and routing"""
+    def __init__(self):
+        self.routes = {}
+        self.middleware = []
+        self.rate_limiters = {}
+        self.authentication_tokens = {}
+        
+        # Metrics
+        self.request_counter = Counter('api_requests_total', 'Total API requests', ['endpoint', 'method'])
+        self.response_time_histogram = Histogram('api_response_time_seconds', 'API response time', ['endpoint'])
+        self.error_counter = Counter('api_errors_total', 'Total API errors', ['endpoint', 'error_type'])
+    
+    def add_route(self, path: str, method: str, handler, middleware: List = None):
+        """Add route to gateway"""
+        route_key = f"{method}:{path}"
+        self.routes[route_key] = {
+            'handler': handler,
+            'middleware': middleware or []
+        }
+    
+    def add_middleware(self, middleware):
+        """Add global middleware"""
+        self.middleware.append(middleware)
+    
+    async def handle_request(self, path: str, method: str, headers: Dict, body: Dict) -> Dict:
+        """Handle incoming request"""
+        start_time = time.time()
+        
+        try:
+            # Record request
+            self.request_counter.labels(endpoint=path, method=method).inc()
+            
+            # Check rate limiting
+            if not self._check_rate_limit(path, headers):
+                raise Exception("Rate limit exceeded")
+            
+            # Authenticate request
+            if not self._authenticate_request(headers):
+                raise Exception("Authentication failed")
+            
+            # Find route
+            route_key = f"{method}:{path}"
+            if route_key not in self.routes:
+                raise Exception("Route not found")
+            
+            route = self.routes[route_key]
+            
+            # Apply middleware
+            processed_body = body
+            for middleware in self.middleware + route['middleware']:
+                processed_body = await middleware(processed_body, headers)
+            
+            # Call handler
+            result = await route['handler'](processed_body, headers)
+            
+            # Record response time
+            response_time = time.time() - start_time
+            self.response_time_histogram.labels(endpoint=path).observe(response_time)
+            
+            return result
             
         except Exception as e:
-            logger.error(f"Error in matching pipeline: {e}")
-            # Return fallback matching results
+            # Record error
+            self.error_counter.labels(endpoint=path, error_type=type(e).__name__).inc()
+            raise e
+    
+    def _check_rate_limit(self, path: str, headers: Dict) -> bool:
+        """Check rate limiting"""
+        # Simple rate limiting implementation
+        client_id = headers.get('X-Client-ID', 'default')
+        rate_key = f"{client_id}:{path}"
+        if rate_key not in self.rate_limiters:
+            self.rate_limiters[rate_key] = deque(maxlen=100)
+        
+        now = time.time()
+        requests = self.rate_limiters[rate_key]
+        
+        # Remove old requests
+        while requests and now - requests[0] > 60:  # 1 minute window
+            requests.popleft()
+        
+        # Check limit
+        if len(requests) >= 100: # 100 requests per minute
+            return False
+        
+        requests.append(now)
+        return True
+    
+    def _authenticate_request(self, headers: Dict) -> bool:
+        """Authenticate request"""
+        # Simple token-based authentication
+        token = headers.get('Authorization', '').replace('Bearer ', '')
+        
+        if not token:
+            return False
+        
+        # Check if token is valid
+        return token in self.authentication_tokens
+
+class ServiceMesh:
+    """Service mesh for inter-service communication"""
+    def __init__(self):
+        self.services = {}
+        self.policies = {}
+        self.metrics = {}
+        
+        # Initialize metrics
+        self.service_call_counter = Counter('service_calls_total', 'Total service calls', ['from_service', 'to_service'])
+        self.service_latency_histogram = Histogram('service_latency_seconds', 'Service call latency', ['from_service', 'to_service'])
+    
+    def register_service(self, service_id: str, service_info: Dict):
+        """Register service in mesh"""
+        self.services[service_id] = service_info
+    
+    def add_policy(self, service_id: str, policy: Dict):
+        """Add policy for service"""
+        self.policies[service_id] = policy
+    
+    async def call_service(self, from_service: str, to_service: str, method: str, data: Dict) -> Dict:
+        """Call service through mesh"""
+        start_time = time.time()
+        
+        try:
+            # Record call
+            self.service_call_counter.labels(from_service=from_service, to_service=to_service).inc()
+            
+            # Apply policies
+            if to_service in self.policies:
+                data = await self._apply_policies(to_service, data)
+            
+            # Make actual service call
+            result = await self._make_service_call(to_service, method, data)
+            
+            # Record latency
+            latency = time.time() - start_time
+            self.service_latency_histogram.labels(from_service=from_service, to_service=to_service).observe(latency)
+            
+            return result
+            
+        except Exception as e:
+            logging.error(f"Service call failed: {e}")
+            raise e
+    
+    async def _apply_policies(self, service_id: str, data: Dict) -> Dict:
+        """Apply service policies"""
+        policy = self.policies[service_id]
+        
+        # Apply transformations
+        if 'transform' in policy:
+            for transform in policy['transform']:
+                if transform['type'] == 'add_header':
+                    data['headers'] = data.get('headers', {})
+                    data['headers'][transform['key']] = transform['value']
+        
+        return data
+    
+    async def _make_service_call(self, service_id: str, method: str, data: Dict) -> Dict:
+        """Make actual service call"""
+        # This would integrate with actual service communication
+        # For now, simulate a service call
+        await asyncio.sleep(0.1)  # Simulate network delay
+        
             return {
-                'matching': {
-                    'candidates_found': 0,
-                    'matching_time': 0,
-                    'algorithm_used': 'fallback',
-                    'fallback_used': True
-                },
-                'statistics': {
-                    'total_matches': 0,
-                    'average_matching_time': 0
+            'service_id': service_id,
+            'method': method,
+            'result': 'success',
+            'data': data
+        }
+
+class AIServiceIntegration:
+    """Real ML-powered service integration with advanced orchestration"""
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # Initialize components
+        self.service_discovery = ServiceDiscovery()
+        self.load_balancer = LoadBalancer(strategy='ml_based')
+        self.api_gateway = APIGateway()
+        self.service_mesh = ServiceMesh()
+        self.metrics_tracker = MLMetricsTracker()
+        self.service_monitor = ServiceMonitor()
+        self.config_manager = ConfigManager()
+        
+        # Service registry
+        self.service_registry = ServiceRegistry()
+        
+        # Circuit breakers
+        self.circuit_breakers = {}
+        
+        # Service integration configuration
+        self.integration_config = {
+           'timeout': 30,
+           'retry_attempts': 3,
+           'retry_delay': 1,
+           'max_concurrent_requests': 100,
+           'health_check_interval': 30
+        }
+        
+        # Initialize services
+        self._initialize_services()
+        
+        # Setup API gateway routes
+        self._setup_gateway_routes()
+    
+    def _initialize_services(self):
+        """Initialize core services"""
+        try:
+            # Register ML services
+            ml_services = [
+                ServiceEndpoint(
+                    service_id='ml-inference',
+                    service_type=ServiceType.INFERENCE,
+                    url='localhost',
+                    port=8001,
+                    health_check_url='/health',
+                    status=ServiceStatus.HEALTHY,
+                    load_balancer_weight=1.0,
+                    last_health_check=datetime.now(),
+                    response_time=0.1,
+                    error_rate=0.0
+                ),
+                ServiceEndpoint(
+                    service_id='ml-training',
+                    service_type=ServiceType.TRAINING,
+                    url='localhost',
+                    port=8002,
+                    health_check_url='/health',
+                    status=ServiceStatus.HEALTHY,
+                    load_balancer_weight=1.0,
+                    last_health_check=datetime.now(),
+                    response_time=0.2,
+                    error_rate=0.0
+                ),
+                ServiceEndpoint(
+                    service_id='ml-monitoring',
+                    service_type=ServiceType.MONITORING,
+                    url='localhost',
+                    port=8003,
+                    health_check_url='/health',
+                    status=ServiceStatus.HEALTHY,
+                    load_balancer_weight=1.0,
+                    last_health_check=datetime.now(),
+                    response_time=0.05,
+                    error_rate=0.0
+                )
+            ]
+            
+            for service in ml_services:
+                self.service_discovery.register_service(service)
+                self.service_mesh.register_service(service.service_id, {
+                    'type': service.service_type.value,
+                    'url': f"http://{service.url}:{service.port}",
+                    'health_check_url': service.health_check_url
+                })
+                
+                # Create circuit breaker
+                self.circuit_breakers[service.service_id] = CircuitBreaker(
+                    failure_threshold=5,
+                    recovery_timeout=60
+                )
+            
+            self.logger.info("Services initialized successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Error initializing services: {e}")
+    
+    def _setup_gateway_routes(self):
+        """Setup API gateway routes"""
+        try:
+            # ML Inference route
+            self.api_gateway.add_route(
+                path='/api/v1/inference',
+                method='POST',
+                handler=self._handle_inference_request
+            )
+            
+            # ML Training route
+            self.api_gateway.add_route(
+                path='/api/v1/training',
+                method='POST',
+                handler=self._handle_training_request
+            )
+            
+            # Health check route
+            self.api_gateway.add_route(
+                path='/health',
+                method='GET',
+                handler=self._handle_health_check
+            )
+            
+            # Add middleware
+            self.api_gateway.add_middleware(self._logging_middleware)
+            self.api_gateway.add_middleware(self._metrics_middleware)
+            
+            self.logger.info("API gateway routes configured")
+            
+        except Exception as e:
+            self.logger.error(f"Error setting up gateway routes: {e}")
+    
+    async def _handle_inference_request(self, body: Dict, headers: Dict) -> Dict:
+        """Handle ML inference request"""
+        try:
+            # Discover inference services
+            services = self.service_discovery.discover_service(ServiceType.INFERENCE)
+            
+            if not services:
+                raise Exception("No inference services available")
+            
+            # Select service using load balancer
+            selected_service = self.load_balancer.select_service(services, {
+                'request_size': len(str(body)),
+                'priority': headers.get('X-Priority', 1),
+                'user_tier': headers.get('X-User-Tier', 1),
+                'complexity': body.get('complexity', 1),
+                'urgency': headers.get('X-Urgency', 1)
+            })
+            
+            # Call service through mesh
+            result = await self.service_mesh.call_service(
+                from_service='api-gateway',
+                to_service=selected_service.service_id,
+                method='inference',
+                data=body
+            )
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Inference request failed: {e}")
+            raise e
+    
+    async def _handle_training_request(self, body: Dict, headers: Dict) -> Dict:
+        """Handle ML training request"""
+        try:
+            # Discover training services
+            services = self.service_discovery.discover_service(ServiceType.TRAINING)
+            
+            if not services:
+                raise Exception("No training services available")
+            
+            # Select service
+            selected_service = self.load_balancer.select_service(services, {
+                'request_size': len(str(body)),
+                'priority': headers.get('X-Priority', 1),
+                'complexity': body.get('complexity', 1)
+            })
+            
+            # Call service through mesh
+            result = await self.service_mesh.call_service(
+                from_service='api-gateway',
+                to_service=selected_service.service_id,
+                method='training',
+                data=body
+            )
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Training request failed: {e}")
+            raise e
+    
+    async def _handle_health_check(self, body: Dict, headers: Dict) -> Dict:
+        """Handle health check request"""
+            return {
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'services': len(self.service_discovery.services)
+        }
+    
+    async def _logging_middleware(self, body: Dict, headers: Dict) -> Dict:
+        """Logging middleware"""
+        self.logger.info(f"Request: {headers.get('X-Request-ID', 'unknown')}")
+        return body
+    
+    async def _metrics_middleware(self, body: Dict, headers: Dict) -> Dict:
+        """Metrics middleware"""
+        # Add request ID if not present
+        if 'X-Request-ID' not in headers:
+            headers['X-Request-ID'] = hashlib.md5(str(time.time()).encode()).hexdigest()
+        return body
+    
+    async def call_ml_service(self, 
+                            service_type: ServiceType,
+                            method: str,
+                            data: Dict,
+                            request_context: Dict = None) -> Dict:
+        """Call ML service with advanced orchestration"""
+        try:
+            # Discover services
+            services = self.service_discovery.discover_service(service_type)
+            
+            if not services:
+                raise Exception(f"No {service_type.value} services available")
+            
+            # Select service
+            selected_service = self.load_balancer.select_service(services, request_context or {})
+            
+            # Get circuit breaker
+            circuit_breaker = self.circuit_breakers.get(selected_service.service_id)
+            
+            if circuit_breaker:
+                # Call with circuit breaker protection
+                result = circuit_breaker.call(
+                    lambda: asyncio.run(self._make_service_call(selected_service, method, data))
+                )
+            else:
+                # Direct call
+                result = await self._make_service_call(selected_service, method, data)
+            
+            # Track metrics
+            self.metrics_tracker.record_service_call_metrics({
+               'service_type': service_type.value,
+               'service_id': selected_service.service_id,
+               'method': method,
+               'response_time': selected_service.response_time,
+               'success': True
+            })
+            
+            return result
+            
+        except Exception as e:
+            # Track error metrics
+            self.metrics_tracker.record_service_call_metrics({
+               'service_type': service_type.value,
+               'service_id': selected_service.service_id if 'selected_service' in locals() else 'unknown',
+               'method': method,
+               'success': False,
+               'error': str(e)
+            })
+            
+            self.logger.error(f"Service call failed: {e}")
+            raise e
+    
+    async def _make_service_call(self, service: ServiceEndpoint, method: str, data: Dict) -> Dict:
+        """Make actual service call"""
+        try:
+            # Prepare request
+            url = f"http://{service.url}:{service.port}/api/v1/{method}"
+            headers = {
+                'Content-Type': 'application/json',
+                'X-Service-ID': service.service_id
+            }
+            
+            # Make request with retry logic
+            for attempt in range(self.integration_config['retry_attempts']):
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(url, json=data, headers=headers, 
+                                              timeout=self.integration_config['timeout']) as response:
+                            if response.status == 200:
+                                return await response.json()
+            else:
+                                raise Exception(f"Service returned status {response.status}")
+                                
+                except Exception as e:
+                    if attempt == self.integration_config['retry_attempts'] - 1:
+                        raise e
+                    await asyncio.sleep(self.integration_config['retry_delay'] * (2 ** attempt))
+            
+        except Exception as e:
+            self.logger.error(f"Service call failed: {e}")
+            raise e
+    
+    async def get_service_health(self) -> Dict:
+        """Get health status of all services"""
+        try:
+            health_status = {
+                'overall_status': 'healthy',
+                'services': {}
+            }
+            
+            for service_id, service in self.service_discovery.services.items():
+                service_health = {
+                    'status': service.status.value,
+                    'last_health_check': service.last_health_check.isoformat(),
+                    'response_time': service.response_time,
+                    'error_rate': service.error_rate,
+                    'circuit_breaker_state': self.circuit_breakers.get(service_id, {'state': 'unknown'})
+                }
+                
+                health_status['services'][service_id] = service_health
+                
+                # Update overall status
+                if service.status != ServiceStatus.HEALTHY:
+                    health_status['overall_status'] = 'degraded'
+            
+            return health_status
+            
+        except Exception as e:
+            self.logger.error(f"Error getting service health: {e}")
+            return {'overall_status': 'error', 'error': str(e)}
+    
+    async def get_system_health(self) -> Dict:
+        """Get system health metrics"""
+        try:
+            health_metrics = {
+                'status': 'healthy',
+                'device': str(self.device),
+                'memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0,
+                'registered_services': len(self.service_discovery.services),
+                'active_circuit_breakers': len(self.circuit_breakers),
+                'service_monitor_status': self.service_monitor.get_status(),
+                'metrics_tracker_status': self.metrics_tracker.get_status(),
+                'performance_metrics': {
+                    'avg_response_time': self._calculate_avg_response_time(),
+                    'service_availability': self._calculate_service_availability(),
+                    'error_rate': self._calculate_error_rate()
                 }
             }
-    
-    def _execute_analysis_pipeline(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute analysis pipeline"""
-        try:
-            # Implement analysis pipeline
-            return {
-                'analysis_type': config.get('type', 'general'),
-                'results': {},
-                'timestamp': datetime.now().isoformat()
-            }
+            
+            return health_metrics
+            
         except Exception as e:
-            logger.error(f"Error in analysis pipeline: {e}")
-            return {
-                'analysis_type': config.get('type', 'general'),
-                'error': str(e),
-                'fallback_used': True
-            }
-    
-    def _execute_forecasting_pipeline(self, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute forecasting pipeline"""
-        try:
-            # Implement forecasting pipeline
-            return {
-                'forecast_type': config.get('type', 'general'),
-                'predictions': {},
-                'timestamp': datetime.now().isoformat()
-            }
-        except Exception as e:
-            logger.error(f"Error in forecasting pipeline: {e}")
-            return {
-                'forecast_type': config.get('type', 'general'),
-                'error': str(e),
-                'fallback_used': True
-            }
-    
-    def check_service_health(self) -> Dict[str, Any]:
-        """Check health of all services and return detailed status"""
-        health_report = {}
-        for service_name, service in self.services.items():
-            try:
-                # Basic health check
-                if hasattr(service, 'get_graph_statistics'):
-                    stats = service.get_graph_statistics()
-                    health_report[service_name] = {'status': 'healthy', 'stats': stats}
-                elif hasattr(service, 'get_learning_statistics'):
-                    stats = service.get_learning_statistics()
-                    health_report[service_name] = {'status': 'healthy', 'stats': stats}
-                elif hasattr(service, 'get_inference_statistics'):
-                    stats = service.get_inference_statistics()
-                    health_report[service_name] = {'status': 'healthy', 'stats': stats}
-                elif hasattr(service, 'get_matching_statistics'):
-                    stats = service.get_matching_statistics()
-                    health_report[service_name] = {'status': 'healthy', 'stats': stats}
-                else:
-                    health_report[service_name] = {'status': 'unknown', 'stats': {}}
-            except Exception as e:
-                health_report[service_name] = {'status': 'error', 'error': str(e)}
-        return health_report
-    
-    def process_request(self, request_type: str, request_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process AI requests (no fallback)"""
-        try:
-            if request_type == 'matching':
-                return self._process_matching_request(request_data)
-            elif request_type == 'analysis':
-                return self._process_analysis_request(request_data)
-            elif request_type == 'forecasting':
-                return self._process_forecasting_request(request_data)
-            else:
-                return {'error': f'Unknown request type: {request_type}'}
-        except Exception as e:
-            logger.error(f"Error processing request: {e}")
-            return {'error': str(e), 'status': 'failed'}
-
-    def _process_matching_request(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process matching requests (no fallback)"""
-        try:
-            # Use matching engine only
-            if hasattr(self.services['advanced_matching'], 'find_matches'):
-                result = self.services['advanced_matching'].find_matches(data)
-                return {'status': 'success', 'matches': result}
-            else:
-                raise RuntimeError('Matching engine is not available')
-        except Exception as e:
+            self.logger.error(f"Error getting system health: {e}")
             return {'status': 'error', 'error': str(e)}
 
-    def _process_analysis_request(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process analysis requests"""
-        try:
-            # Use knowledge graph for analysis
-            if hasattr(self.services['knowledge_graph'], 'analyze_entity'):
-                result = self.services['knowledge_graph'].analyze_entity(data.get('entity_id'))
-                return {'status': 'success', 'analysis': result}
-            else:
-                return {'status': 'fallback', 'analysis': {}, 'message': 'Using fallback analysis'}
-        except Exception as e:
-            return {'status': 'error', 'error': str(e)}
+    def _calculate_avg_response_time(self) -> float:
+        """Calculate average response time across services"""
+        if not self.service_discovery.services:
+            return 0.0   
+        response_times = [service.response_time for service in self.service_discovery.services.values()]
+        return np.mean(response_times)
     
-    def _process_forecasting_request(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Process forecasting requests"""
-        try:
-            # Use GNN for forecasting
-            if hasattr(self.services['gnn_reasoning'], 'forecast'):
-                result = self.services['gnn_reasoning'].forecast(data)
-                return {'status': 'success', 'forecast': result}
-            else:
-                return {'status': 'fallback', 'forecast': {}, 'message': 'Using fallback forecasting'}
-        except Exception as e:
-            return {'status': 'error', 'error': str(e)}
+    def _calculate_service_availability(self) -> float:
+        """Calculate service availability percentage"""
+        if not self.service_discovery.services:
+            return 0.0   
+        healthy_services = sum(1 for service in self.service_discovery.services.values() 
+                             if service.status == ServiceStatus.HEALTHY)
+        return healthy_services / len(self.service_discovery.services)
+    
+    def _calculate_error_rate(self) -> float:
+        """Calculate overall error rate"""
+        if not self.service_discovery.services:
+            return 0.0   
+        error_rates = [service.error_rate for service in self.service_discovery.services.values()]
+        return np.mean(error_rates)
 
-# Initialize global AI service integration
+# Initialize service
 ai_service_integration = AIServiceIntegration() 

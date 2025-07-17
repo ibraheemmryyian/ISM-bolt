@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Complete System Startup Script
-Starts all AI services and components with proper error handling
-"""
-
 import os
 import subprocess
 import time
@@ -11,7 +5,7 @@ import logging
 import threading
 import requests
 
-# List of all modular ML services to launch
+# List of all modular ML services to launch (production)
 SERVICES = [
     {'name': 'AI Gateway', 'cmd': ['python', 'ai_service_flask/ai_gateway.py'], 'health_url': 'http://localhost:8000/health'},
     {'name': 'Federated Learning', 'cmd': ['python', 'ai_service_flask/federated_learning_service.py'], 'health_url': None},
@@ -69,7 +63,7 @@ def main():
     # Start monitoring thread
     monitor_thread = threading.Thread(target=monitor_services, daemon=True)
     monitor_thread.start()
-    logging.info("All modular ML services launched. System is running.")
+    logging.info("All modular ML services launched. Production system is running.")
     # Wait for all processes
     for proc in processes:
         proc.wait()

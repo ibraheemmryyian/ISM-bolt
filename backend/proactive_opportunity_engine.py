@@ -3,6 +3,9 @@ Advanced Proactive Opportunity Detection Engine
 AI-Powered Future Need Prediction and Market Intelligence
 """
 
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import asyncio
 import aiohttp
 import numpy as np
@@ -28,7 +31,21 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
-logger = logging.getLogger(__name__)
+import torch
+import numpy as np
+from backend.ml_core.models import BaseNN
+from backend.ml_core.training import train_supervised
+from backend.ml_core.inference import predict_supervised
+from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from torch.utils.data import DataLoader, TensorDataset
+import os
+import shap
+from backend.utils.distributed_logger import DistributedLogger
+from backend.utils.advanced_data_validator import AdvancedDataValidator
+from flask import Flask, request, jsonify
+from flask_restx import Api, Resource, fields
+
+logger = DistributedLogger('ProactiveOpportunityEngine', log_file='logs/proactive_opportunity_engine.log')
 
 @dataclass
 class OpportunityPrediction:
@@ -62,6 +79,31 @@ class MarketIntelligence:
     market_sentiment: float
     data_sources: List[str]
     last_updated: datetime
+
+class OpportunityPredictor:
+    def __init__(self, input_dim=10, output_dim=2, model_dir="opportunity_models"):
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.model_dir = model_dir
+        self.model = BaseNN(input_dim, output_dim)
+    def train(self, X, y, epochs=20):
+        dataset = TensorDataset(torch.tensor(X, dtype=torch.float), torch.tensor(y, dtype=torch.long))
+        loader = DataLoader(dataset, batch_size=32, shuffle=True)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01)
+        criterion = torch.nn.CrossEntropyLoss()
+        train_supervised(self.model, loader, optimizer, criterion, epochs=epochs)
+        save_checkpoint(self.model, optimizer, epochs, os.path.join(self.model_dir, "opportunity_model.pt"))
+    def predict(self, X):
+        return torch.argmax(predict_supervised(self.model, torch.tensor(X, dtype=torch.float)), dim=1).cpu().numpy()
+    def feedback_loop(self, X, y):
+        # Active learning: retrain on new feedback
+        self.train(X, y, epochs=5)
+    def human_in_the_loop(self, X, y_true):
+        # Simulate human review and correction
+        y_pred = self.predict(X)
+        corrections = (y_pred != y_true)
+        if corrections.any():
+            self.train(X[corrections], y_true[corrections], epochs=3)
 
 class AdvancedProactiveOpportunityEngine:
     """
@@ -794,6 +836,50 @@ class AdvancedProactiveOpportunityEngine:
         except Exception as e:
             logger.error(f"Error calculating cache hit rate: {e}")
             return 0.0
+
+# Add Flask app and API for explainability endpoint if not present
+app = Flask(__name__)
+api = Api(app, version='1.0', title='Proactive Opportunity Engine', description='Advanced ML Opportunity Detection', doc='/docs')
+
+# Add data validator
+data_validator = AdvancedDataValidator(logger=logger)
+
+explain_input = api.model('ExplainInput', {
+    'model_type': fields.String(required=True, description='Model type (demand_forecaster, market_analyzer, etc.)'),
+    'input_data': fields.Raw(required=True, description='Input data for explanation')
+})
+
+@api.route('/explain')
+class Explain(Resource):
+    @api.expect(explain_input)
+    @api.response(200, 'Success')
+    @api.response(400, 'Invalid input data')
+    @api.response(500, 'Internal error')
+    def post(self):
+        try:
+            data = request.json
+            model_type = data.get('model_type')
+            input_data = data.get('input_data')
+            schema = {'type': 'object', 'properties': {'features': {'type': 'array'}}, 'required': ['features']}
+            data_validator.set_schema(schema)
+            if not data_validator.validate(input_data):
+                logger.error('Input data failed schema validation.')
+                return {'error': 'Invalid input data'}, 400
+            features = np.array(input_data['features']).reshape(1, -1)
+            if model_type == 'demand_forecaster':
+                model = self.demand_forecaster
+            elif model_type == 'market_analyzer':
+                model = self.market_analyzer
+            else:
+                logger.error(f'Unknown model_type: {model_type}')
+                return {'error': 'Unknown model_type'}, 400
+            explainer = shap.Explainer(model.predict, features)
+            shap_values = explainer(features)
+            logger.info(f'Explanation generated for {model_type}')
+            return {'shap_values': shap_values.values.tolist(), 'base_values': shap_values.base_values.tolist()}
+        except Exception as e:
+            logger.error(f'Explainability error: {e}')
+            return {'error': str(e)}, 500
 
 # Global instance
 proactive_opportunity_engine = AdvancedProactiveOpportunityEngine() 

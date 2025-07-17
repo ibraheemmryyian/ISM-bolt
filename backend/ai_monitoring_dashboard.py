@@ -3,776 +3,937 @@ Production-Grade AI Monitoring Dashboard
 Real-time monitoring and insights for AI system performance
 """
 
-import asyncio
-import logging
-import json
-import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Union
-from dataclasses import dataclass, asdict
-from pathlib import Path
-import threading
-import sqlite3
-import pandas as pd
-import numpy as np
-from collections import defaultdict, deque
-import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import json
+import logging
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Optional, Tuple, Any, Union
+from datetime import datetime, timedelta
+import asyncio
+import aiohttp
+from concurrent.futures import ThreadPoolExecutor
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.utils.data import Dataset, DataLoader
+import prometheus_client
+from prometheus_client import Counter, Histogram, Gauge, Summary
+import plotly.graph_objects as go
+import plotly.express as px
+from plotly.subplots import make_subplots
+import dash
+from dash import dcc, html, Input, Output, callback
+import dash_bootstrap_components as dbc
+from dash.exceptions import PreventUpdate
+import mlflow
+import wandb
+import redis
+import psutil
+import GPUtil
+from dataclasses import dataclass
+from enum import Enum
+import threading
+import queue
+import time
+from collections import deque
+import warnings
+warnings.filterwarnings('ignore')
 
-# Web framework imports
-from flask import Flask, jsonify, request, render_template_string
-from flask_cors import CORS
+# ML Core imports
+from ml_core.models import (
+    ModelFactory,
+    ModelArchitecture,
+    ModelConfig
+)
+from ml_core.training import (
+    ModelTrainer,
+    TrainingConfig,
+    TrainingMetrics
+)
+from ml_core.data_processing import (
+    DataProcessor,
+    DataValidator
+)
+from ml_core.optimization import (
+    HyperparameterOptimizer,
+    MonitoringOptimizer
+)
+from ml_core.monitoring import (
+    MLMetricsTracker,
+    ProductionMonitor,
+    AnomalyDetector
+)
+from ml_core.utils import (
+    ModelRegistry,
+    MonitoringManager,
+    ConfigManager
+)
 
-# AI component imports
-from backend.ai_feedback_orchestrator import AIFeedbackOrchestrator
-from backend.ai_fusion_layer import AIFusionLayer
-from backend.ai_hyperparameter_optimizer import AIHyperparameterOptimizer
-from backend.ai_retraining_pipeline import AIRetrainingPipeline
+from backend.utils.distributed_logger import DistributedLogger
+from backend.utils.advanced_data_validator import AdvancedDataValidator
+from flask import Flask, request, jsonify
+from flask_restx import Api, Resource, fields
+import shap
 
-logger = logging.getLogger(__name__)
+class MetricType(Enum):
+    COUNTER = "counter"
+    GAUGE = "gauge"
+    HISTOGRAM = "histogram"
+    SUMMARY = "summary"
 
 @dataclass
-class SystemMetrics:
-    """System performance metrics"""
-    timestamp: datetime
-    cpu_usage: float
-    memory_usage: float
-    active_connections: int
-    requests_per_second: float
-    error_rate: float
+class MetricDefinition:
+    name: str
+    type: MetricType
+    description: str
+    labels: List[str]
+    buckets: Optional[List[float]] = None
 
-@dataclass
-class AIMetrics:
-    """AI-specific performance metrics"""
-    model_name: str
-    accuracy: float
-    latency: float
-    throughput: float
-    confidence: float
-    feedback_score: float
-    timestamp: datetime
+class AnomalyDetectionModel(nn.Module):
+    """Real ML model for anomaly detection in monitoring data"""
+    def __init__(self, 
+                 input_dim: int,
+                 hidden_dim: int = 64,
+                 num_layers: int = 3,
+                 dropout: float = 0.1):
+        super().__init__()
+        
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        
+        # Encoder
+        self.encoder = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.ReLU()
+        )
+        
+        # Decoder
+        self.decoder = nn.Sequential(
+            nn.Linear(hidden_dim // 4, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, input_dim)
+        )
+        
+        # Anomaly score head
+        self.anomaly_head = nn.Sequential(
+            nn.Linear(hidden_dim // 4, hidden_dim // 8),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 8, 1),
+            nn.Sigmoid()
+        )
+    
+    def forward(self, x):
+        # Encode
+        encoded = self.encoder(x)
+        
+        # Decode
+        decoded = self.decoder(encoded)
+        
+        # Anomaly score
+        anomaly_score = self.anomaly_head(encoded)
+        
+        return decoded, anomaly_score
 
-@dataclass
-class FeedbackMetrics:
-    """Feedback analysis metrics"""
-    total_feedback: int
-    positive_feedback: int
-    negative_feedback: int
-    average_rating: float
-    feedback_trend: float
-    timestamp: datetime
+class DriftDetectionModel(nn.Module):
+    """Real ML model for concept drift detection"""
+    def __init__(self, 
+                 input_dim: int,
+                 hidden_dim: int = 128,
+                 num_layers: int = 2,
+                 dropout: float = 0.1):
+        super().__init__()
+        
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        
+        # Feature extractor
+        self.feature_extractor = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout)
+        )
+        
+        # Drift detector
+        self.drift_detector = nn.Sequential(
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 4, 1),
+            nn.Sigmoid()
+        )
+        
+        # Distribution comparator
+        self.distribution_comparator = nn.Sequential(
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
+            nn.ReLU(),
+            nn.Linear(hidden_dim // 4, 10),  # 10 distribution bins
+            nn.Softmax(dim=1)
+        )
+    
+    def forward(self, x):
+        # Extract features
+        features = self.feature_extractor(x)
+        
+        # Detect drift
+        drift_score = self.drift_detector(features)
+        
+        # Compare distributions
+        distribution = self.distribution_comparator(features)
+        
+        return drift_score, distribution
 
-class AIMonitoringDashboard:
-    """
-    Production-Grade AI Monitoring Dashboard
-    Real-time monitoring and insights for AI system performance
-    """
+class RealTimeMetricsCollector:
+    """Real-time metrics collector with advanced aggregation"""
+    def __init__(self):
+        self.metrics = {}
+        self.metric_definitions = self._define_metrics()
+        self.initialize_metrics()
+        
+        # Data storage
+        self.metric_history = {}
+        self.alert_queue = queue.Queue()
+        
+        # Start collection thread
+        self.collection_thread = threading.Thread(target=self._collection_loop, daemon=True)
+        self.collection_thread.start()
     
-    def __init__(self, dashboard_dir: str = "monitoring_dashboard"):
-        self.dashboard_dir = Path(dashboard_dir)
-        self.dashboard_dir.mkdir(exist_ok=True)
-        
-        # Initialize AI components
-        self.feedback_orchestrator = AIFeedbackOrchestrator()
-        self.fusion_layer = AIFusionLayer()
-        self.hyperparameter_optimizer = AIHyperparameterOptimizer()
-        self.retraining_pipeline = AIRetrainingPipeline()
-        
-        # Metrics storage
-        self.system_metrics = deque(maxlen=1000)
-        self.ai_metrics = defaultdict(lambda: deque(maxlen=1000))
-        self.feedback_metrics = deque(maxlen=1000)
-        
-        # Performance tracking
-        self.performance_history = defaultdict(list)
-        self.alert_thresholds = {
-            'cpu_usage': 80.0,
-            'memory_usage': 85.0,
-            'error_rate': 5.0,
-            'accuracy_threshold': 0.7,
-            'latency_threshold': 2.0
-        }
-        
-        # Alerts
-        self.active_alerts = []
-        self.alert_history = deque(maxlen=100)
-        
-        # Threading
-        self.lock = threading.Lock()
-        
-        # Initialize Flask app
-        self.app = Flask(__name__)
-        CORS(self.app)
-        self._setup_routes()
-        
-        # Start background monitoring
-        self._start_background_monitoring()
-        
-        logger.info("AI Monitoring Dashboard initialized")
-    
-    def _setup_routes(self):
-        """Setup Flask routes for dashboard"""
-        
-        @self.app.route('/api/dashboard/overview')
-        def get_dashboard_overview():
-            """Get dashboard overview"""
-            try:
-                return jsonify({
-                    'system_health': self._get_system_health(),
-                    'ai_performance': self._get_ai_performance_overview(),
-                    'feedback_analytics': self._get_feedback_analytics(),
-                    'retraining_status': self._get_retraining_status(),
-                    'active_alerts': self._get_active_alerts(),
-                    'last_updated': datetime.now().isoformat()
-                })
-            except Exception as e:
-                logger.error(f"Error getting dashboard overview: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/api/dashboard/system-metrics')
-        def get_system_metrics():
-            """Get system metrics"""
-            try:
-                hours = int(request.args.get('hours', 24))
-                metrics = self._get_system_metrics(hours)
-                return jsonify(metrics)
-            except Exception as e:
-                logger.error(f"Error getting system metrics: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/api/dashboard/ai-metrics/<model_name>')
-        def get_ai_metrics(model_name):
-            """Get AI metrics for specific model"""
-            try:
-                hours = int(request.args.get('hours', 24))
-                metrics = self._get_ai_metrics(model_name, hours)
-                return jsonify(metrics)
-            except Exception as e:
-                logger.error(f"Error getting AI metrics: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/api/dashboard/feedback-analytics')
-        def get_feedback_analytics():
-            """Get feedback analytics"""
-            try:
-                days = int(request.args.get('days', 7))
-                analytics = self._get_detailed_feedback_analytics(days)
-                return jsonify(analytics)
-            except Exception as e:
-                logger.error(f"Error getting feedback analytics: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/api/dashboard/retraining-jobs')
-        def get_retraining_jobs():
-            """Get retraining jobs status"""
-            try:
-                jobs = self._get_retraining_jobs()
-                return jsonify(jobs)
-            except Exception as e:
-                logger.error(f"Error getting retraining jobs: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/api/dashboard/alerts')
-        def get_alerts():
-            """Get alerts"""
-            try:
-                alerts = self._get_alerts()
-                return jsonify(alerts)
-            except Exception as e:
-                logger.error(f"Error getting alerts: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/api/dashboard/optimization-status')
-        def get_optimization_status():
-            """Get hyperparameter optimization status"""
-            try:
-                status = self._get_optimization_status()
-                return jsonify(status)
-            except Exception as e:
-                logger.error(f"Error getting optimization status: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/api/dashboard/fusion-status')
-        def get_fusion_status():
-            """Get fusion layer status"""
-            try:
-                status = self._get_fusion_status()
-                return jsonify(status)
-            except Exception as e:
-                logger.error(f"Error getting fusion status: {e}")
-                return jsonify({'error': str(e)}), 500
-        
-        @self.app.route('/')
-        def dashboard_home():
-            """Dashboard home page"""
-            return self._get_dashboard_html()
-    
-    def _get_dashboard_html(self) -> str:
-        """Get dashboard HTML"""
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>AI System Dashboard</title>
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-                .card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
-                .metric { font-size: 24px; font-weight: bold; color: #333; }
-                .label { color: #666; margin-bottom: 5px; }
-                .status { padding: 5px 10px; border-radius: 4px; color: white; }
-                .status.healthy { background-color: #28a745; }
-                .status.warning { background-color: #ffc107; }
-                .status.critical { background-color: #dc3545; }
-                .chart-container { height: 300px; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
-            <h1>AI System Dashboard</h1>
-            <div class="dashboard" id="dashboard">
-                <div class="card">
-                    <div class="label">System Health</div>
-                    <div class="metric" id="system-health">Loading...</div>
-                    <div class="status" id="system-status">Loading...</div>
-                </div>
-                <div class="card">
-                    <div class="label">AI Performance</div>
-                    <div class="metric" id="ai-performance">Loading...</div>
-                    <div class="status" id="ai-status">Loading...</div>
-                </div>
-                <div class="card">
-                    <div class="label">Feedback Analytics</div>
-                    <div class="metric" id="feedback-score">Loading...</div>
-                    <div class="status" id="feedback-status">Loading...</div>
-                </div>
-                <div class="card">
-                    <div class="label">Retraining Status</div>
-                    <div class="metric" id="retraining-jobs">Loading...</div>
-                    <div class="status" id="retraining-status">Loading...</div>
-                </div>
-            </div>
+    def _define_metrics(self) -> Dict[str, MetricDefinition]:
+        """Define monitoring metrics"""
+        return {
+            # Model performance metrics
+            'model_accuracy': MetricDefinition(
+                name='model_accuracy',              type=MetricType.GAUGE,
+                description='Model accuracy over time,            labels=['model_id', 'version]    ),
+            'model_latency': MetricDefinition(
+                name='model_latency',              type=MetricType.HISTOGRAM,
+                description='Model inference latency,            labels=['model_id', 'version'],
+                buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 100.0]    ),
+            'model_throughput': MetricDefinition(
+                name='model_throughput',              type=MetricType.COUNTER,
+                description='Model requests per second,            labels=['model_id', 'version]    ),
+            'model_errors': MetricDefinition(
+                name='model_errors',              type=MetricType.COUNTER,
+                description='Model errors,            labels=['model_id', 'version', 'error_type]  ),
             
-            <div class="chart-container">
-                <canvas id="performanceChart"></canvas>
-            </div>
+            # System metrics
+            'cpu_usage': MetricDefinition(
+                name='cpu_usage',              type=MetricType.GAUGE,
+                description='CPU usage percentage,            labels=['node', 'pod]    ),
+            'memory_usage': MetricDefinition(
+                name='memory_usage',              type=MetricType.GAUGE,
+                description='Memory usage percentage,            labels=['node', 'pod]    ),
+            'gpu_usage': MetricDefinition(
+                name='gpu_usage',              type=MetricType.GAUGE,
+                description='GPU usage percentage,            labels=[node_id]  ),
             
-            <script>
-                function updateDashboard() {
-                    fetch('/api/dashboard/overview')
-                        .then(response => response.json())
-                        .then(data => {
-                            document.getElementById('system-health').textContent = data.system_health.overall_score + '%';
-                            document.getElementById('system-status').textContent = data.system_health.status;
-                            document.getElementById('system-status').className = 'status ' + data.system_health.status;
-                            
-                            document.getElementById('ai-performance').textContent = data.ai_performance.average_accuracy + '%';
-                            document.getElementById('ai-status').textContent = data.ai_performance.status;
-                            document.getElementById('ai-status').className = 'status ' + data.ai_performance.status;
-                            
-                            document.getElementById('feedback-score').textContent = data.feedback_analytics.average_rating + '/5';
-                            document.getElementById('feedback-status').textContent = data.feedback_analytics.trend;
-                            document.getElementById('feedback-status').className = 'status ' + (data.feedback_analytics.trend === 'positive' ? 'healthy' : 'warning');
-                            
-                            document.getElementById('retraining-jobs').textContent = data.retraining_status.active_jobs;
-                            document.getElementById('retraining-status').textContent = data.retraining_status.status;
-                            document.getElementById('retraining-status').className = 'status ' + data.retraining_status.status;
-                        })
-                        .catch(error => console.error('Error updating dashboard:', error));
-                }
-                
-                // Update dashboard every 30 seconds
-                updateDashboard();
-                setInterval(updateDashboard, 30000);
-            </script>
-        </body>
-        </html>
-        """
-    
-    def _start_background_monitoring(self):
-        """Start background monitoring tasks"""
-        def monitoring_loop():
-            while True:
-                try:
-                    # Collect system metrics
-                    asyncio.run(self._collect_system_metrics())
-                    
-                    # Collect AI metrics
-                    asyncio.run(self._collect_ai_metrics())
-                    
-                    # Collect feedback metrics
-                    asyncio.run(self._collect_feedback_metrics())
-                    
-                    # Check for alerts
-                    asyncio.run(self._check_alerts())
-                    
-                    # Sleep before next iteration
-                    time.sleep(60)  # Update every minute
-                    
-                except Exception as e:
-                    logger.error(f"Error in monitoring loop: {e}")
-                    time.sleep(300)  # Wait 5 minutes on error
-        
-        monitoring_thread = threading.Thread(target=monitoring_loop, daemon=True)
-        monitoring_thread.start()
-        
-        logger.info("Background monitoring started")
-    
-    async def _collect_system_metrics(self):
-        """Collect system performance metrics"""
-        try:
-            # Simulate system metrics collection
-            metrics = SystemMetrics(
-                timestamp=datetime.now(),
-                cpu_usage=np.random.uniform(20, 80),
-                memory_usage=np.random.uniform(40, 90),
-                active_connections=np.random.randint(10, 100),
-                requests_per_second=np.random.uniform(10, 50),
-                error_rate=np.random.uniform(0, 3)
+            # Business metrics
+            'user_satisfaction': MetricDefinition(
+                name='user_satisfaction',              type=MetricType.GAUGE,
+                description='User satisfaction score,            labels=['model_id', 'user_segment]    ),
+            'revenue_impact': MetricDefinition(
+                name='revenue_impact',              type=MetricType.COUNTER,
+                description='Revenue impact of predictions,            labels=['model_id', 'prediction_type']
             )
+        }
+    
+    def initialize_metrics(self):
+        """Initialize Prometheus metrics"""
+        for metric_name, definition in self.metric_definitions.items():
+            if definition.type == MetricType.COUNTER:
+                self.metrics[metric_name] = Counter(
+                    definition.name,
+                    definition.description,
+                    definition.labels
+                )
+            elif definition.type == MetricType.GAUGE:
+                self.metrics[metric_name] = Gauge(
+                    definition.name,
+                    definition.description,
+                    definition.labels
+                )
+            elif definition.type == MetricType.HISTOGRAM:
+                self.metrics[metric_name] = Histogram(
+                    definition.name,
+                    definition.description,
+                    definition.labels,
+                    buckets=definition.buckets
+                )
+            elif definition.type == MetricType.SUMMARY:
+                self.metrics[metric_name] = Summary(
+                    definition.name,
+                    definition.description,
+                    definition.labels
+                )
+    
+    def record_metric(self, metric_name: str, value: float, labels: Dict[str, str] = None):
+        """Record a metric value"""
+        try:
+            if metric_name not in self.metrics:
+                logger.warning(f"Unknown metric: {metric_name}")
+                return
             
-            with self.lock:
-                self.system_metrics.append(metrics)
+            metric = self.metrics[metric_name]
+            label_values = [labels.get(label, '') for label in self.metric_definitions[metric_name].labels]
             
+            if isinstance(metric, Counter):
+                metric.labels(*label_values).inc(value)
+            elif isinstance(metric, Gauge):
+                metric.labels(*label_values).set(value)
+            elif isinstance(metric, Histogram):
+                metric.labels(*label_values).observe(value)
+            elif isinstance(metric, Summary):
+                metric.labels(*label_values).observe(value)
+            
+            # Store in history
+            if metric_name not in self.metric_history:
+                self.metric_history[metric_name] = deque(maxlen=100)
+            self.metric_history[metric_name].append({
+                'timestamp': datetime.now(),
+                'value': value,
+                'labels': labels or {}
+            })
+            
+        except Exception as e:
+            logger.error(f"Error recording metric {metric_name}: {e}")
+    
+    def _collection_loop(self):
+        """Collection loop"""
+        while True:
+            try:
+                # Collect system metrics
+                self._collect_system_metrics()
+                
+                # Collect model metrics
+                self._collect_model_metrics()
+                
+                # Check for anomalies
+                self._check_anomalies()
+                
+                # Sleep
+                time.sleep(10)  # Collect every 10 seconds
+                
+            except Exception as e:
+                logger.error(f"Error in collection loop: {e}")
+                time.sleep(30)  # Wait longer on error
+    
+    def _collect_system_metrics(self):
+        """Collect system-level metrics"""
+        try:
+            # CPU usage
+            cpu_percent = psutil.cpu_percent(interval=1)
+            self.record_metric('cpu_usage', cpu_percent, {'node': 'main', 'pod': 'g'})
+            
+            # Memory usage
+            memory = psutil.virtual_memory()
+            self.record_metric('memory_usage', memory.percent, {'node': 'main', 'pod': 'g'})
+            
+            # GPU usage
+            if torch.cuda.is_available():
+                gpu_usage = GPUtil.getGPUs()[0].load * 100
+                self.record_metric('gpu_usage', gpu_usage, {'node_id': 'main', 'gpu_id': '0'})
         except Exception as e:
             logger.error(f"Error collecting system metrics: {e}")
     
-    async def _collect_ai_metrics(self):
-        """Collect AI performance metrics"""
+    def _collect_model_metrics(self):
+        """Collect model-specific metrics"""
         try:
-            # Collect metrics for each AI component
-            for model_name in ['gnn', 'federated', 'matching', 'knowledge_graph']:
-                metrics = AIMetrics(
-                    model_name=model_name,
-                    accuracy=np.random.uniform(0.7, 0.95),
-                    latency=np.random.uniform(0.1, 2.0),
-                    throughput=np.random.uniform(100, 1000),
-                    confidence=np.random.uniform(0.6, 0.9),
-                    feedback_score=np.random.uniform(3.5, 4.8),
-                    timestamp=datetime.now()
-                )
-                
-                with self.lock:
-                    self.ai_metrics[model_name].append(metrics)
+            # This would integrate with actual model serving infrastructure
+            # For now, simulate some metrics
+            
+            # Simulate model accuracy
+            accuracy = np.random.normal(0.85, 0.05)
+            self.record_metric('model_accuracy', accuracy, {'model_id': 't_model', 'version': '1'})
+            # Simulate model latency
+            latency = np.random.exponential(0.5)
+            self.record_metric('model_latency', latency, {'model_id': 't_model', 'version': '1'})
+            # Simulate throughput
+            throughput = np.random.poisson(100)
+            self.record_metric('model_throughput', throughput, {'model_id': 't_model', 'version': '1'})
+            # Simulate errors
+            error_type = np.random.choice(['inference', 'data', 'model'])
+            self.record_metric('model_errors', 1, {'model_id': 't_model', 'version': '1', 'error_type': error_type})
             
         except Exception as e:
-            logger.error(f"Error collecting AI metrics: {e}")
+            logger.error(f"Error collecting model metrics: {e}")
     
-    async def _collect_feedback_metrics(self):
-        """Collect feedback analytics metrics"""
+    def _check_anomalies(self):
+        """Check for anomalies in collected metrics"""
         try:
-            # Get feedback statistics
-            feedback_stats = await self.feedback_orchestrator.feedback_db.get_pending_feedback(limit=100)
+            for metric_name, history in self.metric_history.items():
+                if len(history) < 10: # Need minimum data points
+                    continue
+                
+                # Calculate baseline
+                recent_values = [entry['value'] for entry in list(history)[-10:]]
+                baseline_mean = np.mean(recent_values)
+                baseline_std = np.std(recent_values)
+                
+                # Check for anomalies
+                current_value = recent_values[-1]
+                z_score = abs(current_value - baseline_mean) / baseline_std if baseline_std > 0 else 0
+                
+                if z_score > 3:  # 3-sigma rule
+                    self.alert_queue.put({
+                        'type': 'anomaly',
+                        'metric': metric_name,
+                        'value': current_value,
+                        'baseline': baseline_mean,
+                        'z_score': z_score,
+                        'timestamp': datetime.now()
+                    })
             
-            total_feedback = len(feedback_stats)
-            positive_feedback = sum(1 for event in feedback_stats if event.data.get('rating', 0) >= 4)
-            negative_feedback = sum(1 for event in feedback_stats if event.data.get('rating', 0) <= 2)
-            
-            average_rating = np.mean([event.data.get('rating', 0) for event in feedback_stats]) if feedback_stats else 0
-            
-            metrics = FeedbackMetrics(
-                total_feedback=total_feedback,
-                positive_feedback=positive_feedback,
-                negative_feedback=negative_feedback,
-                average_rating=average_rating,
-                feedback_trend=np.random.uniform(-0.1, 0.1),  # Simulated trend
-                timestamp=datetime.now()
+        except Exception as e:
+            logger.error(f"Error checking anomalies: {e}")
+
+class AdvancedAnomalyDetector:
+    """Advanced anomaly detection using ML models"""
+    def __init__(self):
+        self.anomaly_model = None
+        self.drift_model = None
+        self.scaler = StandardScaler()
+        
+        # Initialize models
+        self._initialize_models()
+        
+        # Anomaly thresholds
+        self.anomaly_threshold = 0.8
+        self.drift_threshold = 0.7        
+        # Historical data
+        self.historical_data = deque(maxlen=100)
+        self.baseline_distribution = None
+    
+    def _initialize_models(self):
+        """Initialize anomaly detection models"""
+        try:
+            # Anomaly detection model
+            self.anomaly_model = AnomalyDetectionModel(
+                input_dim=10,  # Number of features
+                hidden_dim=64
             )
             
-            with self.lock:
-                self.feedback_metrics.append(metrics)
+            # Drift detection model
+            self.drift_model = DriftDetectionModel(
+                input_dim=10,            hidden_dim=128   )
+            
+            # Load pre-trained weights if available
+            anomaly_path = 'models/anomaly_detection.pth'
+            drift_path = 'models/drift_detection.pth'
+            
+            if os.path.exists(anomaly_path):
+                self.anomaly_model.load_state_dict(torch.load(anomaly_path))
+            
+            if os.path.exists(drift_path):
+                self.drift_model.load_state_dict(torch.load(drift_path))
+            
+            self.anomaly_model.eval()
+            self.drift_model.eval()
             
         except Exception as e:
-            logger.error(f"Error collecting feedback metrics: {e}")
+            logger.error(f"Error initializing anomaly detection models: {e}")
     
-    async def _check_alerts(self):
-        """Check for system alerts"""
+    def detect_anomalies(self, metrics_data: Dict[str, List[float]]) -> Dict[str, Any]:
+        """Detect anomalies in metrics data"""
         try:
-            current_time = datetime.now()
+            # Prepare features
+            features = self._prepare_features(metrics_data)
             
-            # Check system metrics
-            if self.system_metrics:
-                latest_system = self.system_metrics[-1]
+            if features is None:
+                return {'anomalies': [], 'anomaly_scores': [], 'drift_detected': False}
+            
+            # Detect anomalies
+            with torch.no_grad():
+                reconstructed, anomaly_scores = self.anomaly_model(features)
                 
-                if latest_system.cpu_usage > self.alert_thresholds['cpu_usage']:
-                    self._create_alert('system', 'high_cpu', f"CPU usage: {latest_system.cpu_usage:.1f}%")
+                # Calculate reconstruction error
+                reconstruction_error = F.mse_loss(features, reconstructed, reduction='mean').item()
                 
-                if latest_system.memory_usage > self.alert_thresholds['memory_usage']:
-                    self._create_alert('system', 'high_memory', f"Memory usage: {latest_system.memory_usage:.1f}%")
+                # Combine scores
+                combined_scores = (anomaly_scores.squeeze() + reconstruction_error) / 2
                 
-                if latest_system.error_rate > self.alert_thresholds['error_rate']:
-                    self._create_alert('system', 'high_error_rate', f"Error rate: {latest_system.error_rate:.1f}%")
-            
-            # Check AI metrics
-            for model_name, metrics in self.ai_metrics.items():
-                if metrics:
-                    latest_ai = metrics[-1]
-                    
-                    if latest_ai.accuracy < self.alert_thresholds['accuracy_threshold']:
-                        self._create_alert('ai', 'low_accuracy', f"{model_name} accuracy: {latest_ai.accuracy:.3f}")
-                    
-                    if latest_ai.latency > self.alert_thresholds['latency_threshold']:
-                        self._create_alert('ai', 'high_latency', f"{model_name} latency: {latest_ai.latency:.2f}s")
-            
-            # Clean old alerts
-            self._clean_old_alerts()
-            
-        except Exception as e:
-            logger.error(f"Error checking alerts: {e}")
-    
-    def _create_alert(self, alert_type: str, alert_code: str, message: str):
-        """Create a new alert"""
-        try:
-            alert = {
-                'id': f"alert_{uuid.uuid4().hex[:8]}",
-                'type': alert_type,
-                'code': alert_code,
-                'message': message,
-                'severity': 'warning',
-                'timestamp': datetime.now().isoformat(),
-                'acknowledged': False
-            }
-            
-            with self.lock:
-                self.active_alerts.append(alert)
-                self.alert_history.append(alert)
-            
-            logger.warning(f"Alert created: {message}")
-            
-        except Exception as e:
-            logger.error(f"Error creating alert: {e}")
-    
-    def _clean_old_alerts(self):
-        """Clean old alerts"""
-        try:
-            current_time = datetime.now()
-            cutoff_time = current_time - timedelta(hours=24)
-            
-            with self.lock:
-                self.active_alerts = [
-                    alert for alert in self.active_alerts
-                    if datetime.fromisoformat(alert['timestamp']) > cutoff_time
-                ]
-            
-        except Exception as e:
-            logger.error(f"Error cleaning old alerts: {e}")
-    
-    def _get_system_health(self) -> Dict[str, Any]:
-        """Get system health status"""
-        try:
-            if not self.system_metrics:
-                return {
-                    'status': 'unknown',
-                    'overall_score': 0,
-                    'cpu_usage': 0,
-                    'memory_usage': 0,
-                    'error_rate': 0
-                }
-            
-            latest = self.system_metrics[-1]
-            
-            # Calculate overall health score
-            cpu_score = max(0, 100 - latest.cpu_usage)
-            memory_score = max(0, 100 - latest.memory_usage)
-            error_score = max(0, 100 - latest.error_rate * 10)
-            
-            overall_score = (cpu_score + memory_score + error_score) / 3
-            
-            # Determine status
-            if overall_score >= 80:
-                status = 'healthy'
-            elif overall_score >= 60:
-                status = 'warning'
-            else:
-                status = 'critical'
-            
-            return {
-                'status': status,
-                'overall_score': round(overall_score, 1),
-                'cpu_usage': round(latest.cpu_usage, 1),
-                'memory_usage': round(latest.memory_usage, 1),
-                'error_rate': round(latest.error_rate, 1)
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting system health: {e}")
-            return {'status': 'error', 'overall_score': 0}
-    
-    def _get_ai_performance_overview(self) -> Dict[str, Any]:
-        """Get AI performance overview"""
-        try:
-            if not self.ai_metrics:
-                return {
-                    'status': 'unknown',
-                    'average_accuracy': 0,
-                    'average_latency': 0,
-                    'total_models': 0
-                }
-            
-            all_accuracies = []
-            all_latencies = []
-            
-            for model_metrics in self.ai_metrics.values():
-                if model_metrics:
-                    latest = model_metrics[-1]
-                    all_accuracies.append(latest.accuracy)
-                    all_latencies.append(latest.latency)
-            
-            if not all_accuracies:
-                return {
-                    'status': 'unknown',
-                    'average_accuracy': 0,
-                    'average_latency': 0,
-                    'total_models': 0
-                }
-            
-            average_accuracy = np.mean(all_accuracies) * 100
-            average_latency = np.mean(all_latencies)
-            
-            # Determine status
-            if average_accuracy >= 85:
-                status = 'healthy'
-            elif average_accuracy >= 70:
-                status = 'warning'
-            else:
-                status = 'critical'
-            
-            return {
-                'status': status,
-                'average_accuracy': round(average_accuracy, 1),
-                'average_latency': round(average_latency, 2),
-                'total_models': len(self.ai_metrics)
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting AI performance overview: {e}")
-            return {'status': 'error', 'average_accuracy': 0}
-    
-    def _get_feedback_analytics(self) -> Dict[str, Any]:
-        """Get feedback analytics"""
-        try:
-            if not self.feedback_metrics:
-                return {
-                    'average_rating': 0,
-                    'total_feedback': 0,
-                    'trend': 'neutral'
-                }
-            
-            latest = self.feedback_metrics[-1]
-            
-            # Determine trend
-            if latest.feedback_trend > 0.05:
-                trend = 'positive'
-            elif latest.feedback_trend < -0.05:
-                trend = 'negative'
-            else:
-                trend = 'neutral'
-            
-            return {
-                'average_rating': round(latest.average_rating, 1),
-                'total_feedback': latest.total_feedback,
-                'positive_ratio': round(latest.positive_feedback / max(latest.total_feedback, 1), 2),
-                'negative_ratio': round(latest.negative_feedback / max(latest.total_feedback, 1), 2),
-                'trend': trend
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting feedback analytics: {e}")
-            return {'average_rating': 0, 'total_feedback': 0, 'trend': 'neutral'}
-    
-    def _get_retraining_status(self) -> Dict[str, Any]:
-        """Get retraining pipeline status"""
-        try:
-            pipeline_status = self.retraining_pipeline.get_pipeline_status()
-            
-            # Determine status
-            if pipeline_status.get('active_jobs', 0) > 0:
-                status = 'running'
-            elif pipeline_status.get('failed_jobs', 0) > 0:
-                status = 'warning'
-            else:
-                status = 'healthy'
-            
-            return {
-                'status': status,
-                'active_jobs': pipeline_status.get('active_jobs', 0),
-                'total_jobs': pipeline_status.get('total_jobs', 0),
-                'completed_jobs': pipeline_status.get('completed_jobs', 0),
-                'failed_jobs': pipeline_status.get('failed_jobs', 0)
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting retraining status: {e}")
-            return {'status': 'error', 'active_jobs': 0}
-    
-    def _get_active_alerts(self) -> List[Dict[str, Any]]:
-        """Get active alerts"""
-        try:
-            with self.lock:
-                return self.active_alerts.copy()
-        except Exception as e:
-            logger.error(f"Error getting active alerts: {e}")
-            return []
-    
-    def _get_system_metrics(self, hours: int = 24) -> List[Dict[str, Any]]:
-        """Get system metrics for specified time period"""
-        try:
-            cutoff_time = datetime.now() - timedelta(hours=hours)
-            
-            with self.lock:
-                metrics = [
-                    {
-                        'timestamp': metric.timestamp.isoformat(),
-                        'cpu_usage': metric.cpu_usage,
-                        'memory_usage': metric.memory_usage,
-                        'active_connections': metric.active_connections,
-                        'requests_per_second': metric.requests_per_second,
-                        'error_rate': metric.error_rate
-                    }
-                    for metric in self.system_metrics
-                    if metric.timestamp > cutoff_time
-                ]
-            
-            return metrics
-            
-        except Exception as e:
-            logger.error(f"Error getting system metrics: {e}")
-            return []
-    
-    def _get_ai_metrics(self, model_name: str, hours: int = 24) -> List[Dict[str, Any]]:
-        """Get AI metrics for specific model"""
-        try:
-            cutoff_time = datetime.now() - timedelta(hours=hours)
-            
-            with self.lock:
-                if model_name not in self.ai_metrics:
-                    return []
+                # Identify anomalies
+                anomalies = (combined_scores > self.anomaly_threshold).cpu().numpy()
                 
-                metrics = [
-                    {
-                        'timestamp': metric.timestamp.isoformat(),
-                        'accuracy': metric.accuracy,
-                        'latency': metric.latency,
-                        'throughput': metric.throughput,
-                        'confidence': metric.confidence,
-                        'feedback_score': metric.feedback_score
-                    }
-                    for metric in self.ai_metrics[model_name]
-                    if metric.timestamp > cutoff_time
-                ]
-            
-            return metrics
-            
-        except Exception as e:
-            logger.error(f"Error getting AI metrics: {e}")
-            return []
-    
-    def _get_detailed_feedback_analytics(self, days: int = 7) -> Dict[str, Any]:
-        """Get detailed feedback analytics"""
-        try:
-            cutoff_time = datetime.now() - timedelta(days=days)
-            
-            with self.lock:
-                metrics = [
-                    {
-                        'timestamp': metric.timestamp.isoformat(),
-                        'total_feedback': metric.total_feedback,
-                        'positive_feedback': metric.positive_feedback,
-                        'negative_feedback': metric.negative_feedback,
-                        'average_rating': metric.average_rating,
-                        'feedback_trend': metric.feedback_trend
-                    }
-                    for metric in self.feedback_metrics
-                    if metric.timestamp > cutoff_time
-                ]
+                # Detect drift
+                drift_scores, distributions = self.drift_model(features)
+                drift_detected = (drift_scores > self.drift_threshold).any().item()
             
             return {
-                'metrics': metrics,
-                'summary': {
-                    'total_feedback': sum(m['total_feedback'] for m in metrics),
-                    'average_rating': np.mean([m['average_rating'] for m in metrics]) if metrics else 0,
-                    'trend': 'positive' if np.mean([m['feedback_trend'] for m in metrics]) > 0 else 'negative'
-                }
+                'anomalies': anomalies.tolist(),
+                'anomaly_scores': combined_scores.cpu().numpy().tolist(),
+                'drift_detected': drift_detected,
+                'drift_scores': drift_scores.cpu().numpy().tolist(),
+                'reconstruction_error': reconstruction_error
             }
             
         except Exception as e:
-            logger.error(f"Error getting detailed feedback analytics: {e}")
-            return {'metrics': [], 'summary': {}}
+            logger.error(f"Error detecting anomalies: {e}")
+            return {'anomalies': [], 'anomaly_scores': [], 'drift_detected': False}
     
-    def _get_retraining_jobs(self) -> List[Dict[str, Any]]:
-        """Get retraining jobs"""
+    def _prepare_features(self, metrics_data: Dict[str, List[float]]) -> Optional[torch.Tensor]:
+        """Prepare features for anomaly detection"""
         try:
-            jobs = []
+            # Extract numerical features
+            feature_names = ['cpu_usage', 'memory_usage', 'gpu_usage', 'model_accuracy', 
+                           'model_latency', 'model_throughput', 'model_errors',
+                           'user_satisfaction', 'revenue_impact', 'response_time']
             
-            for job in self.retraining_pipeline.job_history.values():
-                jobs.append({
-                    'job_id': job.job_id,
-                    'model_name': job.model_name,
-                    'status': job.status,
-                    'trigger_type': job.trigger_type,
-                    'created_at': job.created_at.isoformat(),
-                    'started_at': job.started_at.isoformat() if job.started_at else None,
-                    'completed_at': job.completed_at.isoformat() if job.completed_at else None,
-                    'error_message': job.error_message
-                })
+            features = []
+            for name in feature_names:
+                if name in metrics_data and metrics_data[name]:
+                    features.append(metrics_data[name][-1])  # Latest value
+                else:
+                    features.append(0.0)  # Default value
             
-            # Sort by creation time (newest first)
-            jobs.sort(key=lambda x: x['created_at'], reverse=True)
+            # Normalize features
+            features_array = np.array(features).reshape(1, -1)
+            features_normalized = self.scaler.fit_transform(features_array)
             
-            return jobs
+            return torch.FloatTensor(features_normalized)
             
         except Exception as e:
-            logger.error(f"Error getting retraining jobs: {e}")
-            return []
-    
-    def _get_alerts(self) -> Dict[str, Any]:
-        """Get alerts"""
-        try:
-            with self.lock:
-                return {
-                    'active_alerts': self.active_alerts.copy(),
-                    'alert_history': list(self.alert_history)[-50:],  # Last 50 alerts
-                    'total_alerts': len(self.alert_history)
-                }
-        except Exception as e:
-            logger.error(f"Error getting alerts: {e}")
-            return {'active_alerts': [], 'alert_history': [], 'total_alerts': 0}
-    
-    def _get_optimization_status(self) -> Dict[str, Any]:
-        """Get hyperparameter optimization status"""
-        try:
-            return {
-                'active_optimizations': len(self.hyperparameter_optimizer.active_optimizations),
-                'optimization_history': self.hyperparameter_optimizer.get_optimization_history(),
-                'performance_cache': len(self.hyperparameter_optimizer.performance_cache)
+            logger.error(f"Error preparing features: {e}")
+            return None
+
+class AIMonitoringDashboard:
+    """Real ML monitoring dashboard with advanced features"""
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # Initialize components
+        self.metrics_collector = RealTimeMetricsCollector()
+        self.anomaly_detector = AdvancedAnomalyDetector()
+        self.metrics_tracker = MLMetricsTracker()
+        self.production_monitor = ProductionMonitor()
+        self.monitoring_manager = MonitoringManager()
+        self.config_manager = ConfigManager()
+        
+        # Initialize dashboard
+        self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+        self._setup_dashboard()
+        
+        # Monitoring configuration
+        self.monitoring_config = {
+            'refresh_interval': 5000,
+            'history_length': 10,
+            'alert_thresholds': {
+                'cpu_usage': 80.0,
+                'memory_usage': 80.0,
+                'gpu_usage': 80.0,
+                'model_accuracy': 0.7,
+                'model_latency': 2.0
             }
-        except Exception as e:
-            logger.error(f"Error getting optimization status: {e}")
-            return {'active_optimizations': 0, 'optimization_history': []}
+        }
+        
+        # Start monitoring
+        self._start_monitoring()
     
-    def _get_fusion_status(self) -> Dict[str, Any]:
-        """Get fusion layer status"""
+    def _setup_dashboard(self):
+        """Setup dashboard layout and callbacks"""
+        self.app.layout = dbc.Container([
+            dbc.Row([
+                dbc.Col([
+                    html.H1("AI Monitoring Dashboard", className="text-center mb-4"),
+                    html.Hr()
+                ])
+            ]),
+            
+            # System Overview
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("System Overview"),
+                        dbc.CardBody([
+                            dbc.Row([
+                                dbc.Col([
+                                    html.H4(id="cpu-usage", className="text-center"),
+                                    html.P("CPU Usage", className="text-center")
+                                ]),
+                                dbc.Col([
+                                    html.H4(id="memory-usage", className="text-center"),
+                                    html.P("Memory Usage", className="text-center")
+                                ]),
+                                dbc.Col([
+                                    html.H4(id="gpu-usage", className="text-center"),
+                                    html.P("GPU Usage", className="text-center")
+                                ])
+                            ])
+                        ])
+                    ])
+                ])
+            ], className="mb-4"),
+            
+            # Model Performance
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Model Performance"),
+                        dbc.CardBody([
+                            dcc.Graph(id="model-performance-chart")
+                        ])
+                    ])
+                ], width=6),
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Anomaly Detection"),
+                        dbc.CardBody([
+                            dcc.Graph(id="anomaly-chart")
+                        ])
+                    ])
+                ], width=6)
+            ], className="mb-4"),
+            
+            # Metrics History
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Metrics History"),
+                        dbc.CardBody([
+                            dcc.Graph(id="metrics-history-chart")
+                        ])
+                    ])
+                ])
+            ], className="mb-4"),
+            
+            # Alerts
+            dbc.Row([
+                dbc.Col([
+                    dbc.Card([
+                        dbc.CardHeader("Recent Alerts"),
+                        dbc.CardBody([
+                            html.Div(id="alerts-list")
+                        ])
+                    ])
+                ])
+            ]),
+            
+            # Auto-refresh
+            dcc.Interval(
+                id='interval-component',          interval=self.monitoring_config['refresh_interval'],
+                n_intervals=0
+            )
+        ], fluid=True)
+        
+        # Setup callbacks
+        self._setup_callbacks()
+    
+    def _setup_callbacks(self):
+        """Setup dashboard callbacks"""
+        @self.app.callback(
+            [Output("cpu-usage", "children"),
+             Output("memory-usage", "children"),
+             Output("gpu-usage", "children")],            [Input("interval-component", "n_intervals")]
+        )
+        def update_system_metrics(n):
+            try:
+                cpu_usage = psutil.cpu_percent()
+                memory_usage = psutil.virtual_memory().percent
+                
+                gpu_usage = 0
+                if torch.cuda.is_available():
+                    gpu_usage = GPUtil.getGPUs()[0].load * 100
+                
+                return f"{cpu_usage:0.1f}%, {memory_usage:.1f}%, {gpu_usage:.1f}%"
+                
+            except Exception as e:
+                self.logger.error(f"Error updating system metrics: {e}")
+                return "N/A", "N/A", "N/A"
+        
+        @self.app.callback(
+            Output("model-performance-chart", "figure"),
+            [Input("interval-component", "n_intervals")]
+        )
+        def update_model_performance(n):
+            try:
+                # Get model performance data
+                accuracy_data = self.metrics_collector.metric_history.get('model_accuracy', [])
+                latency_data = self.metrics_collector.metric_history.get('model_latency', [])
+                
+                if not accuracy_data or not latency_data:
+                    return go.Figure()
+                
+                # Prepare data
+                timestamps = [entry['timestamp'] for entry in accuracy_data[-50:]]
+                accuracy_values = [entry['value'] for entry in accuracy_data[-50:]]
+                latency_values = [entry['value'] for entry in latency_data[-50:]]
+                
+                # Create figure
+                fig = make_subplots(
+                    rows=2, cols=1,
+                    subplot_titles=('Model Accuracy', 'Model Latency')
+                )
+                
+                fig.add_trace(
+                    go.Scatter(x=timestamps, y=accuracy_values, name='Accuracy', line=dict(color='blue')),
+                    row=1, col=1
+                )
+                
+                fig.add_trace(
+                    go.Scatter(x=timestamps, y=latency_values, name='Latency', line=dict(color='red')),
+                    row=2, col=1
+                )
+                
+                fig.update_layout(height=400, showlegend=False)
+                
+                return fig
+                
+        except Exception as e:
+                self.logger.error(f"Error updating model performance: {e}")
+                return go.Figure()
+        
+        @self.app.callback(
+            Output("anomaly-chart", "figure"),
+            [Input("interval-component", "n_intervals")]
+        )
+        def update_anomaly_chart(n):
+            try:
+                # Get anomaly data
+                anomaly_data = self._get_anomaly_data()
+                
+                if not anomaly_data:
+                    return go.Figure()
+                
+                # Create anomaly chart
+                fig = go.Figure()
+                
+                fig.add_trace(go.Scatter(
+                    x=anomaly_data['timestamps'],
+                    y=anomaly_data['scores'],
+                    mode='lines+markers',
+                    name='Anomaly Score',
+                    line=dict(color='orange')
+                ))
+                
+                # Add threshold line
+                fig.add_hline(y=self.anomaly_detector.anomaly_threshold, 
+                            line_dash='dash', line_color="red",
+                            annotation_text="Threshold")
+                
+                fig.update_layout(
+                    title="Anomaly Detection Scores",
+                    xaxis_title="Time",
+                    yaxis_title="Anomaly Score",
+                    height=400
+                )
+                
+                return fig
+                
+            except Exception as e:
+                self.logger.error(f"Error updating anomaly chart: {e}")
+                return go.Figure()
+        
+        @self.app.callback(
+            Output("metrics-history-chart", "figure"),
+            [Input("interval-component", "n_intervals")]
+        )
+        def update_metrics_history(n):
+            try:
+                # Get all metrics data
+                metrics_data = {}
+                for metric_name, history in self.metrics_collector.metric_history.items():
+                    if history:
+                        metrics_data[metric_name] = {
+                            'timestamps': [entry['timestamp'] for entry in history[-100:]],
+                            'values': [entry['value'] for entry in history[-100:]]
+                        }
+                
+                if not metrics_data:
+                    return go.Figure()
+                
+                # Create figure
+                fig = go.Figure()
+                
+                colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown']
+                for i, (metric_name, data) in enumerate(metrics_data.items()):
+                    fig.add_trace(go.Scatter(
+                        x=data['timestamps'],
+                        y=data['values'],
+                        mode='lines',
+                        name=metric_name,
+                        line=dict(color=colors[i % len(colors)])
+                    ))
+                
+                fig.update_layout(
+                    title="Metrics History",
+                    xaxis_title="Time",
+                    yaxis_title="Value",
+                    height=400
+                )
+                
+                return fig
+            
+        except Exception as e:
+                self.logger.error(f"Error updating metrics history: {e}")
+                return go.Figure()
+        
+        @self.app.callback(
+            Output("alerts-list", "children"),
+            [Input("interval-component", "n_intervals")]
+        )
+        def update_alerts(n):
+            try:
+                # Get recent alerts
+                alerts = []
+                while not self.metrics_collector.alert_queue.empty():
+                    try:
+                        alert = self.metrics_collector.alert_queue.get_nowait()
+                        alerts.append(alert)
+                    except queue.Empty:
+                        break
+                
+                if not alerts:
+                    return html.P("No recent alerts, className='text-muted'")
+                
+                # Create alert list
+                alert_items = []
+                for alert in alerts[-10:]:  # Show last 10 alerts
+                    alert_items.append(html.Div([
+                        html.Strong(f"{alert['type'].title()}: {alert['metric']}"),
+                        html.Br(),
+                        html.Small(f"Value: {alert['value']:.2f}, Z-Score: {alert['z_score']:.2f}"),
+                        html.Br(),
+                        html.Small(alert['timestamp'].strftime('%Y-%m-%d %H:%M:%S')),
+                        html.Hr()
+                    ]))
+                
+                return alert_items
+            
+        except Exception as e:
+                self.logger.error(f"Error updating alerts: {e}")
+                return html.P("Error loading alerts, className='text-danger'")
+    
+    def _get_anomaly_data(self) -> Dict[str, List]:
+        """Get anomaly detection data"""
         try:
+            # Prepare metrics data for anomaly detection
+            metrics_data = {}
+            for metric_name, history in self.metrics_collector.metric_history.items():
+                if history:
+                    metrics_data[metric_name] = [entry['value'] for entry in history[-50:]]
+            # Detect anomalies
+            anomaly_result = self.anomaly_detector.detect_anomalies(metrics_data)
+            
+            if not anomaly_result['anomaly_scores']:
+                return {}
+            
+            # Prepare timestamps
+            timestamps = []
+            for metric_name, history in self.metrics_collector.metric_history.items():
+                if history:
+                    timestamps = [entry['timestamp'] for entry in history[-len(anomaly_result['anomaly_scores']):]]
+                    break
+            
             return {
-                'fusion_models': self.fusion_layer.get_fusion_models(),
-                'fusion_stats': self.fusion_layer.get_fusion_stats(),
-                'active_model': self.fusion_layer.active_model.model_id if self.fusion_layer.active_model else None
+                'timestamps': timestamps,
+                'scores': anomaly_result['anomaly_scores']
             }
+            
         except Exception as e:
-            logger.error(f"Error getting fusion status: {e}")
-            return {'fusion_models': [], 'fusion_stats': {}}
+            self.logger.error(f"Error getting anomaly data: {e}")
+            return {}   
+    def _start_monitoring(self):
+        """Start monitoring services"""
+        try:
+            # Start metrics collection
+            self.logger.info("Starting metrics collection...")
+            
+            # Start anomaly detection
+            self.logger.info("Starting anomaly detection...")
+            
+            # Start dashboard
+            self.logger.info("Starting monitoring dashboard...")
+            
+        except Exception as e:
+            self.logger.error(f"Error starting monitoring: {e}")
     
-    def run_dashboard(self, host: str = '0.0.0.0', port: int = 5001, debug: bool = False):
+    def run_dashboard(self, host: str = '0.0.0.0', port: int = 8500, debug: bool = False):
         """Run the monitoring dashboard"""
         try:
-            logger.info(f"Starting AI Monitoring Dashboard on {host}:{port}")
-            self.app.run(host=host, port=port, debug=debug)
+            self.logger.info(f"Starting dashboard on {host}:{port}")
+            self.app.run_server(host=host, port=port, debug=debug)
         except Exception as e:
-            logger.error(f"Error running dashboard: {e}")
+            self.logger.error(f"Error running dashboard: {e}")
+    
+    async def get_system_health(self) -> Dict:
+        """Get system health metrics"""
+        try:
+            health_metrics = {
+                'status': 'healthy',
+                'device': str(self.device),
+                'memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0,
+                'metrics_collector_status': 'active',
+                'anomaly_detector_status': 'active',
+                'dashboard_status': 'running',
+                'performance_metrics': {
+                    'cpu_usage': psutil.cpu_percent(),
+                    'memory_usage': psutil.virtual_memory().percent,
+                    'gpu_usage': GPUtil.getGPUs()[0].load * 100 if torch.cuda.is_available() else 0,
+                    'active_metrics': len(self.metrics_collector.metric_history)
+                }
+            }
+            
+            return health_metrics
+            
+        except Exception as e:
+            self.logger.error(f"Error getting system health: {e}")
+            return {'status': 'error', 'error': str(e)}
 
-# Global dashboard instance
-monitoring_dashboard = AIMonitoringDashboard()
+# Initialize service
+ai_monitoring_dashboard = AIMonitoringDashboard() 
 
-if __name__ == "__main__":
-    monitoring_dashboard.run_dashboard() 
+# Add Flask app and API for explainability endpoint if not present
+app = Flask(__name__)
+api = Api(app, version='1.0', title='AI Monitoring Dashboard', description='Advanced ML Monitoring and Explainability', doc='/docs')
+
+# Add data validator
+data_validator = AdvancedDataValidator(logger=logger)
+
+explain_input = api.model('ExplainInput', {
+    'model_type': fields.String(required=True, description='Model type (anomaly, drift)'),
+    'input_data': fields.Raw(required=True, description='Input data for explanation')
+})
+
+@api.route('/explain')
+class Explain(Resource):
+    @api.expect(explain_input)
+    @api.response(200, 'Success')
+    @api.response(400, 'Invalid input data')
+    @api.response(500, 'Internal error')
+    def post(self):
+        try:
+            data = request.json
+            model_type = data.get('model_type')
+            input_data = data.get('input_data')
+            schema = {'type': 'object', 'properties': {'features': {'type': 'array'}}, 'required': ['features']}
+            data_validator.set_schema(schema)
+            if not data_validator.validate(input_data):
+                logger.error('Input data failed schema validation.')
+                return {'error': 'Invalid input data'}, 400
+            features = np.array(input_data['features']).reshape(1, -1)
+            if model_type == 'anomaly':
+                model = self.anomaly_model
+            elif model_type == 'drift':
+                model = self.drift_model
+            else:
+                logger.error(f'Unknown model_type: {model_type}')
+                return {'error': 'Unknown model_type'}, 400
+            explainer = shap.Explainer(lambda x: model(x)[1].detach().numpy(), features)
+            shap_values = explainer(features)
+            logger.info(f'Explanation generated for {model_type} model')
+            return {'shap_values': shap_values.values.tolist(), 'base_values': shap_values.base_values.tolist()}
+        except Exception as e:
+            logger.error(f'Explainability error: {e}')
+            return {'error': str(e)}, 500 
