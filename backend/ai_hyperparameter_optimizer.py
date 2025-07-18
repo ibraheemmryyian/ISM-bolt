@@ -57,7 +57,8 @@ from ml_core.data_processing import (
 from ml_core.optimization import (
     BaseOptimizer,
     OptimizationStrategy,
-    SearchSpace
+    SearchSpace,
+    HyperparameterOptimizer
 )
 from ml_core.monitoring import (
     MLMetricsTracker,
@@ -358,7 +359,7 @@ class NeuralArchitectureSearch:
                         best_score = score
                         best_architecture = arch
             
-        except Exception as e:
+                except Exception as e:
                     scores.append(float('-inf'))
             
             # Update controller
@@ -613,50 +614,41 @@ class AdvancedHyperparameterOptimizer:
         """Bayesian optimization using Optuna"""
         def optuna_objective(trial):
             # Sample parameters
-        params = {}
+            params = {}
             optuna_space = search_space.get_optuna_space()
-            
             for param_name, distribution in optuna_space.items():
                 params[param_name] = trial.suggest(param_name, distribution)
-            
             # Evaluate objective
             result = objective_function(params)
-            
             # Handle multi-objective case
             if isinstance(result, dict):
                 # Log all objectives
                 for obj_name, obj_value in result.items():
                     trial.set_user_attr(obj_name, obj_value)
-                
                 # Return primary objective
                 return result[objectives[0]]
             else:
                 return result
-        
         # Create study
         study = optuna.create_study(
             direction='maximize',
             sampler=TPESampler(),
             pruner=MedianPruner()
         )
-        
         # Optimize
         study.optimize(
             optuna_objective,
             n_trials=self.optimization_config['n_trials'],
             timeout=self.optimization_config['timeout']
         )
-        
         # Get best results
         best_params = study.best_params
         best_value = study.best_value
-        
         # Extract all objectives from best trial
         best_trial = study.best_trial
         best_scores = {}
         for objective in objectives:
             best_scores[objective] = best_trial.user_attrs.get(objective, best_value)
-        
         return {
         'best_params': best_params,
         'best_scores': best_scores,
@@ -729,13 +721,12 @@ class AdvancedHyperparameterOptimizer:
         
         if isinstance(best_result, dict):
             best_scores = best_result
-                else:
+        else:
             best_scores = {objectives[0]: best_result}
-        
         return {
-        'best_params': best_params,
-        'best_scores': best_scores,
-       'optimization_result': result
+            'best_params': best_params,
+            'best_scores': best_scores,
+            'optimization_result': result
         }
     
     async def _multi_objective_optimization(self,
@@ -819,11 +810,10 @@ class AdvancedHyperparameterOptimizer:
         best_trial = analysis.get_best_trial(objectives[0], 'max')
         best_params = best_trial.config
         best_scores = best_trial.last_result
-        
-                return {
-        'best_params': best_params,
-        'best_scores': best_scores,
-     'analysis': analysis
+        return {
+            'best_params': best_params,
+            'best_scores': best_scores,
+            'analysis': analysis
         }
     
     async def _hyperopt_optimization(self,
@@ -863,7 +853,6 @@ class AdvancedHyperparameterOptimizer:
             best_scores = best_result
         else:
             best_scores = {objectives[0]: best_result}
-        
         return {
         'best_params': best_params,
         'best_scores': best_scores,
@@ -1017,6 +1006,9 @@ class AdvancedHyperparameterOptimizer:
         except Exception as e:
             self.logger.error(f"Error getting system health: {e}")
             return {'status': 'error', 'error': str(e)}
+
+class AIHyperparameterOptimizer(HyperparameterOptimizer):
+    pass
 
 # Initialize service
 advanced_hyperparameter_optimizer = AdvancedHyperparameterOptimizer() 

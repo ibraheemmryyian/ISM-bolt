@@ -37,10 +37,10 @@ import sqlite3
 import uuid
 import sys
 import torch
-from backend.ml_core.models import BaseTransformer
-from backend.ml_core.monitoring import log_metrics, save_checkpoint
-from backend.utils.distributed_logger import DistributedLogger
-from backend.utils.advanced_data_validator import AdvancedDataValidator
+from .ml_core.models import BaseTransformer
+from .ml_core.monitoring import log_metrics, save_checkpoint
+from .utils.distributed_logger import DistributedLogger
+from .utils.advanced_data_validator import AdvancedDataValidator
 from flask import Flask, request, jsonify
 from flask_restx import Api, Resource, fields
 import shap

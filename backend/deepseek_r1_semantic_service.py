@@ -6,7 +6,7 @@ Advanced semantic analysis using DeepSeek R1 for industrial symbiosis
 
 import torch
 from transformers import BertTokenizer, BertModel
-from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from .ml_core.monitoring import log_metrics, save_checkpoint
 import numpy as np
 import os
 

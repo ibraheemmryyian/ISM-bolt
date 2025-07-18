@@ -18,6 +18,7 @@ import { ChatsPanel } from './components/ChatsPanel';
 import { AdminAccessPage } from './components/AdminAccessPage';
 import { ReviewAIListings } from './components/ReviewAIListings';
 import { AIAdvancedDashboard } from './components/AIAdvancedDashboard';
+import { AdaptiveAIOnboarding } from './components/AdaptiveAIOnboarding';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastContainer } from 'react-toastify';
@@ -180,7 +181,7 @@ function App() {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showMaterialForm, setShowMaterialForm] = useState<'waste' | 'requirement' | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  // Remove showOnboarding and legacy onboarding modal
 
   useEffect(() => {
     // Check if user has seen the landing page
@@ -247,15 +248,9 @@ function App() {
             <Route path="/admin" element={<AdminAccessPage />} />
             <Route path="/onboarding" element={
               session ? (
-                <AIOnboardingWizard
-                  companyProfile={{
-                    name: session.user?.user_metadata?.name || '',
-                    industry: '',
-                    location: '',
-                    employee_count: 0
-                  }}
-                  onComplete={() => setShowOnboarding(false)}
-                  onCancel={() => setShowOnboarding(false)}
+                <AdaptiveAIOnboarding
+                  onClose={() => window.location.href = '/dashboard'}
+                  onComplete={() => window.location.href = '/dashboard'}
                 />
               ) : (
                 <Navigate to="/" replace />
@@ -282,11 +277,9 @@ function App() {
                 <Navigate to="/" replace />
               )
             } />
-
             <Route path="/review-ai-listings" element={
               session ? (
                 <ReviewAIListings onConfirm={() => {
-                  // Handle confirmation - navigate to dashboard
                   window.location.href = '/dashboard';
                 }} />
               ) : (
@@ -294,14 +287,12 @@ function App() {
               )
             } />
           </Routes>
-
           {/* Auth Modal */}
           {showAuthModal && (
             <AuthModal 
               onClose={() => setShowAuthModal(false)}
             />
           )}
-
           {/* Material Form Modal */}
           {showMaterialForm && (
             <MaterialForm 
@@ -309,14 +300,7 @@ function App() {
               onClose={() => setShowMaterialForm(null)}
             />
           )}
-
-          {/* Onboarding Modal */}
-          {showOnboarding && (
-            <OnboardingForm 
-              onClose={() => setShowOnboarding(false)}
-            />
-          )}
-
+          {/* Remove legacy onboarding modal */}
           {/* Global Toast Container */}
           <ToastContainer
             position="top-right"

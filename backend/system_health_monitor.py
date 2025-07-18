@@ -108,7 +108,7 @@ class SystemHealthMonitor:
         
         # Threading
         self.monitoring_thread = None
-        self.stop_monitoring = False
+        self._stop_monitoring_flag = False
         self.lock = threading.Lock()
         
         # Email configuration
@@ -449,21 +449,21 @@ class SystemHealthMonitor:
             logger.warning("Monitoring already running")
             return
         
-        self.stop_monitoring = False
+        self._stop_monitoring_flag = False
         self.monitoring_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
         self.monitoring_thread.start()
         logger.info("🚀 Health monitoring started")
     
     def stop_monitoring(self):
         """Stop health monitoring"""
-        self.stop_monitoring = True
+        self._stop_monitoring_flag = True
         if self.monitoring_thread:
             self.monitoring_thread.join()
         logger.info("🛑 Health monitoring stopped")
     
     def _monitoring_loop(self):
         """Main monitoring loop"""
-        while not self.stop_monitoring:
+        while not self._stop_monitoring_flag:
             try:
                 # Get metrics
                 metrics = self._get_system_metrics()

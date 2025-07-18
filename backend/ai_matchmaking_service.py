@@ -12,8 +12,8 @@ from ml_core.models import ModelFactory
 from ml_core.utils import ModelRegistry
 from ml_core.monitoring import MLMetricsTracker
 from ml_core.optimization import HyperparameterOptimizer
-from backend.utils.distributed_logger import DistributedLogger
-from backend.utils.advanced_data_validator import AdvancedDataValidator
+from .utils.distributed_logger import DistributedLogger
+from .utils.advanced_data_validator import AdvancedDataValidator
 
 app = Flask(__name__)
 api = Api(app, version='1.0', title='AI Matchmaking Service', description='Insanely Advanced Modular ML Matchmaking', doc='/docs')
@@ -177,7 +177,7 @@ class Optimize(Resource):
                 optimization_strategy='bayesian'
             )
             return {'status': 'optimization started', 'model_id': model_id}
-            except Exception as e:
+        except Exception as e:
             logger.error(f"Optimization error: {e}")
             return {'error': str(e)}, 500
 

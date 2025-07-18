@@ -32,3 +32,8 @@ class MLMetricsTracker:
         if self.metrics:
             return self.metrics[-1]
         return {} 
+
+# --- STUB: OptimizationMonitor ---
+class OptimizationMonitor:
+    def __init__(self, *args, **kwargs):
+        pass 

@@ -8,7 +8,7 @@ import json
 import logging
 from flask import Flask, request, jsonify
 import torch
-from torch_geometric.nn import GCNConv, GATConv, GraphTransformer
+from torch_geometric.nn import GCNConv, GATConv
 from ml_core.models import ModelFactory
 from ml_core.utils import ModelRegistry
 from ml_core.monitoring import MLMetricsTracker

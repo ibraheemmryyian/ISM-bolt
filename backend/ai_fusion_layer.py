@@ -64,90 +64,91 @@ from ml_core.utils import (
     ConfigManager
 )
 
+# --- Microservice Wrapper for Advanced Orchestrator ---
+try:
+    from ml_core.fusion import FusionLayer
+except ImportError:
+    FusionLayer = object
+
+class AIFusionLayer(FusionLayer):
+    pass
+
 class MultiModalDataset(Dataset):
-  dataset for multi-modal fusion with real data processing
+    """Dataset for multi-modal fusion with real data processing"""
     def __init__(self, 
                  text_data: List[str],
                  numerical_data: np.ndarray,
                  categorical_data: np.ndarray,
                  labels: np.ndarray,
                  tokenizer,
-                 max_length: int = 512
+                 max_length: int = 512):
         self.text_data = text_data
         self.numerical_data = numerical_data
         self.categorical_data = categorical_data
         self.labels = labels
         self.tokenizer = tokenizer
         self.max_length = max_length
-        
         # Process text data
         self.text_features = self._process_text_data()
-        
         # Process numerical data
         self.scaler = StandardScaler()
         self.numerical_features = self.scaler.fit_transform(numerical_data)
-        
         # Process categorical data
-        self.label_encoders =  self.categorical_features = []
-        
+        self.label_encoders = []
+        self.categorical_features = []
         for i in range(categorical_data.shape[1]):
             encoder = LabelEncoder()
             encoded = encoder.fit_transform(categorical_data[:, i])
             self.label_encoders.append(encoder)
             self.categorical_features.append(encoded)
-        
         self.categorical_features = np.column_stack(self.categorical_features)
-    
+
     def _process_text_data(self) -> List[Dict]:
-     Process text data with tokenization"""
+        """Process text data with tokenization"""
         text_features = []
-        
         for text in self.text_data:
             encoding = self.tokenizer(
                 text,
                 truncation=True,
-                padding='max_length,
+                padding='max_length',
                 max_length=self.max_length,
                 return_tensors='pt'
             )
             text_features.append({
-          input_ids: encoding[input_ids'].squeeze(),
-               attention_mask': encodingattention_mask'].squeeze()
+                'input_ids': encoding['input_ids'].squeeze(),
+                'attention_mask': encoding['attention_mask'].squeeze()
             })
-        
         return text_features
-    
+
     def __len__(self):
         return len(self.text_data)
-    
+
     def __getitem__(self, idx):
         return {
-          text_features': self.text_features[idx],
-        numerical_features': torch.FloatTensor(self.numerical_features[idx]),
-          categorical_features': torch.LongTensor(self.categorical_features[idx]),
-              label': torch.LongTensor([self.labels[idx]]) if len(self.labels.shape) == 1 torch.FloatTensor(self.labels[idx])
+            'text_features': self.text_features[idx],
+            'numerical_features': torch.FloatTensor(self.numerical_features[idx]),
+            'categorical_features': torch.LongTensor(self.categorical_features[idx]),
+            'label': torch.LongTensor([self.labels[idx]]) if len(self.labels.shape) == 1 else torch.FloatTensor(self.labels[idx])
         }
 
 class AttentionFusionModule(nn.Module):
-    ntion-based fusion module for multi-modal data
+    """Attention-based fusion module for multi-modal data"""
     def __init__(self, 
                  text_dim: int,
                  numerical_dim: int,
                  categorical_dim: int,
                  fusion_dim: int = 512,
                  num_heads: int = 8,
-                 dropout: float = 00.1        super().__init__()
-        
+                 dropout: float = 0.1):
+        super().__init__()
         self.text_dim = text_dim
         self.numerical_dim = numerical_dim
         self.categorical_dim = categorical_dim
         self.fusion_dim = fusion_dim
-        
         # Feature projections
         self.text_projection = nn.Linear(text_dim, fusion_dim)
         self.numerical_projection = nn.Linear(numerical_dim, fusion_dim)
         self.categorical_projection = nn.Linear(categorical_dim, fusion_dim)
-        
         # Multi-head attention
         self.attention = nn.MultiheadAttention(
             embed_dim=fusion_dim,
@@ -155,7 +156,6 @@ class AttentionFusionModule(nn.Module):
             dropout=dropout,
             batch_first=True
         )
-        
         # Cross-modal attention
         self.cross_attention = nn.MultiheadAttention(
             embed_dim=fusion_dim,
@@ -163,32 +163,28 @@ class AttentionFusionModule(nn.Module):
             dropout=dropout,
             batch_first=True
         )
-        
         # Fusion layers
         self.fusion_layers = nn.Sequential(
-            nn.Linear(fusion_dim *3 fusion_dim * 2
+            nn.Linear(fusion_dim * 3, fusion_dim * 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(fusion_dim * 2, fusion_dim),
             nn.ReLU(),
             nn.Dropout(dropout)
         )
-        
         # Layer normalization
-        self.layer_norm1n.LayerNorm(fusion_dim)
-        self.layer_norm2n.LayerNorm(fusion_dim)
-        
+        self.layer_norm1 = nn.LayerNorm(fusion_dim)
+        self.layer_norm2 = nn.LayerNorm(fusion_dim)
+
     def forward(self, text_features, numerical_features, categorical_features):
         # Project features to common space
         text_proj = self.text_projection(text_features)
         numerical_proj = self.numerical_projection(numerical_features)
         categorical_proj = self.categorical_projection(categorical_features)
-        
         # Self-attention within each modality
         text_attended, _ = self.attention(text_proj, text_proj, text_proj)
         numerical_attended, _ = self.attention(numerical_proj, numerical_proj, numerical_proj)
         categorical_attended, _ = self.attention(categorical_proj, categorical_proj, categorical_proj)
-        
         # Cross-modal attention
         text_cross, _ = self.cross_attention(text_attended, numerical_attended, categorical_attended)
         numerical_cross, _ = self.cross_attention(numerical_attended, text_attended, categorical_attended)
@@ -211,12 +207,13 @@ class AttentionFusionModule(nn.Module):
         return fused_features
 
 class EnsembleFusionModel(nn.Module):
-    emble fusion model with multiple base models and fusion strategies
+    """Emble fusion model with multiple base models and fusion strategies"""
     def __init__(self, 
                  base_models: List[nn.Module],
                  fusion_strategy: str = 'attention',
                  num_classes: int = 10,
-                 fusion_dim: int = 512        super().__init__()
+                 fusion_dim: int = 512):
+        super().__init__()
         
         self.base_models = nn.ModuleList(base_models)
         self.fusion_strategy = fusion_strategy
@@ -229,13 +226,15 @@ class EnsembleFusionModel(nn.Module):
             if hasattr(model, 'classifier'):
                 self.base_output_dims.append(model.classifier.out_features)
             else:
-                self.base_output_dims.append(768t for transformers
+                self.base_output_dims.append(768) # Placeholder for transformers
         
         # Fusion strategies
         if fusion_strategy == 'attention':
             self.fusion_module = AttentionFusionModule(
                 text_dim=self.base_output_dims[0],
-                numerical_dim=self.base_output_dims[1] if len(self.base_output_dims) > 1 else 64       categorical_dim=self.base_output_dims[2] if len(self.base_output_dims) > 2 else 32            fusion_dim=fusion_dim
+                numerical_dim=self.base_output_dims[1] if len(self.base_output_dims) > 1 else 64,
+                categorical_dim=self.base_output_dims[2] if len(self.base_output_dims) > 2 else 32,
+                fusion_dim=fusion_dim
             )
         elif fusion_strategy == 'weighted':
             self.fusion_module = WeightedFusionModule(
@@ -252,23 +251,24 @@ class EnsembleFusionModel(nn.Module):
         
         # Final classifier
         self.classifier = nn.Sequential(
-            nn.Linear(fusion_dim, fusion_dim // 2
+            nn.Linear(fusion_dim, fusion_dim // 2),
             nn.ReLU(),
-            nn.Dropout(0.1,
+            nn.Dropout(0.1),
             nn.Linear(fusion_dim // 2, num_classes)
         )
         
         # Uncertainty estimation
         self.uncertainty_head = nn.Sequential(
-            nn.Linear(fusion_dim, fusion_dim // 4
+            nn.Linear(fusion_dim, fusion_dim // 4),
             nn.ReLU(),
-            nn.Linear(fusion_dim // 41,
+            nn.Linear(fusion_dim // 4, 1),
             nn.Sigmoid()
         )
     
     def forward(self, *inputs):
         # Get outputs from base models
-        base_outputs =      for i, model in enumerate(self.base_models):
+        base_outputs = []
+        for i, model in enumerate(self.base_models):
             if i < len(inputs):
                 output = model(inputs[i])
                 if isinstance(output, tuple):
@@ -290,7 +290,7 @@ class EnsembleFusionModel(nn.Module):
         return logits, uncertainty
 
 class WeightedFusionModule(nn.Module):
-    hted fusion module with learnable weights
+    """Weighted fusion module with learnable weights"""
     def __init__(self, input_dims: List[int], fusion_dim: int):
         super().__init__()
         
@@ -301,18 +301,20 @@ class WeightedFusionModule(nn.Module):
         self.weights = nn.Parameter(torch.ones(len(input_dims)))
         
         # Projection layers
-        self.projections = nn.ModuleList(         nn.Linear(dim, fusion_dim) for dim in input_dims
+        self.projections = nn.ModuleList([
+            nn.Linear(dim, fusion_dim) for dim in input_dims
         ])
         
         # Fusion layer
         self.fusion_layer = nn.Sequential(
             nn.Linear(fusion_dim, fusion_dim),
             nn.ReLU(),
-            nn.Dropout(0.1        )
+            nn.Dropout(0.1)
+        )
     
     def forward(self, inputs: List[torch.Tensor]):
         # Project inputs to common space
-        projected =]
+        projected = []
         for i, (input_tensor, projection) in enumerate(zip(inputs, self.projections)):
             proj = projection(input_tensor)
             projected.append(proj)
@@ -327,7 +329,7 @@ class WeightedFusionModule(nn.Module):
         return fused
 
 class GatedFusionModule(nn.Module):
- ated fusion module with gating mechanisms
+    """Gated fusion module with gating mechanisms"""
     def __init__(self, input_dims: List[int], fusion_dim: int):
         super().__init__()
         
@@ -335,11 +337,13 @@ class GatedFusionModule(nn.Module):
         self.fusion_dim = fusion_dim
         
         # Projection layers
-        self.projections = nn.ModuleList(         nn.Linear(dim, fusion_dim) for dim in input_dims
+        self.projections = nn.ModuleList([
+            nn.Linear(dim, fusion_dim) for dim in input_dims
         ])
         
         # Gating networks
-        self.gates = nn.ModuleList(           nn.Sequential(
+        self.gates = nn.ModuleList([
+            nn.Sequential(
                 nn.Linear(dim, fusion_dim),
                 nn.Sigmoid()
             ) for dim in input_dims
@@ -349,11 +353,12 @@ class GatedFusionModule(nn.Module):
         self.fusion_layer = nn.Sequential(
             nn.Linear(fusion_dim, fusion_dim),
             nn.ReLU(),
-            nn.Dropout(0.1        )
+            nn.Dropout(0.1)
+        )
     
     def forward(self, inputs: List[torch.Tensor]):
         # Project and gate inputs
-        gated_outputs =]
+        gated_outputs = []
         for i, (input_tensor, projection, gate) in enumerate(zip(inputs, self.projections, self.gates)):
             proj = projection(input_tensor)
             gate_value = gate(input_tensor)
@@ -369,11 +374,12 @@ class GatedFusionModule(nn.Module):
         return fused
 
 class AdvancedEnsembleModel(nn.Module):
-    ""Advanced ensemble model with diversity promotion
+    """Advanced ensemble model with diversity promotion"""
     def __init__(self, 
                  base_models: List[nn.Module],
                  ensemble_size: int = 5,
-                 diversity_weight: float = 00.1        super().__init__()
+                 diversity_weight: float = 0.1):
+        super().__init__()
         
         self.base_models = nn.ModuleList(base_models)
         self.ensemble_size = ensemble_size
@@ -407,31 +413,36 @@ class AdvancedEnsembleModel(nn.Module):
         return ensemble_pred, stacked_preds
     
     def diversity_loss(self, predictions):
-  alculate diversity loss to promote ensemble diversity       return self.diversity_regularizer(predictions)
+        """Calculate diversity loss to promote ensemble diversity"""
+        return self.diversity_regularizer(predictions)
 
 class DiversityRegularizer(nn.Module):
-   larizer to promote diversity in ensemble predictions
+    """Regularizer to promote diversity in ensemble predictions"""
     def __init__(self, ensemble_size: int):
         super().__init__()
         self.ensemble_size = ensemble_size
     
     def forward(self, predictions: torch.Tensor):
-  alculate diversity loss based on prediction correlations"""
+        """Calculate diversity loss based on prediction correlations"""
         # predictions shape: [ensemble_size, batch_size, num_classes]
         
         # Convert to probabilities
         probs = F.softmax(predictions, dim=-1)
         
         # Calculate pairwise correlations
-        diversity_loss = 0    for i in range(self.ensemble_size):
+        diversity_loss = 0
+        for i in range(self.ensemble_size):
             for j in range(i + 1, self.ensemble_size):
                 # Correlation between predictions of models i and j
-                corr = torch.corrcoef(torch.stack([probs[i].flatten(), probsj].flatten()]))[0, 1         diversity_loss += corr ** 2   
-        return diversity_loss / (self.ensemble_size * (self.ensemble_size - 12lass AIFusionLayer:
-    Real ML-powered AI fusion layer with advanced ensemble and multi-modal fusion
+                corr = torch.corrcoef(torch.stack([probs[i].flatten(), probs[j].flatten()]))[0, 1]
+                diversity_loss += corr ** 2
+        return diversity_loss / (self.ensemble_size * (self.ensemble_size - 1) / 2)
+
+class AIFusionLayer:
+    """Real ML-powered AI fusion layer with advanced ensemble and multi-modal fusion"""
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.device = torch.device('cuda if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         # Initialize components
         self.model_factory = ModelFactory()
@@ -451,18 +462,21 @@ class DiversityRegularizer(nn.Module):
         
         # Fusion configuration
         self.fusion_config = {
-            batch_size:32     learning_rate':1e-4
-        epochs:30          early_stopping_patience': 5,
-           validation_split': 0.2        fusion_strategies: [ttention', weighted', gated
-         ensemble_size': 5,
-         diversity_weight': 0.1
+            'batch_size': 32,
+            'learning_rate': 1e-4,
+            'epochs': 30,
+            'early_stopping_patience': 5,
+            'validation_split': 0.2,
+            'fusion_strategies': ['attention', 'weighted', 'gated'],
+            'ensemble_size': 5,
+            'diversity_weight': 0.1
         }
         
         # Model paths
-        self.model_paths =[object Object]
-         fusion:models/fusion/',
-         ensemble':models/ensemble/,
-         base: els/base/'
+        self.model_paths = {
+            'fusion': 'models/fusion/',
+            'ensemble': 'models/ensemble/',
+            'base': 'models/base/'
         }
         
         # Ensure directories exist
@@ -472,13 +486,14 @@ class DiversityRegularizer(nn.Module):
     async def create_fusion_model(self,
                                 model_configs: List[Dict],
                                 fusion_strategy: str = 'attention',
-                                task_type: str =classification) -> str:
-     reate a new fusion model with specified base models"""
+                                task_type: str = 'classification') -> str:
+        """Create a new fusion model with specified base models"""
         try:
             self.logger.info(f"Creating fusion model with strategy: {fusion_strategy}")
             
             # Create base models
-            base_models =         for config in model_configs:
+            base_models = []
+            for config in model_configs:
                 model = self.model_factory.create_model(
                     model_type=config['type'],
                     config=config
@@ -489,26 +504,27 @@ class DiversityRegularizer(nn.Module):
             fusion_model = EnsembleFusionModel(
                 base_models=base_models,
                 fusion_strategy=fusion_strategy,
-                num_classes=config.get('num_classes,10)
+                num_classes=config.get('num_classes', 10)
             ).to(self.device)
             
             # Generate model ID
-            model_id = f"fusion_{fusion_strategy}_{datetime.now().strftime('%Y%m%d_%H%M%S)}"      
+            model_id = f"fusion_{fusion_strategy}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             # Save model
-            torch.save(fusion_model.state_dict(), f{self.model_paths['fusion]}/{model_id}.pth")
+            torch.save(fusion_model.state_dict(), f"{self.model_paths['fusion']}/{model_id}.pth")
             
             # Register model
             self.fusion_models[model_id] = fusion_model
             
             # Save metadata
-            metadata =[object Object]             model_id': model_id,
-                fusion_strategy: fusion_strategy,
-                task_type': task_type,
-                base_models: model_configs,
-                created_at:datetime.now().isoformat()
+            metadata = {
+                'model_id': model_id,
+                'fusion_strategy': fusion_strategy,
+                'task_type': task_type,
+                'base_models': model_configs,
+                'created_at': datetime.now().isoformat()
             }
             
-            with open(f{self.model_paths['fusion']}/{model_id}_metadata.json", 'w') as f:
+            with open(f"{self.model_paths['fusion']}/{model_id}_metadata.json", 'w') as f:
                 json.dump(metadata, f, indent=2)
             
             self.logger.info(f"Fusion model created: {model_id}")
@@ -522,7 +538,7 @@ class DiversityRegularizer(nn.Module):
                                model_id: str,
                                training_data: Dict,
                                validation_data: Dict = None) -> Dict:
-     Train fusion model with real ML pipeline"""
+        """Train fusion model with real ML pipeline"""
         try:
             self.logger.info(f"Training fusion model: {model_id}")
             
@@ -566,7 +582,8 @@ class DiversityRegularizer(nn.Module):
             )
             
             # Training loop
-            best_val_loss = float(inf          patience_counter = 0
+            best_val_loss = float('inf')
+            patience_counter = 0
             training_history = []
             
             for epoch in range(self.fusion_config['epochs']):
@@ -576,14 +593,15 @@ class DiversityRegularizer(nn.Module):
                 
                 for batch in train_loader:
                     # Move to device
-                    text_features = batchtext_features                   numerical_features = batch['numerical_features'].to(self.device)
+                    text_features = batch['text_features']
+                    numerical_features = batch['numerical_features'].to(self.device)
                     categorical_features = batch['categorical_features'].to(self.device)
                     labels = batch['label'].to(self.device)
                     
                     # Forward pass
                     logits, uncertainty = fusion_model(
                         text_features['input_ids'].to(self.device),
-                        text_features[attention_mask'].to(self.device),
+                        text_features['attention_mask'].to(self.device),
                         numerical_features,
                         categorical_features
                     )
@@ -593,7 +611,7 @@ class DiversityRegularizer(nn.Module):
                     
                     # Add uncertainty regularization
                     uncertainty_loss = torch.mean(uncertainty)
-                    total_loss = loss +0.1* uncertainty_loss
+                    total_loss = loss + 0.1 * uncertainty_loss
                     
                     # Backward pass
                     optimizer.zero_grad()
@@ -606,17 +624,19 @@ class DiversityRegularizer(nn.Module):
                 scheduler.step()
                 
                 # Validation phase
-                val_loss = 00                if val_loader:
+                val_loss = 0.0
+                if val_loader:
                     fusion_model.eval()
                     with torch.no_grad():
                         for batch in val_loader:
-                            text_features = batchtext_features                   numerical_features = batch['numerical_features'].to(self.device)
+                            text_features = batch['text_features']
+                            numerical_features = batch['numerical_features'].to(self.device)
                             categorical_features = batch['categorical_features'].to(self.device)
                             labels = batch['label'].to(self.device)
                             
                             logits, _ = fusion_model(
                                 text_features['input_ids'].to(self.device),
-                                text_features[attention_mask'].to(self.device),
+                                text_features['attention_mask'].to(self.device),
                                 numerical_features,
                                 categorical_features
                             )
@@ -626,10 +646,11 @@ class DiversityRegularizer(nn.Module):
                 
                 # Log metrics
                 epoch_metrics = {
-                  epoch': epoch,
-                 train_loss': train_loss / len(train_loader),
-                 val_loss': val_loss / len(val_loader) if val_loader else None,
-                 learning_rate': scheduler.get_last_lr()[0                }
+                    'epoch': epoch,
+                    'train_loss': train_loss / len(train_loader),
+                    'val_loss': val_loss / len(val_loader) if val_loader else None,
+                    'learning_rate': scheduler.get_last_lr()[0]
+                }
                 
                 training_history.append(epoch_metrics)
                 
@@ -639,23 +660,26 @@ class DiversityRegularizer(nn.Module):
                     patience_counter = 0
                     
                     # Save best model
-                    torch.save(fusion_model.state_dict(), f{self.model_paths['fusion']}/{model_id}_best.pth)              else:
+                    torch.save(fusion_model.state_dict(), f"{self.model_paths['fusion']}/{model_id}_best.pth")
+                else:
                     patience_counter += 1
                 
                 if patience_counter >= self.fusion_config['early_stopping_patience']:
-                    self.logger.info(fEarly stopping at epoch {epoch}")
+                    self.logger.info(f"Early stopping at epoch {epoch}")
                     break
             
             # Track metrics
             self.metrics_tracker.record_fusion_training_metrics({
-                model_id': model_id,
-                final_train_loss': train_loss / len(train_loader),
-                final_val_loss: best_val_loss,
-                epochs_trained': epoch +1  })
+                'model_id': model_id,
+                'final_train_loss': train_loss / len(train_loader),
+                'final_val_loss': best_val_loss,
+                'epochs_trained': epoch + 1
+            })
             
-            return[object Object]             model_id': model_id,
-                training_history': training_history,
-                best_val_loss': best_val_loss
+            return {
+                'model_id': model_id,
+                'training_history': training_history,
+                'best_val_loss': best_val_loss
             }
             
         except Exception as e:
@@ -664,13 +688,14 @@ class DiversityRegularizer(nn.Module):
     
     async def create_ensemble_model(self,
                                   base_model_ids: List[str],
-                                  ensemble_size: int = 5> str:
-        ate ensemble model with diversity promotion"""
+                                  ensemble_size: int = 5) -> str:
+        """Create ensemble model with diversity promotion"""
         try:
-            self.logger.info(fCreating ensemble model with {ensemble_size} base models")
+            self.logger.info(f"Creating ensemble model with {ensemble_size} base models")
             
             # Load base models
-            base_models =          for model_id in base_model_ids:
+            base_models = []
+            for model_id in base_model_ids:
                 model = await self._load_base_model(model_id)
                 base_models.append(model)
             
@@ -682,21 +707,22 @@ class DiversityRegularizer(nn.Module):
             ).to(self.device)
             
             # Generate ensemble ID
-            ensemble_id = f"ensemble_{datetime.now().strftime('%Y%m%d_%H%M%S)}"      
+            ensemble_id = f"ensemble_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             # Save ensemble
-            torch.save(ensemble_model.state_dict(), f{self.model_paths['ensemble]}/{ensemble_id}.pth")
+            torch.save(ensemble_model.state_dict(), f"{self.model_paths['ensemble']}/{ensemble_id}.pth")
             
             # Register ensemble
             self.ensemble_models[ensemble_id] = ensemble_model
             
             # Save metadata
-            metadata =[object Object]          ensemble_id': ensemble_id,
-                base_model_ids': base_model_ids,
-                ensemble_size: ensemble_size,
-                created_at:datetime.now().isoformat()
+            metadata = {
+                'ensemble_id': ensemble_id,
+                'base_model_ids': base_model_ids,
+                'ensemble_size': ensemble_size,
+                'created_at': datetime.now().isoformat()
             }
             
-            with open(f{self.model_paths['ensemble]}/{ensemble_id}_metadata.json", 'w') as f:
+            with open(f"{self.model_paths['ensemble']}/{ensemble_id}_metadata.json", 'w') as f:
                 json.dump(metadata, f, indent=2)
             
             self.logger.info(f"Ensemble model created: {ensemble_id}")
@@ -709,8 +735,8 @@ class DiversityRegularizer(nn.Module):
     async def fuse_predictions(self,
                              model_id: str,
                              input_data: Dict,
-                             fusion_strategy: str =auto) -> Dict:
-        "e predictions from multiple models using real ML fusion"""
+                             fusion_strategy: str = 'auto') -> Dict:
+        """Fuse predictions from multiple models using real ML fusion"""
         try:
             # Load model
             if model_id not in self.fusion_models:
@@ -724,30 +750,33 @@ class DiversityRegularizer(nn.Module):
             # Get predictions
             fusion_model.eval()
             with torch.no_grad():
-                text_features = processed_data['text_features]         numerical_features = processed_data['numerical_features'].to(self.device)
+                text_features = processed_data['text_features']
+                numerical_features = processed_data['numerical_features'].to(self.device)
                 categorical_features = processed_data['categorical_features'].to(self.device)
                 
                 logits, uncertainty = fusion_model(
                     text_features['input_ids'].to(self.device),
-                    text_features[attention_mask'].to(self.device),
+                    text_features['attention_mask'].to(self.device),
                     numerical_features,
                     categorical_features
                 )
                 
                 # Convert to probabilities
-                probabilities = F.softmax(logits, dim=1       predictions = torch.argmax(probabilities, dim=1)
+                probabilities = F.softmax(logits, dim=1)
+                predictions = torch.argmax(probabilities, dim=1)
             
             # Track fusion metrics
             self.fusion_monitor.record_fusion_metrics({
-                model_id': model_id,
-                uncertainty: float(uncertainty.mean()),
-                confidence': float(probabilities.max(dim=1)[0].mean())
+                'model_id': model_id,
+                'uncertainty': float(uncertainty.mean()),
+                'confidence': float(probabilities.max(dim=1)[0].mean())
             })
             
-            return[object Object]       predictions:predictions.cpu().numpy().tolist(),
-                probabilities: probabilities.cpu().numpy().tolist(),
-                uncertainty:uncertainty.cpu().numpy().tolist(),
-                fusion_strategy: fusion_strategy
+            return {
+                'predictions': predictions.cpu().numpy().tolist(),
+                'probabilities': probabilities.cpu().numpy().tolist(),
+                'uncertainty': uncertainty.cpu().numpy().tolist(),
+                'fusion_strategy': fusion_strategy
             }
             
         except Exception as e:
@@ -757,7 +786,7 @@ class DiversityRegularizer(nn.Module):
     async def ensemble_predict(self,
                              ensemble_id: str,
                              input_data: Dict) -> Dict:
-     semble predictions with diversity analysis"""
+        """Ensemble predictions with diversity analysis"""
         try:
             # Load ensemble
             if ensemble_id not in self.ensemble_models:
@@ -774,7 +803,8 @@ class DiversityRegularizer(nn.Module):
                 ensemble_pred, individual_preds = ensemble_model(*processed_data)
                 
                 # Convert to probabilities
-                ensemble_probs = F.softmax(ensemble_pred, dim=1          ensemble_prediction = torch.argmax(ensemble_probs, dim=1)
+                ensemble_probs = F.softmax(ensemble_pred, dim=1)
+                ensemble_prediction = torch.argmax(ensemble_probs, dim=1)
                 
                 # Calculate diversity
                 diversity_score = ensemble_model.diversity_loss(individual_preds)
@@ -782,11 +812,12 @@ class DiversityRegularizer(nn.Module):
             # Analyze ensemble behavior
             ensemble_analysis = self._analyze_ensemble_behavior(individual_preds, ensemble_probs)
             
-            return[object Object]          ensemble_prediction': ensemble_prediction.cpu().numpy().tolist(),
-                ensemble_probabilities': ensemble_probs.cpu().numpy().tolist(),
-                individual_predictions: individual_preds.cpu().numpy().tolist(),
-                diversity_score: float(diversity_score),
-                ensemble_analysis': ensemble_analysis
+            return {
+                'ensemble_prediction': ensemble_prediction.cpu().numpy().tolist(),
+                'ensemble_probabilities': ensemble_probs.cpu().numpy().tolist(),
+                'individual_predictions': individual_preds.cpu().numpy().tolist(),
+                'diversity_score': float(diversity_score),
+                'ensemble_analysis': ensemble_analysis
             }
             
         except Exception as e:
@@ -794,7 +825,7 @@ class DiversityRegularizer(nn.Module):
             raise
     
     def _analyze_ensemble_behavior(self, individual_preds: torch.Tensor, ensemble_probs: torch.Tensor) -> Dict:
- ensemble behavior and agreement"""
+        """Analyze ensemble behavior and agreement"""
         # Calculate agreement among individual models
         individual_argmax = torch.argmax(individual_preds, dim=-1)  # [ensemble_size, batch_size]
         
@@ -807,25 +838,27 @@ class DiversityRegularizer(nn.Module):
             agreement_ratios.append(agreement.item())
         
         # Confidence analysis
-        confidence_scores = ensemble_probs.max(dim=1)0.numpy()
+        confidence_scores = ensemble_probs.max(dim=1)[0].numpy()
         
-        return [object Object]            avg_agreement_ratio': np.mean(agreement_ratios),
-            confidence_distribution':[object Object]
-              mean': float(np.mean(confidence_scores)),
-             std': float(np.std(confidence_scores)),
-             min': float(np.min(confidence_scores)),
-             max': float(np.max(confidence_scores))
+        return {
+            'avg_agreement_ratio': np.mean(agreement_ratios),
+            'confidence_distribution': {
+                'mean': float(np.mean(confidence_scores)),
+                'std': float(np.std(confidence_scores)),
+                'min': float(np.min(confidence_scores)),
+                'max': float(np.max(confidence_scores))
             },
-            ensemble_stability: float(np.std(agreement_ratios))
+            'ensemble_stability': float(np.std(agreement_ratios))
         }
     
     async def _prepare_fusion_dataset(self, data: Dict) -> MultiModalDataset:
-        repare dataset for fusion training"""
+        """Prepare dataset for fusion training"""
         try:
             # Extract data components
-            text_data = data.get('text, [])         numerical_data = np.array(data.get(numerical, []))
+            text_data = data.get('text', [])
+            numerical_data = np.array(data.get('numerical', []))
             categorical_data = np.array(data.get('categorical', []))
-            labels = np.array(data.get('labels',       
+            labels = np.array(data.get('labels', []))
             # Create dataset
             dataset = MultiModalDataset(
                 text_data=text_data,
@@ -842,28 +875,30 @@ class DiversityRegularizer(nn.Module):
             raise
     
     async def _process_fusion_input(self, input_data: Dict) -> Dict:
-      Process input data for fusion inference"""
+        """Process input data for fusion inference"""
         try:
             # Process text data
-            text = input_data.get('text, )
+            text = input_data.get('text', )
             text_encoding = self.tokenizer(
                 text,
                 truncation=True,
-                padding='max_length,
-                max_length=512            return_tensors='pt'
+                padding='max_length',
+                max_length=512,
+                return_tensors='pt'
             )
             
             # Process numerical data
-            numerical_data = np.array(input_data.get(numerical', [0.0] * 10))
+            numerical_data = np.array(input_data.get('numerical', [0.0] * 10))
             numerical_features = torch.FloatTensor(numerical_data).unsqueeze(0)
             
             # Process categorical data
-            categorical_data = np.array(input_data.get(categorical', [0] * 5))
+            categorical_data = np.array(input_data.get('categorical', [0] * 5))
             categorical_features = torch.LongTensor(categorical_data).unsqueeze(0)
             
-            return[object Object]              text_features: text_encoding,
-                numerical_features': numerical_features,
-                categorical_features': categorical_features
+            return {
+                'text_features': text_encoding,
+                'numerical_features': numerical_features,
+                'categorical_features': categorical_features
             }
             
         except Exception as e:
@@ -871,7 +906,7 @@ class DiversityRegularizer(nn.Module):
             raise
     
     async def _process_ensemble_input(self, input_data: Dict) -> List[torch.Tensor]:
-      Process input data for ensemble inference"""
+        """Process input data for ensemble inference"""
         try:
             # Convert input to tensor format expected by ensemble
             processed_inputs = []
@@ -881,12 +916,12 @@ class DiversityRegularizer(nn.Module):
                 text_encoding = self.tokenizer(
                     input_data['text'],
                     truncation=True,
-                    padding='max_length,
+                    padding='max_length',
                     max_length=512,
                     return_tensors='pt'
                 )
                 processed_inputs.append(text_encoding['input_ids'].to(self.device))
-                processed_inputs.append(text_encoding[attention_mask'].to(self.device))
+                processed_inputs.append(text_encoding['attention_mask'].to(self.device))
             
             # Numerical input
             if 'numerical' in input_data:
@@ -905,10 +940,10 @@ class DiversityRegularizer(nn.Module):
             raise
     
     async def _load_fusion_model(self, model_id: str) -> nn.Module:
-    Load fusion model from disk"""
+        """Load fusion model from disk"""
         try:
-            model_path = f{self.model_paths['fusion]}/{model_id}.pth"
-            metadata_path = f{self.model_paths['fusion']}/{model_id}_metadata.json"
+            model_path = f"{self.model_paths['fusion']}/{model_id}.pth"
+            metadata_path = f"{self.model_paths['fusion']}/{model_id}_metadata.json"
             
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Fusion model not found: {model_path}")
@@ -918,7 +953,8 @@ class DiversityRegularizer(nn.Module):
                 metadata = json.load(f)
             
             # Create base models
-            base_models =         for config in metadata['base_models']:
+            base_models = []
+            for config in metadata['base_models']:
                 model = self.model_factory.create_model(
                     model_type=config['type'],
                     config=config
@@ -929,7 +965,7 @@ class DiversityRegularizer(nn.Module):
             fusion_model = EnsembleFusionModel(
                 base_models=base_models,
                 fusion_strategy=metadata['fusion_strategy'],
-                num_classes=metadata.get('num_classes,10)
+                num_classes=metadata.get('num_classes', 10)
             ).to(self.device)
             
             # Load weights
@@ -942,15 +978,15 @@ class DiversityRegularizer(nn.Module):
             raise
     
     async def _load_base_model(self, model_id: str) -> nn.Module:
-        ad base model from disk"""
+        """Load base model from disk"""
         try:
-            model_path = f{self.model_paths[base]}/{model_id}.pth"
+            model_path = f"{self.model_paths['base']}/{model_id}.pth"
             
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Base model not found: {model_path}")
             
             # Load model (simplified - would need proper model loading logic)
-            model = nn.Linear(76810).to(self.device)  # Placeholder
+            model = nn.Linear(768, 10).to(self.device)  # Placeholder
             model.load_state_dict(torch.load(model_path, map_location=self.device))
             
             return model
@@ -960,10 +996,10 @@ class DiversityRegularizer(nn.Module):
             raise
     
     async def _load_ensemble_model(self, ensemble_id: str) -> nn.Module:
-      oad ensemble model from disk"""
+        """Load ensemble model from disk"""
         try:
-            model_path = f{self.model_paths['ensemble]}/{ensemble_id}.pth"
-            metadata_path = f{self.model_paths['ensemble]}/{ensemble_id}_metadata.json"
+            model_path = f"{self.model_paths['ensemble']}/{ensemble_id}.pth"
+            metadata_path = f"{self.model_paths['ensemble']}/{ensemble_id}_metadata.json"
             
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Ensemble model not found: {model_path}")
@@ -973,7 +1009,8 @@ class DiversityRegularizer(nn.Module):
                 metadata = json.load(f)
             
             # Load base models
-            base_models =          for model_id in metadata['base_model_ids']:
+            base_models = []
+            for model_id in metadata['base_model_ids']:
                 model = await self._load_base_model(model_id)
                 base_models.append(model)
             
@@ -993,18 +1030,20 @@ class DiversityRegularizer(nn.Module):
             raise
     
     async def get_system_health(self) -> Dict:
-   Get system health metrics"""
+        """Get system health metrics"""
         try:
-            health_metrics =[object Object]            status': 'healthy,
-                device:str(self.device),
-                memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0            fusion_models_loaded: len(self.fusion_models),
-                ensemble_models_loaded': len(self.ensemble_models),
-                fusion_monitor_status: self.fusion_monitor.get_status(),
-                metrics_tracker_status': self.metrics_tracker.get_status(),
-                performance_metrics': {
-                    avg_fusion_time: self.fusion_monitor.get_avg_fusion_time(),
-                    avg_ensemble_time: self.fusion_monitor.get_avg_ensemble_time(),
-                    fusion_accuracy': self.metrics_tracker.get_fusion_accuracy()
+            health_metrics = {
+                'status': 'healthy',
+                'device': str(self.device),
+                'memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0,
+                'fusion_models_loaded': len(self.fusion_models),
+                'ensemble_models_loaded': len(self.ensemble_models),
+                'fusion_monitor_status': self.fusion_monitor.get_status(),
+                'metrics_tracker_status': self.metrics_tracker.get_status(),
+                'performance_metrics': {
+                    'avg_fusion_time': self.fusion_monitor.get_avg_fusion_time(),
+                    'avg_ensemble_time': self.fusion_monitor.get_avg_ensemble_time(),
+                    'fusion_accuracy': self.metrics_tracker.get_fusion_accuracy()
                 }
             }
             
@@ -1012,7 +1051,7 @@ class DiversityRegularizer(nn.Module):
             
         except Exception as e:
             self.logger.error(f"Error getting system health: {e}")
-            return[object Object]status:error', error': str(e)}
+            return {'status': 'error', 'error': str(e)}
 
 # Initialize service
 ai_fusion_layer = AIFusionLayer() 

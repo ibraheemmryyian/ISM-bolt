@@ -287,7 +287,7 @@ class EnhancedMaterialsSystem:
         
         try:
             # Import and initialize enhanced materials service
-            from enhancedMaterialsService import EnhancedMaterialsService
+            from enhanced_materials_service import EnhancedMaterialsService
             
             # Create service instance
             service = EnhancedMaterialsService()

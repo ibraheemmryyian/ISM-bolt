@@ -2427,7 +2427,6 @@ app.post('/api/adaptive-onboarding/complete', async (req, res) => {
         onboarding_completed: true,
         updated_at: new Date().toISOString()
       };
-
       const { data: savedCompany, error: saveError } = await supabase
         .from('companies')
         .upsert([{
@@ -2439,14 +2438,25 @@ app.post('/api/adaptive-onboarding/complete', async (req, res) => {
         })
         .select()
         .single();
-
       if (saveError) {
         console.error('Error saving company profile:', saveError);
       }
+      // --- NEW: Trigger advanced listings generation and save to materials table ---
+      try {
+        // Use the same logic as /api/ai-pipeline
+        const portfolioResult = await runPythonScript('listing_inference_service.py', {
+          action: 'generate_listings_from_profile',
+          company_profile: enrichedCompanyProfile
+        });
+        await savePortfolioToDatabase(user.id, portfolioResult);
+        result.generated_listings = portfolioResult.predicted_outputs || [];
+      } catch (listingError) {
+        console.error('Error generating/saving material listings after onboarding:', listingError);
+        return res.status(500).json({ error: 'Failed to generate material listings after onboarding', details: listingError.message });
+      }
+      // --- END NEW ---
     }
-    
     res.json(result);
-    
   } catch (error) {
     console.error('Error completing adaptive onboarding:', error);
     res.status(500).json({ error: 'Failed to complete adaptive onboarding' });

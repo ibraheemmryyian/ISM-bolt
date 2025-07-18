@@ -33,17 +33,18 @@ warnings.filterwarnings('ignore')
 
 import torch
 import numpy as np
-from backend.ml_core.models import BaseNN
-from backend.ml_core.training import train_supervised
-from backend.ml_core.inference import predict_supervised
-from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from .ml_core.models import BaseNN
+from .ml_core.training import train_supervised
+from .ml_core.inference import predict_supervised
+from .ml_core.monitoring import log_metrics, save_checkpoint
 from torch.utils.data import DataLoader, TensorDataset
 import os
 import shap
-from backend.utils.distributed_logger import DistributedLogger
-from backend.utils.advanced_data_validator import AdvancedDataValidator
+from .utils.distributed_logger import DistributedLogger
+from .utils.advanced_data_validator import AdvancedDataValidator
 from flask import Flask, request, jsonify
 from flask_restx import Api, Resource, fields
+from .industrial_intelligence_engine import IndustrialIntelligenceEngine
 
 logger = DistributedLogger('ProactiveOpportunityEngine', log_file='logs/proactive_opportunity_engine.log')
 
@@ -146,6 +147,13 @@ class AdvancedProactiveOpportunityEngine:
         self.news_api = NewsApiClient(api_key=self.config.get('news_api_key', ''))
         self.market_data_cache = {}
         self.opportunity_graph = nx.DiGraph()
+        
+        self.industrial_intelligence_engine = IndustrialIntelligenceEngine(
+            redis_client=self.redis_client,
+            logger=logger,
+            cache_ttl=self.cache_ttl,
+            config=self.config
+        )
         
         # Background processing
         self.running = False
@@ -569,109 +577,25 @@ class AdvancedProactiveOpportunityEngine:
             )
     
     async def _get_industry_news(self, industry: str) -> Dict[str, Any]:
-        """Get industry news and sentiment analysis using real NewsAPI"""
+        """Get industry news and sentiment analysis using IndustrialIntelligenceEngine"""
         try:
-            # Check cache first
-            cache_key = f"news:{industry}"
-            cached_data = self._get_cached_result(cache_key)
-            if cached_data:
-                return cached_data
-            
-            # Use real NewsAPI to get industry news
-            try:
-                # Get top headlines for the industry
-                headlines = self.news_api.get_top_headlines(
-                    q=industry,
-                    language='en',
-                    page_size=50
-                )
-                
-                # Get everything for broader industry coverage
-                everything = self.news_api.get_everything(
-                    q=f"{industry} AND (manufacturing OR supply OR materials OR sustainability)",
-                    language='en',
-                    sort_by='relevancy',
-                    page_size=50
-                )
-                
-                # Combine and analyze articles
-                all_articles = []
-                if headlines.get('articles'):
-                    all_articles.extend(headlines['articles'])
-                if everything.get('articles'):
-                    all_articles.extend(everything['articles'])
-                
-                # Analyze sentiment and extract insights
-                positive_count = 0
-                negative_count = 0
-                neutral_count = 0
-                trending_topics = []
-                
-                for article in all_articles[:30]:  # Analyze first 30 articles
-                    title = article.get('title', '').lower()
-                    description = article.get('description', '').lower()
-                    content = f"{title} {description}"
-                    
-                    # Simple sentiment analysis based on keywords
-                    positive_words = ['growth', 'increase', 'profit', 'success', 'innovation', 'sustainable', 'green', 'efficient']
-                    negative_words = ['decline', 'loss', 'crisis', 'shortage', 'disruption', 'pollution', 'waste', 'cost']
-                    
-                    positive_score = sum(1 for word in positive_words if word in content)
-                    negative_score = sum(1 for word in negative_words if word in content)
-                    
-                    if positive_score > negative_score:
-                        positive_count += 1
-                    elif negative_score > positive_score:
-                        negative_count += 1
-                    else:
-                        neutral_count += 1
-                    
-                    # Extract trending topics
-                    topic_keywords = ['sustainability', 'digital', 'ai', 'automation', 'supply chain', 'recycling', 'circular economy']
-                    for topic in topic_keywords:
-                        if topic in content and topic not in trending_topics:
-                            trending_topics.append(topic)
-                
-                # Calculate sentiment score
-                total_articles = len(all_articles)
-                if total_articles > 0:
-                    sentiment_score = (positive_count - negative_count) / total_articles
-                    sentiment_score = (sentiment_score + 1) / 2  # Normalize to 0-1
-                else:
-                    sentiment_score = 0.5
-                
-                news_data = {
-                    'sentiment_score': max(0.1, min(0.9, sentiment_score)),  # Clamp between 0.1 and 0.9
-                    'article_count': total_articles,
-                    'positive_articles': positive_count,
-                    'negative_articles': negative_count,
-                    'neutral_articles': neutral_count,
-                    'trending_topics': trending_topics[:5],  # Top 5 trending topics
-                    'data_source': 'NewsAPI',
-                    'last_updated': datetime.now().isoformat()
-                }
-                
-                # Cache the result
-                self._cache_result(cache_key, news_data)
-                
-                logger.info(f"Retrieved {total_articles} articles for {industry} with sentiment score {sentiment_score:.2f}")
-                return news_data
-                
-            except Exception as api_error:
-                logger.warning(f"NewsAPI call failed for {industry}: {api_error}")
-                # Fallback to simulated data
-                return {
-                    'sentiment_score': np.random.uniform(0.4, 0.8),
-                    'article_count': np.random.randint(10, 100),
-                    'positive_articles': np.random.randint(5, 50),
-                    'negative_articles': np.random.randint(1, 20),
-                    'trending_topics': ['sustainability', 'digital_transformation', 'supply_chain'],
-                    'data_source': 'simulated_fallback'
-                }
-                
+            return await self.industrial_intelligence_engine.fetch_industrial_intelligence(industry)
         except Exception as e:
-            logger.error(f"Error getting industry news: {e}")
-            return {'sentiment_score': 0.5, 'article_count': 0, 'data_source': 'error_fallback'}
+            logger.error(f"Error getting industry intelligence: {e}")
+            # Fallback to simulated data (same as before)
+            import numpy as np
+            from datetime import datetime
+            np.random.seed()
+            return {
+                'sentiment_score': float(np.random.uniform(0.4, 0.8)),
+                'article_count': int(np.random.randint(10, 100)),
+                'positive_articles': int(np.random.randint(5, 50)),
+                'negative_articles': int(np.random.randint(1, 20)),
+                'neutral_articles': int(np.random.randint(1, 20)),
+                'trending_topics': ['sustainability', 'digital_transformation', 'supply_chain'],
+                'data_source': 'simulated_fallback',
+                'last_updated': datetime.now().isoformat()
+            }
     
     async def _get_regulatory_updates(self, industry: str, location: str) -> Dict[str, Any]:
         """Get regulatory updates and changes"""

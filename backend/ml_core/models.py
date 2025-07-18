@@ -4,6 +4,9 @@ ML Core Models: Base classes and advanced architectures for ISM AI
 import torch
 import torch.nn as nn
 
+from dataclasses import dataclass, field
+from typing import Any, Dict, Optional
+
 # Base NN model
 class BaseNN(nn.Module):
     def __init__(self, input_dim, output_dim):
@@ -76,9 +79,79 @@ class DistMult(nn.Module):
     def forward(self, head, relation, tail):
         return torch.sum(self.entity_emb(head) * self.relation_emb(relation) * self.entity_emb(tail), dim=1)
 
-# --- STUB: ModelFactory ---
+class SimpleNN(nn.Module):
+    def __init__(self, input_dim=10, output_dim=2):
+        super().__init__()
+        self.fc = nn.Linear(input_dim, output_dim)
+    def forward(self, x):
+        return self.fc(x)
+
 class ModelFactory:
-    def __init__(self):
+    def create_model(self, model_type: str, params: dict):
+        if model_type == 'simple_nn':
+            input_dim = params.get('input_dim', 10)
+            output_dim = params.get('output_dim', 2)
+            return SimpleNN(input_dim, output_dim)
+        raise ValueError(f"Unknown model_type: {model_type}")
+
+# --- STUB: ModelArchitecture ---
+class ModelArchitecture:
+    def __init__(self, *args, **kwargs):
         pass
-    def create_model(self, *args, **kwargs):
-        raise NotImplementedError('ModelFactory.create_model is a stub. Replace with real implementation.') 
+
+@dataclass
+class ModelConfig:
+    """
+    Production-grade configuration for all AI models.
+    Supports serialization, validation, and dynamic overrides.
+    """
+    model_type: str
+    input_dim: Optional[int] = None
+    output_dim: Optional[int] = None
+    hidden_size: Optional[int] = 768
+    num_layers: Optional[int] = 6
+    num_heads: Optional[int] = 12
+    dropout: Optional[float] = 0.1
+    num_classes: Optional[int] = None
+    task_type: Optional[str] = None
+    use_adapters: Optional[bool] = False
+    additional_params: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = self.__dict__.copy()
+        d.update(self.additional_params)
+        return d
+
+    @classmethod
+    def from_dict(cls, config: Dict[str, Any]) -> "ModelConfig":
+        base_fields = {f.name for f in cls.__dataclass_fields__.values()}
+        base_args = {k: v for k, v in config.items() if k in base_fields}
+        additional = {k: v for k, v in config.items() if k not in base_fields}
+        return cls(**base_args, additional_params=additional)
+
+    def validate(self):
+        if not self.model_type:
+            raise ValueError("model_type must be specified in ModelConfig")
+        if self.input_dim is not None and self.input_dim <= 0:
+            raise ValueError("input_dim must be positive")
+        if self.output_dim is not None and self.output_dim <= 0:
+            raise ValueError("output_dim must be positive")
+        if self.hidden_size is not None and self.hidden_size <= 0:
+            raise ValueError("hidden_size must be positive")
+        if self.num_layers is not None and self.num_layers <= 0:
+            raise ValueError("num_layers must be positive")
+        if self.num_heads is not None and self.num_heads <= 0:
+            raise ValueError("num_heads must be positive")
+        if self.dropout is not None and not (0.0 <= self.dropout <= 1.0):
+            raise ValueError("dropout must be between 0.0 and 1.0")
+        if self.num_classes is not None and self.num_classes <= 0:
+            raise ValueError("num_classes must be positive")
+        # Add more validation as needed for your use cases 
+
+# --- STUB: PromptGenerationModel ---
+class PromptGenerationModel(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        # Add extensible initialization here
+    def forward(self, *args, **kwargs):
+        raise NotImplementedError('PromptGenerationModel.forward must be implemented by subclasses.') 

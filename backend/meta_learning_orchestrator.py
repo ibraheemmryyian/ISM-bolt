@@ -10,8 +10,8 @@ from ml_core.utils import ModelRegistry
 from ml_core.monitoring import MLMetricsTracker
 from ml_core.optimization import HyperparameterOptimizer
 from ml_core.training import ModelTrainer
-from backend.utils.distributed_logger import DistributedLogger
-from backend.utils.advanced_data_validator import AdvancedDataValidator
+from utils.distributed_logger import DistributedLogger
+from utils.advanced_data_validator import AdvancedDataValidator
 import flwr as fl
 import mlflow
 import wandb
@@ -23,14 +23,27 @@ try:
 except ImportError:
     dowhy = None
 
+try:
+    from ml_core.meta_learning import MetaLearningOrchestrator as BaseMetaLearningOrchestrator
+except ImportError:
+    BaseMetaLearningOrchestrator = object
+
+class MetaLearningOrchestrator(BaseMetaLearningOrchestrator):
+    pass
+
+from ml_core.optimization_base import SearchSpace
+
 app = Flask(__name__)
 api = Api(app, version='1.0', title='Meta-Learning Orchestrator', description='Autonomous, Self-Optimizing AI Orchestrator', doc='/docs')
 
 logger = DistributedLogger('MetaLearningOrchestrator', log_file='logs/meta_learning_orchestrator.log')
 model_registry = ModelRegistry()
 metrics_tracker = MLMetricsTracker()
-optimizer = HyperparameterOptimizer()
-trainer = ModelTrainer()
+model = ModelFactory().create_model('simple_nn', {'input_dim': 10, 'output_dim': 2})
+config = {'learning_rate': 0.001, 'epochs': 10}
+search_space = SearchSpace({'learning_rate': [0.0001, 0.001, 0.01], 'batch_size': [16, 32, 64]})
+optimizer = HyperparameterOptimizer(model, config, search_space)
+# trainer = ModelTrainer()  # Removed invalid instantiation; instantiate with required arguments where needed
 data_validator = AdvancedDataValidator(logger=logger)
 
 meta_optimize_input = api.model('MetaOptimizeInput', {

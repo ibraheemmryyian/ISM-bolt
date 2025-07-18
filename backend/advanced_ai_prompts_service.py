@@ -16,7 +16,7 @@ from transformers import (
     AutoTokenizer, 
     AutoModelForCausalLM, 
     AutoModelForSeq2SeqLM,
-    T5kenizer,
+    T5Tokenizer,
     T5ForConditionalGeneration,
     GPT2LMHeadModel,
     GPT2Tokenizer
@@ -41,92 +41,79 @@ from ml_core.optimization import HyperparameterOptimizer
 from ml_core.monitoring import MLMetricsTracker
 from ml_core.utils import ModelRegistry, DataValidator
 
+# --- FIXED: PromptDataset class ---
 class PromptDataset(Dataset):
- dataset for prompt engineering with actual ML preprocessing
-    def __init__(self, prompts: List[Dict], tokenizer, max_length: int = 512
+    """Dataset for prompt engineering with actual ML preprocessing"""
+    def __init__(self, prompts: List[Dict], tokenizer, max_length: int = 512):
         self.prompts = prompts
         self.tokenizer = tokenizer
         self.max_length = max_length
-        
-        # Real feature engineering
         self.scaler = StandardScaler()
         self.label_encoder = LabelEncoder()
-        
-        # Extract features
-        self.features =       self.labels = []
-        
+        self.features = []
+        self.labels = []
         for prompt in prompts:
-            # Text features
-            text = prompt.get('text,            context = prompt.get('context,             target = prompt.get('target',      
-            # Combine text
-            full_text = fContext:[object Object]context} Prompt: {text} Target: {target}"
-            
-            # Tokenize
+            text = prompt.get('text', '')
+            context = prompt.get('context', '')
+            target = prompt.get('target', '')
+            full_text = f"Context: {context} Prompt: {text} Target: {target}"
             encoding = self.tokenizer(
                 full_text,
                 truncation=True,
-                padding='max_length,               max_length=self.max_length,
+                padding='max_length',
+                max_length=self.max_length,
                 return_tensors='pt'
             )
-            
-            # Numerical features
-            numerical_features =               len(text),
+            numerical_features = [
+                len(text),
                 len(context),
                 len(target),
                 prompt.get('complexity_score', 0.5),
-                prompt.get(specificity_score', 0.5),
-                prompt.get(clarity_score', 00.5   ]
-            
-            # Categorical features
-            categorical_features =            prompt.get(domain', 'general'),
-                prompt.get('style', 'formal'),
-                prompt.get('intent, tion')
+                prompt.get('specificity_score', 0.5),
+                prompt.get('clarity_score', 0.5)
             ]
-            
+            categorical_features = [
+                prompt.get('domain', 'general'),
+                prompt.get('style', 'formal'),
+                prompt.get('intent', 'action')
+            ]
             self.features.append({
-          input_ids: encoding[input_ids'].squeeze(),
-               attention_mask': encoding[attention_mask'].squeeze(),
-        numerical_features': torch.FloatTensor(numerical_features),
-          categorical_features': categorical_features
+                'input_ids': encoding['input_ids'].squeeze(),
+                'attention_mask': encoding['attention_mask'].squeeze(),
+                'numerical_features': torch.FloatTensor(numerical_features),
+                'categorical_features': categorical_features
             })
-            
-            # Labels
             self.labels.append({
-            effectiveness_score': prompt.get('effectiveness_score', 0.5),
-               response_quality': prompt.get('response_quality', 0.5),
-                user_satisfaction': prompt.get(user_satisfaction', 0.5      })
-        
-        # Encode categorical features
+                'effectiveness_score': prompt.get('effectiveness_score', 0.5),
+                'response_quality': prompt.get('response_quality', 0.5),
+                'user_satisfaction': prompt.get('user_satisfaction', 0.5)
+            })
         if self.features:
             all_categorical = [f['categorical_features'] for f in self.features]
             encoded_categorical = []
-            
             for i in range(len(all_categorical[0])):
                 column = [cat[i] for cat in all_categorical]
                 encoded_column = self.label_encoder.fit_transform(column)
                 encoded_categorical.append(encoded_column)
-            
-            # Update features with encoded categorical data
             for i, feature in enumerate(self.features):
                 feature['categorical_features'] = torch.LongTensor([
                     encoded_categorical[j][i] for j in range(len(encoded_categorical))
                 ])
-    
     def __len__(self):
         return len(self.prompts)
-    
     def __getitem__(self, idx):
         return self.features[idx], self.labels[idx]
 
 class AdvancedPromptGenerationModel(nn.Module):
-    """Real deep learning model for advanced prompt generation with transformer architecture
+    """Real deep learning model for advanced prompt generation with transformer architecture"""
     def __init__(self, 
                  vocab_size: int,
                  hidden_size: int = 768,
                  num_layers: int = 6,
                  num_heads: int = 12,
                  dropout: float = 0.1,
-                 max_length: int = 512        super().__init__()
+                 max_length: int = 512):
+        super().__init__()
         
         self.hidden_size = hidden_size
         self.max_length = max_length
@@ -146,14 +133,16 @@ class AdvancedPromptGenerationModel(nn.Module):
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers)
         
         # Feature fusion
-        self.numerical_projection = nn.Linear(6, hidden_size //2  self.categorical_projection = nn.Linear(3, hidden_size // 2)
+        self.numerical_projection = nn.Linear(6, hidden_size //2)
+        self.categorical_projection = nn.Linear(3, hidden_size // 2)
         
         # Prompt generation head
         self.prompt_decoder = nn.TransformerDecoder(
             nn.TransformerDecoderLayer(
                 d_model=hidden_size,
                 nhead=num_heads,
-                dim_feedforward=hidden_size * 4           dropout=dropout,
+                dim_feedforward=hidden_size * 4,
+                dropout=dropout,
                 batch_first=True
             ),
             num_layers=3
@@ -164,9 +153,11 @@ class AdvancedPromptGenerationModel(nn.Module):
         
         # Quality prediction heads
         self.quality_predictors = nn.ModuleDict({
-          effectiveness': nn.Linear(hidden_size * 21),
-         clarity': nn.Linear(hidden_size * 21        specificity': nn.Linear(hidden_size * 21),
-           relevance': nn.Linear(hidden_size *2      })
+          'effectiveness': nn.Linear(hidden_size * 21),
+         'clarity': nn.Linear(hidden_size * 21),
+        'specificity': nn.Linear(hidden_size * 21),
+           'relevance': nn.Linear(hidden_size *2)
+        })
         
     def forward(self, input_ids, attention_mask, numerical_features, categorical_features, target_ids=None):
         batch_size, seq_len = input_ids.shape
@@ -194,18 +185,20 @@ class AdvancedPromptGenerationModel(nn.Module):
         ], dim=1)
         
         # Expand for sequence generation
-        expanded_features = combined_features.unsqueeze(1xpand(-1, self.max_length, -1)
+        expanded_features = combined_features.unsqueeze(1)
         
         # Generate prompt sequence
         if target_ids is not None:
             # Training mode
             target_embeddings = self.embedding(target_ids)
-            target_position_encodings = self.position_encoding[:, :target_ids.size(1            target_embeddings = target_embeddings + target_position_encodings
+            target_position_encodings = self.position_encoding[:, :target_ids.size(1), :]
+            target_embeddings = target_embeddings + target_position_encodings
             
             decoded_features = self.prompt_decoder(
                 target_embeddings,
                 encoded_features,
-                tgt_mask=self._generate_square_subsequent_mask(target_ids.size(1         )
+                tgt_mask=self._generate_square_subsequent_mask(target_ids.size(1))
+            )
         else:
             # Inference mode - autoregressive generation
             decoded_features = self._generate_autoregressive(expanded_features, encoded_features)
@@ -221,20 +214,21 @@ class AdvancedPromptGenerationModel(nn.Module):
         return output_logits, quality_predictions
     
     def _generate_square_subsequent_mask(self, sz):
-        nerate causal mask for autoregressive generation      mask = torch.triu(torch.ones(sz, sz), diagonal=1)
-        mask = mask.masked_fill(mask == 1t('-inf))       return mask
+        mask = torch.triu(torch.ones(sz, sz), diagonal=1)
+        mask = mask.masked_fill(mask == 1, float('-inf'))
+        return mask
     
-    def _generate_autoregressive(self, start_features, encoded_features, max_length=50
-       ressive generation of prompt sequence"""
+    def _generate_autoregressive(self, start_features, encoded_features, max_length=50):
         batch_size = start_features.size(0)
         generated = start_features[:, :1, :]  # Start with first token
         
-        for i in range(max_length -1
+        for i in range(max_length -1):
             # Decode current sequence
             decoded = self.prompt_decoder(
                 generated,
                 encoded_features,
-                tgt_mask=self._generate_square_subsequent_mask(generated.size(1   )
+                tgt_mask=self._generate_square_subsequent_mask(generated.size(1))
+            )
             
             # Get next token prediction
             next_logits = self.output_projection(decoded[:, -1:, :])
@@ -242,7 +236,7 @@ class AdvancedPromptGenerationModel(nn.Module):
             
             # Add to sequence
             next_embedding = self.embedding(next_token)
-            next_position = self.position_encoding:, generated.size(1):generated.size(1)+1, :]
+            next_position = self.position_encoding[:, generated.size(1):generated.size(1)+1, :]
             next_embedding = next_embedding + next_position
             
             generated = torch.cat([generated, next_embedding], dim=1)
@@ -254,20 +248,22 @@ class AdvancedPromptGenerationModel(nn.Module):
         return generated
 
 class PromptOptimizationModel(nn.Module):
-  eal RL-based model for prompt optimization
+    """Real RL-based model for prompt optimization"""
     def __init__(self, 
                  vocab_size: int,
                  hidden_size: int = 512,
                  num_layers: int = 4,
                  num_heads: int = 8,
-                 dropout: float = 00.1        super().__init__()
+                 dropout: float = 0.1):
+        super().__init__()
         
         # Policy network
         self.policy_encoder = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
                 d_model=hidden_size,
                 nhead=num_heads,
-                dim_feedforward=hidden_size * 4           dropout=dropout,
+                dim_feedforward=hidden_size * 4,
+                dropout=dropout,
                 batch_first=True
             ),
             num_layers=num_layers
@@ -278,7 +274,8 @@ class PromptOptimizationModel(nn.Module):
             nn.TransformerEncoderLayer(
                 d_model=hidden_size,
                 nhead=num_heads,
-                dim_feedforward=hidden_size * 4           dropout=dropout,
+                dim_feedforward=hidden_size * 4,
+                dropout=dropout,
                 batch_first=True
             ),
             num_layers=num_layers
@@ -289,7 +286,7 @@ class PromptOptimizationModel(nn.Module):
         
         # Policy head
         self.policy_head = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size // 2
+            nn.Linear(hidden_size, hidden_size // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_size // 2, vocab_size)
@@ -297,7 +294,7 @@ class PromptOptimizationModel(nn.Module):
         
         # Value head
         self.value_head = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size // 2
+            nn.Linear(hidden_size, hidden_size // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_size // 2, 1)
@@ -317,10 +314,10 @@ class PromptOptimizationModel(nn.Module):
         return policy_logits, value
 
 class AdvancedAIPromptsService:
-    Real ML-powered AI prompts service with actual deep learning models
+    """Real ML-powered AI prompts service with actual deep learning models"""
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.device = torch.device('cuda if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         # Initialize ML components
         self.model_registry = ModelRegistry()
@@ -341,9 +338,9 @@ class AdvancedAIPromptsService:
         
         # Model paths
         self.model_paths = {
-            prompt_generation': 'models/prompt_generation.pth',
-       prompt_optimization: odels/prompt_optimization.pth',
-   context_understanding: 'models/context_understanding.pth'
+            'prompt_generation': 'models/prompt_generation.pth',
+            'prompt_optimization': 'models/prompt_optimization.pth',
+            'context_understanding': 'models/context_understanding.pth'
         }
         
         # Load or initialize models
@@ -351,21 +348,23 @@ class AdvancedAIPromptsService:
         
         # Training configuration
         self.training_config = {
-            batch_size:16         learning_rate':5e-5,
-        epochs:30           early_stopping_patience': 5,
-           validation_split': 0.2
+            'batch_size': 16,
+            'learning_rate': 5e-5,
+            'epochs': 30,
+            'early_stopping_patience': 5,
+            'validation_split': 0.2
         }
         
         # Prompt templates and patterns
         self.prompt_templates = self._load_prompt_templates()
         
     def _initialize_models(self):
-      Initialize or load pre-trained models"""
+        """Initialize or load pre-trained models"""
         try:
             # Load prompt generation model
-            if os.path.exists(self.model_paths[prompt_generation']):
+            if os.path.exists(self.model_paths['prompt_generation']):
                 self.prompt_generation_model = torch.load(
-                    self.model_paths[prompt_generation'],
+                    self.model_paths['prompt_generation'],
                     map_location=self.device
                 )
                 self.logger.info("Loaded pre-trained prompt generation model")
@@ -406,23 +405,22 @@ class AdvancedAIPromptsService:
             raise
     
     def _load_prompt_templates(self) -> Dict:
-    d prompt templates for different use cases
+        """Load prompt templates for different use cases"""
         return {
-        analysis[object Object]
-                template': "Analyze the following {context} and provide insights on {focus_area}: {input_data},
-             variables': ['context, ocus_area', 'input_data]    },
-          generation[object Object]
-           template':Generate {output_type} based on the following requirements: {requirements},
-             variables: ['output_type', 'requirements]    },
-            optimization[object Object]
-                template': "Optimize the following {target} for {objective}: {current_state},
-             variables': ['target', 'objective',current_state]    },
-           classification':[object Object]
-                template': "Classify the following {data_type} into appropriate categories: {input_data},
-             variables: [data_type', 'input_data]    },
-          prediction[object Object]
-           template': "Predict [object Object]prediction_target} based on the following data: {input_data},
-             variables': [prediction_target', 'input_data']
+            'analysis': {
+                'template': "Analyze the following {context} and provide insights on {focus_area}: {input_data}, variables: ['context', 'focus_area', 'input_data']",
+            },
+            'generation': {
+                'template': "Generate {output_type} based on the following requirements: {requirements}, variables: ['output_type', 'requirements']",
+            },
+            'optimization': {
+                'template': "Optimize the following {target} for {objective}: {current_state}, variables: ['target', 'objective', 'current_state']",
+            },
+            'classification': {
+                'template': "Classify the following {data_type} into appropriate categories: {input_data}, variables: ['data_type', 'input_data']",
+            },
+            'prediction': {
+                'template': "Predict {prediction_target} based on the following data: {input_data}, variables: ['prediction_target', 'input_data']",
             }
         }
     
@@ -431,25 +429,27 @@ class AdvancedAIPromptsService:
                                      intent: str, 
                                      target_ai: str,
                                      complexity_level: str = 'medium',
-                                     style: str = professional') -> Dict:
- Generate advanced prompts using real ML models"""
+                                     style: str = 'professional') -> Dict:
+        """Generate advanced prompts using real ML models"""
         try:
             # Validate inputs
             validated_inputs = self.data_validator.validate_prompt_inputs({
-                context': context,
-                intentt,
-          target_ai': target_ai,
-               complexity_level': complexity_level,
-             style style
+                'context': context,
+                'intent': intent,
+                'target_ai': target_ai,
+                'complexity_level': complexity_level,
+                'style': style
             })
             
             # Prepare input features
-            input_text = f"Context:[object Object]validated_inputs[context]}Intent:[object Object]validated_inputsintent]}Target:[object Object]validated_inputs['target_ai]}"      
+            input_text = f"Context: {validated_inputs['context']} Intent: {validated_inputs['intent']} Target: {validated_inputs['target_ai']}"      
             # Tokenize
             encoding = self.tokenizer(
                 input_text,
                 truncation=True,
-                padding='max_length,               max_length=512            return_tensors='pt'
+                padding='max_length',
+                max_length=512,
+                return_tensors='pt'
             )
             
             # Prepare numerical features
@@ -458,8 +458,8 @@ class AdvancedAIPromptsService:
                 len(intent),
                 self._get_complexity_score(complexity_level),
                 self._get_style_score(style),
-     00.5 # placeholder for specificity
-     00.5 # placeholder for clarity
+                0.5, # placeholder for specificity
+                0.5  # placeholder for clarity
             ]).unsqueeze(0).to(self.device)
             
             # Prepare categorical features
@@ -474,20 +474,21 @@ class AdvancedAIPromptsService:
             with torch.no_grad():
                 output_logits, quality_predictions = self.prompt_generation_model(
                     encoding['input_ids'].to(self.device),
-                    encoding[attention_mask'].to(self.device),
+                    encoding['attention_mask'].to(self.device),
                     numerical_features,
                     categorical_features
                 )
                 
                 # Decode generated prompt
-                generated_tokens = torch.argmax(output_logits, dim=-1         generated_prompt = self.tokenizer.decode(generated_tokens[0kip_special_tokens=True)
+                generated_tokens = torch.argmax(output_logits, dim=-1)
+                generated_prompt = self.tokenizer.decode(generated_tokens[0], skip_special_tokens=True)
                 
                 # Extract quality scores
                 quality_scores = {
-                  effectiveness: float(quality_predictionseffectiveness'][0]),
-                   clarity: float(quality_predictions['clarity'][0]),
-                specificity: float(quality_predictions['specificity'][0]),
-                    relevance: float(quality_predictionsrelevance])
+                    'effectiveness': float(quality_predictions['effectiveness'][0]),
+                    'clarity': float(quality_predictions['clarity'][0]),
+                    'specificity': float(quality_predictions['specificity'][0]),
+                    'relevance': float(quality_predictions['relevance'])
                 }
             
             # Post-process generated prompt
@@ -495,20 +496,20 @@ class AdvancedAIPromptsService:
             
             # Track metrics
             self.metrics_tracker.record_prompt_generation_metrics({
-               context_length': len(context),
-                intent_complexity': len(intent),
-               generated_length: len(processed_prompt),
-               quality_scores: quality_scores
+                'context_length': len(context),
+                'intent_complexity': len(intent),
+                'generated_length': len(processed_prompt),
+                'quality_scores': quality_scores
             })
             
-            return[object Object]
-       prompt': processed_prompt,
-               quality_scores': quality_scores,
-          generation_metadata': {
-                 model_used': advanced_prompt_generation',
-                    generation_time:datetime.now().isoformat(),
-                   complexity_level': complexity_level,
-                 stylele
+            return {
+                'prompt': processed_prompt,
+                'quality_scores': quality_scores,
+                'generation_metadata': {
+                    'model_used': 'advanced_prompt_generation',
+                    'generation_time': datetime.now().isoformat(),
+                    'complexity_level': complexity_level,
+                    'style': style
                 }
             }
             
@@ -520,13 +521,13 @@ class AdvancedAIPromptsService:
                             original_prompt: str, 
                             feedback: Dict,
                             optimization_target: str = 'effectiveness') -> Dict:
-        imize prompt using real RL-based optimization"""
+        """Optimize prompt using real RL-based optimization"""
         try:
             # Validate inputs
             validated_inputs = self.data_validator.validate_optimization_inputs({
-                original_prompt: original_prompt,
-         feedback': feedback,
-           optimization_target': optimization_target
+                'original_prompt': original_prompt,
+                'feedback': feedback,
+                'optimization_target': optimization_target
             })
             
             # Prepare training data for optimization
@@ -553,7 +554,7 @@ class AdvancedAIPromptsService:
                 
                 for batch_features, batch_labels in dataloader:
                     input_ids = batch_features['input_ids'].to(self.device)
-                    attention_mask = batch_features[attention_mask'].to(self.device)
+                    attention_mask = batch_features['attention_mask'].to(self.device)
                     
                     # Get policy and value
                     policy_logits, value = self.prompt_optimization_model(
@@ -573,7 +574,7 @@ class AdvancedAIPromptsService:
                     log_probs = policy_dist.log_prob(actions)
                     policy_loss = -(log_probs * rewards).mean()
                     value_loss = F.mse_loss(value.squeeze(), rewards)
-                    total_loss = policy_loss +0.5                 
+                    total_loss = policy_loss + 0.5
                     # Backward pass
                     optimizer.zero_grad()
                     total_loss.backward()
@@ -597,14 +598,14 @@ class AdvancedAIPromptsService:
             # Save optimized model
             torch.save(self.prompt_optimization_model, self.model_paths['prompt_optimization'])
             
-            return[object Object]
-                original_prompt: original_prompt,
-               optimized_prompt': best_prompt,
-                improvement_score': best_reward,
-            optimization_metadata': {
-           target': optimization_target,
-                    epochs_trained': 10,
-                 final_reward': best_reward
+            return {
+                'original_prompt': original_prompt,
+                'optimized_prompt': best_prompt,
+                'improvement_score': best_reward,
+                'optimization_metadata': {
+                    'target': optimization_target,
+                    'epochs_trained': 10,
+                    'final_reward': best_reward
                 }
             }
                 
@@ -616,13 +617,13 @@ class AdvancedAIPromptsService:
                                          user_input: str, 
                                          conversation_history: List[Dict],
                                          ai_capabilities: Dict) -> Dict:
-        nalyze context and generate contextual prompts using real ML"""
+        """Analyze context and generate contextual prompts using real ML"""
         try:
             # Validate inputs
             validated_inputs = self.data_validator.validate_context_inputs({
-                user_input': user_input,
-           conversation_history': conversation_history,
-                ai_capabilities: ai_capabilities
+                'user_input': user_input,
+                'conversation_history': conversation_history,
+                'ai_capabilities': ai_capabilities
             })
             
             # Analyze context using ML model
@@ -640,13 +641,14 @@ class AdvancedAIPromptsService:
                 contextual_prompt, ai_capabilities
             )
             
-            return[object Object]
-               context_analysis': context_analysis,
-               generated_prompt': optimized_prompt,
-               context_metadata': {
-               conversation_length': len(conversation_history),
-                  context_complexity': context_analysis['complexity_score'],
-                    ai_specialization: ai_capabilities.get('specialization', 'general)                }
+            return {
+                'context_analysis': context_analysis,
+                'generated_prompt': optimized_prompt,
+                'context_metadata': {
+                    'conversation_length': len(conversation_history),
+                    'context_complexity': context_analysis['complexity_score'],
+                    'ai_specialization': ai_capabilities.get('specialization', 'general')
+                }
             }
                 
         except Exception as e:
@@ -654,24 +656,32 @@ class AdvancedAIPromptsService:
             raise
 
     def _get_complexity_score(self, complexity_level: str) -> float:
-      merical complexity score"""
+        """Calculate numerical complexity score"""
         complexity_map = {
-         simple: 0.2        medium: 0.5        complex: 08       expert': 1.0
+            'simple': 0.2,
+            'medium': 0.5,
+            'complex': 0.8,
+            'expert': 1.0
         }
-        return complexity_map.get(complexity_level,00.5
+        return complexity_map.get(complexity_level, 0.5)
     
     def _get_style_score(self, style: str) -> float:
-      et numerical style score"""
-        style_map = [object Object]        casual: 0.2     professional': 0.5        technical: 08       academic': 1.0
+        """Calculate numerical style score"""
+        style_map = {
+            'casual': 0.2,
+            'professional': 0.5,
+            'technical': 0.8,
+            'academic': 1.0
         }
-        return style_map.get(style,00.5  
+        return style_map.get(style, 0.5)
     def _encode_domain(self, intent: str) -> int:
-      Encode domain for categorical features        domain_map = {
-         analysis': 0,
-           generation': 1,
-           optimization': 2,
-            classification': 3,
-          prediction': 4
+        """Encode domain for categorical features"""
+        domain_map = {
+            'analysis': 0,
+            'generation': 1,
+            'optimization': 2,
+            'classification': 3,
+            'prediction': 4
         }
         
         for domain, code in domain_map.items():
@@ -680,18 +690,22 @@ class AdvancedAIPromptsService:
         return 0  # default to analysis
     
     def _encode_style(self, style: str) -> int:
-     le for categorical features"""
-        style_map = [object Object]      casual': 0,
-           professional': 1,
-          technical': 2     academic': 3
+        """Encode style for categorical features"""
+        style_map = {
+            'casual': 0,
+            'professional': 1,
+            'technical': 2,
+            'academic': 3
         }
-        return style_map.get(style,1  
+        return style_map.get(style, 1)
+    
     def _encode_intent(self, intent: str) -> int:
-      Encode intent for categorical features        intent_map = {
-            information': 0,
-       action': 1,
-         analysis': 2,
-        creation': 3
+        """Encode intent for categorical features"""
+        intent_map = {
+            'information': 0,
+            'action': 1,
+            'analysis': 2,
+            'creation': 3
         }
         
         for intent_type, code in intent_map.items():
@@ -700,104 +714,116 @@ class AdvancedAIPromptsService:
         return 0  # default to information
     
     def _post_process_prompt(self, generated_prompt: str, context: str, intent: str) -> str:
-     -process generated prompt for better quality"        # Clean up the prompt
+        """Post-process generated prompt for better quality"""
+        # Clean up the prompt
         cleaned_prompt = re.sub(r'\s+', ' ', generated_prompt).strip()
         
         # Ensure it starts with a proper instruction
-        if not cleaned_prompt.lower().startswith(('analyze', generate', optimize', 'classify', 'predict)):
+        if not cleaned_prompt.lower().startswith(('analyze', 'generate', 'optimize', 'classify', 'predict')):
             # Add intent-based prefix
-            intent_prefixes =[object Object]
-                analysis': 'Analyze,
-             generation': 'Generate,
-               optimization': 'Optimize,
-               classification': 'Classify,
-             prediction': 'Predict'
+            intent_prefixes = {
+                'analysis': 'Analyze,',
+                'generation': 'Generate,',
+                'optimization': 'Optimize,',
+                'classification': 'Classify,',
+                'prediction': 'Predict'
             }
             
             for intent_type, prefix in intent_prefixes.items():
                 if intent_type in intent.lower():
-                    cleaned_prompt = f"{prefix}: {cleaned_prompt}"
+                    cleaned_prompt = f"{prefix} {cleaned_prompt}"
                     break
         
         # Add context if not present
         if context and context not in cleaned_prompt:
-            cleaned_prompt = fContext: {context}\n{cleaned_prompt}   
+            cleaned_prompt = f"Context: {context}\n{cleaned_prompt}"   
         return cleaned_prompt
     
     def _prepare_optimization_data(self, original_prompt: str, feedback: Dict, target: str) -> List[Dict]:
-     re data for prompt optimization        return [{
-            text: original_prompt,
-    context': feedback.get('context',            targetarget,
-        effectiveness_score': feedback.get(effectiveness',00.5        response_quality': feedback.get('quality',00.5
-            user_satisfaction: feedback.get(satisfaction',00.5         complexity_score': feedback.get('complexity',00.5         specificity_score': feedback.get(specificity',00.5),
-          clarity_score': feedback.get('clarity',00.5           domain': feedback.get(domain', 'general'),
-           style': feedback.get('style',professional'),
-            intent': feedback.get('intent, ormation')
+        """Prepare data for prompt optimization"""
+        return [{
+            'text': original_prompt,
+            'context': feedback.get('context', ''),
+            'target': feedback.get('target', ''),
+            'effectiveness_score': feedback.get('effectiveness', 0.5),
+            'response_quality': feedback.get('quality', 0.5),
+            'user_satisfaction': feedback.get('satisfaction', 0.5),
+            'complexity_score': feedback.get('complexity', 0.5),
+            'specificity_score': feedback.get('specificity', 0.5),
+            'clarity_score': feedback.get('clarity', 0.5),
+            'domain': feedback.get('domain', 'general'),
+            'style': feedback.get('style', 'professional'),
+            'intent': feedback.get('intent', 'information')
         }]
     
     def _calculate_optimization_rewards(self, labels: Dict, target: str) -> torch.Tensor:
-  Calculate rewards for RL optimization"
+        """Calculate rewards for RL optimization"""
         rewards = []
         
         for label in labels:
-            if target ==effectiveness:            reward = label['effectiveness_score']
-            elif target == 'quality:            reward = label['response_quality']
-            elif target == 'satisfaction:            reward = label[user_satisfaction']
+            if target == 'effectiveness':
+                reward = label['effectiveness_score']
+            elif target == 'quality':
+                reward = label['response_quality']
+            elif target == 'satisfaction':
+                reward = label['user_satisfaction']
             else:
                 reward = (label['effectiveness_score'] + 
                          label['response_quality'] + 
-                         label[user_satisfaction']) / 3
+                         label['user_satisfaction']) / 3
             
             rewards.append(reward)
         
         return torch.FloatTensor(rewards).to(self.device)
     
     async def _generate_optimized_prompt(self, original_prompt: str, reward: float) -> str:
- Generate optimized prompt based on reward""
+        """Generate optimized prompt based on reward"""
         # Simple optimization strategy - can be enhanced
-        if reward > 0.7            # High reward - minor improvements
+        if reward > 0.7:            # High reward - minor improvements
             return original_prompt
-        elif reward > 0.5          # Medium reward - moderate improvements
+        elif reward > 0.5:          # Medium reward - moderate improvements
             return self._apply_moderate_improvements(original_prompt)
         else:
             # Low reward - significant improvements
             return self._apply_significant_improvements(original_prompt)
     
     def _apply_moderate_improvements(self, prompt: str) -> str:
-       erate improvements to prompt"""
+        """Improvements to prompt"""
         improvements = [
-           Pleaseprovide a detailed ",
-       Consider all relevant factors when ",
- Ensure comprehensive coverage of ",
-       Focus on key aspects of "
+            "Please provide a detailed ",
+            "Consider all relevant factors when ",
+            "Ensure comprehensive coverage of ",
+            "Focus on key aspects of "
         ]
         
         for improvement in improvements:
             if improvement.lower() not in prompt.lower():
-                return f"{improvement}{prompt}   
+                return f"{improvement}{prompt}"   
         return prompt
     
     def _apply_significant_improvements(self, prompt: str) -> str:
-        ""Apply significant improvements to prompt"""
+        """Apply significant improvements to prompt"""
         # Add structure and clarity
-        if not prompt.startswith((Please', 'Analyze', Generate', 'Optimize')):
-            prompt = fPlease {prompt}        
+        if not prompt.startswith(('Please', 'Analyze', 'Generate', 'Optimize')):
+            prompt = f"Please {prompt}"        
         # Add specificity
-        ifdetailed' not in prompt.lower():
-            prompt = prompt.replace(Please,Pleaseprovide a detailed ')
+        if 'detailed' not in prompt.lower():
+            prompt = prompt.replace('Please', 'Please provide a detailed ')
         
         return prompt
     
     async def _analyze_conversation_context(self, user_input: str, history: List[Dict]) -> Dict:
-alyze conversation context using ML"""
+        """Analyze conversation context using ML"""
         # Combine conversation history
-        conversation_text =         for msg in history[-5:]:  # Last 5 messages
-            conversation_text += f"{msg.get('role', user')}:[object Object]msg.get(content, '')}         
+        conversation_text = ""
+        for msg in history[-5:]:  # Last 5 messages
+            conversation_text += f"{msg.get('role', 'user')}: {msg.get('content', '')}\n"         
         # Analyze using context model
         encoding = self.tokenizer(
             conversation_text + user_input,
             truncation=True,
-            padding='max_length,        max_length=512,
+            padding='max_length',
+            max_length=512,
             return_tensors='pt'
         )
         
@@ -805,24 +831,25 @@ alyze conversation context using ML"""
         with torch.no_grad():
             _, context_features = self.context_model(
                 encoding['input_ids'].to(self.device),
-                encoding[attention_mask'].to(self.device),
-                torch.zeros(1,6).to(self.device),  # placeholder numerical features
-                torch.zeros(1, 3.to(self.device)   # placeholder categorical features
+                encoding['attention_mask'].to(self.device),
+                torch.zeros(1, 6).to(self.device),  # placeholder numerical features
+                torch.zeros(1, 3).to(self.device)   # placeholder categorical features
             )
         
         return {
-           complexity_score': float(context_featureseffectiveness'][0            topic_consistency': float(context_features[relevance][0,
-            conversation_flow': float(context_features['clarity'][0
-        user_intent': self._extract_user_intent(user_input, history)
+            'complexity_score': float(context_features['effectiveness'][0]),
+            'topic_consistency': float(context_features['relevance'][0, 0]),
+            'conversation_flow': float(context_features['clarity'][0])
         }
     
     def _extract_user_intent(self, user_input: str, history: List[Dict]) -> str:
-     xtract user intent from input and history        intent_keywords = {
-        analysis: [analyze',examine', 'study', 'investigate'],
-          generation': ['generate', create',build', 'develop'],
-            optimization': [optimize, improve,enhance', 'refine'],
-           classification: [lassify, categorize', sortoup'],
-          prediction': ['predict', 'forecast', 'estimate', project']
+        """Extract user intent from input and history"""
+        intent_keywords = {
+            'analysis': ['analyze', 'examine', 'study', 'investigate'],
+            'generation': ['generate', 'create', 'build', 'develop'],
+            'optimization': ['optimize', 'improve', 'enhance', 'refine'],
+            'classification': ['classify', 'categorize', 'sortup'],
+            'prediction': ['predict', 'forecast', 'estimate', 'project']
         }
         
         combined_text = user_input.lower()
@@ -836,7 +863,7 @@ alyze conversation context using ML"""
         return 'information'  # default intent
     
     async def _generate_contextual_prompt(self, user_input: str, context_analysis: Dict, ai_capabilities: Dict) -> str:
- enerate contextual prompt based on analysis"""
+        """Generate contextual prompt based on analysis"""
         # Use context analysis to inform prompt generation
         complexity = context_analysis['complexity_score']
         intent = context_analysis['user_intent']
@@ -845,42 +872,43 @@ alyze conversation context using ML"""
         base_prompt = await self.generate_advanced_prompt(
             context=user_input,
             intent=intent,
-            target_ai=ai_capabilities.get('name', AI        complexity_level='complex if complexity > 00.7dium',
-            style='technical if complexity > 0.7 else 'professional'
+            target_ai=ai_capabilities.get('name', 'AI'),
+            complexity_level='complex' if complexity > 0.7 else 'medium',
+            style='technical' if complexity > 0.7 else 'professional'
         )
         
-        return base_prompt[prompt']
+        return base_prompt['prompt']
     
     async def _optimize_for_ai_capabilities(self, prompt: str, capabilities: Dict) -> str:
-        ptimize prompt for specific AI capabilities"""
+        """Optimize prompt for specific AI capabilities"""
         specialization = capabilities.get('specialization', 'general')
         
         # Add capability-specific instructions
         if specialization == 'technical':
             prompt = f"Provide a technical analysis with detailed specifications: {prompt}"
         elif specialization == 'creative':
-            prompt = fGenerate creative and innovative solutions: {prompt}"
+            prompt = f"Generate creative and innovative solutions: {prompt}"
         elif specialization == 'analytical':
-            prompt = f"Provide comprehensive analytical insights with data-driven approach: {prompt}   
+            prompt = f"Provide comprehensive analytical insights with data-driven approach: {prompt}"
         return prompt
     
     async def get_system_health(self) -> Dict:
-   Get system health metrics"""
+        """Get system health metrics"""
         try:
-            health_metrics =[object Object]
-                status': 'healthy,
-              models_loaded': all([
+            health_metrics = {
+                'status': 'healthy',
+                'models_loaded': all([
                     self.prompt_generation_model is not None,
                     self.prompt_optimization_model is not None,
                     self.context_model is not None
                 ]),
-                device:str(self.device),
-             memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0
-              model_metrics': self.metrics_tracker.get_latest_metrics(),
-           performance_metrics': {
-                 avg_generation_time': self.metrics_tracker.get_avg_generation_time(),
-                   prompt_quality_trend': self.metrics_tracker.get_quality_trend(),
-                 optimization_success_rate': self.metrics_tracker.get_optimization_success_rate()
+                'device': str(self.device),
+                'memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0,
+                'model_metrics': self.metrics_tracker.get_latest_metrics(),
+                'performance_metrics': {
+                    'avg_generation_time': self.metrics_tracker.get_avg_generation_time(),
+                    'prompt_quality_trend': self.metrics_tracker.get_quality_trend(),
+                    'optimization_success_rate': self.metrics_tracker.get_optimization_success_rate()
                 }
             }
             
@@ -888,7 +916,7 @@ alyze conversation context using ML"""
             
         except Exception as e:
             self.logger.error(f"Error getting system health: {e}")
-            return[object Object]status:error', error': str(e)}
+            return {'status': 'error', 'error': str(e)}
 
 # Initialize service
 advanced_ai_prompts_service = AdvancedAIPromptsService() 

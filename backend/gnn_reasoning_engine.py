@@ -1,9 +1,9 @@
 import torch
 from torch_geometric.data import Data
-from backend.ml_core.models import BaseGCN, BaseGAT
-from backend.ml_core.training import train_gnn
-from backend.ml_core.inference import predict_gnn
-from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from .ml_core.models import BaseGCN, BaseGAT
+from .ml_core.training import train_gnn
+from .ml_core.inference import predict_gnn
+from .ml_core.monitoring import log_metrics, save_checkpoint
 import numpy as np
 import os
 

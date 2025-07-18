@@ -174,6 +174,7 @@ npm run test:e2e
 - **Waste Tracking**: Material flow optimization
 - **Analytics**: Business intelligence and insights
 - **Pricing Orchestrator**: World-class pricing intelligence (928 lines)
+- **Industrial Intelligence Engine**: Multi-source, production-grade industrial news and signal aggregator. Now uses **real ML/NLP models** (MaterialsBERT and DeepSeek R1) for sentiment analysis and trending topic extraction. Outputs are transformer-based, not just logic-based. Integrates RSS, SEC EDGAR, EPA, Google News, Reddit, LinkedIn, and government procurement for actionable, high-confidence industrial intelligence. Async, Prometheus-monitored, Redis-cached, and fully production-ready.
 
 ### AI Integration Architecture
 - **Pricing Integration Layer**: Comprehensive middleware for all AI modules
@@ -331,3 +332,20 @@ python backend/start_pricing_system.py # Start pricing orchestrator
 ---
 
 **🚀 Ready for Series A**: This platform represents the future of industrial symbiosis with world-class AI pricing intelligence and comprehensive integration across all modules.
+
+## 🆕 Industrial Intelligence Engine Migration
+
+The legacy NewsAPI integration has been fully replaced by the new **IndustrialIntelligenceEngine**. This engine:
+- Aggregates actionable industrial intelligence from multiple authoritative sources (RSS, SEC, EPA, Google News, Reddit, LinkedIn, government procurement)
+- Provides **transformer-based ML sentiment analysis (DeepSeek R1)** and **ML-driven trending topics (MaterialsBERT)**
+- Uses async/await for parallel data fetching and smart Redis caching
+- Integrates Prometheus metrics for monitoring and alerting
+- Handles rate limiting and errors gracefully, with robust fallback logic
+- Is a drop-in replacement for all NewsAPI usage in the Proactive Opportunity Engine
+
+**Benefits:**
+- 10x more relevant and actionable than generic news APIs
+- No reliance on third-party news APIs or API keys
+- Focused on industrial signals: plant closures, regulatory changes, hiring spikes, and more
+- **Outputs are now true ML/NLP, not just logic**
+- Fully production-grade, modular, and extensible

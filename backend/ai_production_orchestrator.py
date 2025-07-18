@@ -288,7 +288,7 @@ class ABTestManager:
             
             return test
                     
-                except Exception as e:
+        except Exception as e:
             logging.error(f"Error recording A/B test result: {e}")
             raise
     
@@ -336,7 +336,7 @@ class StatisticalAnalyzer:
                 'significant': overall_analysis['significant']
             }
                     
-                except Exception as e:
+        except Exception as e:
             logging.error(f"Error analyzing A/B test: {e}")
             raise
     
@@ -394,7 +394,7 @@ class KubernetesDeploymentManager:
             self.v1 = client.CoreV1Api()
             self.apps_v1 = client.AppsV1Api()
             self.networking_v1 = client.NetworkingV1Api()
-                except Exception as e:
+        except Exception as e:
             logging.warning(f"Kubernetes not available: {e}")
             self.v1 = None
             self.apps_v1 = None
@@ -602,7 +602,7 @@ class AIProductionOrchestrator:
                 try:
                     self._check_system_health()
                     time.sleep(self.production_config['health_check_interval'])
-        except Exception as e:
+                except Exception as e:
                     self.logger.error(f"Health monitoring error: {e}")
         
         thread = threading.Thread(target=health_monitor, daemon=True)
@@ -684,7 +684,7 @@ class AIProductionOrchestrator:
                 'strategy': 'blue_green',
                 'status': 'completed'
             }
-            
+        
         except Exception as e:
             self.logger.error(f"Blue-green deployment failed: {e}")
             raise
@@ -924,8 +924,7 @@ class AIProductionOrchestrator:
                     return
                 
                 await asyncio.sleep(10)
-            
-        except Exception as e:
+            except Exception as e:
                 self.logger.warning(f"Error checking deployment status: {e}")
                 await asyncio.sleep(10)
         
@@ -1010,7 +1009,7 @@ class AIProductionOrchestrator:
             if cpu_percent > 80 or memory.percent > 80:
                 self.logger.warning(f"High resource usage: CPU {cpu_percent}%, Memory {memory.percent}%")
                 
-    except Exception as e:
+        except Exception as e:
             self.logger.error(f"Health check error: {e}")
     
     async def get_system_health(self) -> Dict:

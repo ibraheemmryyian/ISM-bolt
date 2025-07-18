@@ -70,8 +70,8 @@ from ml_core.utils import (
     ConfigManager
 )
 
-from backend.utils.distributed_logger import DistributedLogger
-from backend.utils.advanced_data_validator import AdvancedDataValidator
+from .utils.distributed_logger import DistributedLogger
+from .utils.advanced_data_validator import AdvancedDataValidator
 from flask import Flask, request, jsonify
 from flask_restx import Api, Resource, fields
 import shap

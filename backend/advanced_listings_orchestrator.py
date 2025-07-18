@@ -7,8 +7,8 @@ import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from supabase import create_client, Client
-from backend.dynamic_materials_integration_service import DynamicMaterialsIntegrationService
-from backend.advanced_ai_prompts_service import AdvancedAIPromptsService
+from .dynamic_materials_integration_service import DynamicMaterialsIntegrationService
+from .advanced_ai_prompts_service import AdvancedAIPromptsService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

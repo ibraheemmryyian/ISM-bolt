@@ -30,10 +30,10 @@ import re
 from urllib.parse import urljoin
 import requests
 import torch
-from backend.ml_core.models import BaseNN
-from backend.ml_core.training import train_supervised
-from backend.ml_core.inference import predict_supervised
-from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from .ml_core.models import BaseNN
+from .ml_core.training import train_supervised
+from .ml_core.inference import predict_supervised
+from .ml_core.monitoring import log_metrics, save_checkpoint
 from torch.utils.data import DataLoader, TensorDataset
 import os
 import shap

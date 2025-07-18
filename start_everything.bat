@@ -25,6 +25,24 @@ start cmd /k "python ai_service_flask/multi_hop_symbiosis_service.py"
 REM Start AI Pricing Service
 start cmd /k "python backend/ai_pricing_service.py"
 
+REM Start AI Pricing Orchestrator (Flask API)
+start cmd /k "python backend/ai_pricing_orchestrator.py"
+
+REM Start Meta-Learning Orchestrator
+start cmd /k "python backend/meta_learning_orchestrator.py"
+
+REM Start System Health Monitor
+start cmd /k "python backend/system_health_monitor.py"
+
+REM Start Enhanced Materials System Orchestrator
+start cmd /k "python backend/start_enhanced_materials_system.py"
+
+REM Start Production AI System Orchestrator
+start cmd /k "python backend/start_production_ai_system.py"
+
+REM Start Production AI System Fixed Orchestrator
+start cmd /k "python backend/start_production_ai_system_fixed.py"
+
 REM Start Logistics Cost Service
 start cmd /k "python logistics_cost_service.py"
 

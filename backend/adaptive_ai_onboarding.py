@@ -13,9 +13,9 @@ import numpy as np
 import requests
 from enum import Enum
 import torch
-from backend.ml_core.models import BaseRLAgent
-from backend.ml_core.training import train_rl
-from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from ml_core.models import BaseRLAgent
+from ml_core.training import train_rl
+from ml_core.monitoring import log_metrics, save_checkpoint
 import os
 
 # Import existing services

@@ -79,45 +79,45 @@ from ml_core.utils import (
 )
 
 class RetrainingDataset(Dataset):
-  dataset for model retraining with advanced data processing
+    """Dataset for model retraining with advanced data processing"""
     def __init__(self, 
                  data: pd.DataFrame, 
                  tokenizer,
                  max_length: int = 512,
-                 task_type: str = classification,
+                 task_type: str = 'classification',
                  augment: bool = True):
         self.data = data
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.task_type = task_type
         self.augment = augment
-        
         # Initialize data processors
         self.scaler = StandardScaler()
         self.label_encoder = LabelEncoder()
         self.augmentor = DataAugmentation()
-        
         # Process features
         self._process_features()
-        
         # Apply data augmentation if enabled
         if self.augment:
             self._apply_augmentation()
-    
+
     def _process_features(self):
-    ocess and engineer features   # Text features
-        self.text_features =        for _, row in self.data.iterrows():
-            text = f"{row.get('text, [object Object]row.get('context, {row.get(metadata          encoding = self.tokenizer(
+        """Process and engineer features"""
+        # Text features
+        self.text_features = []
+        for _, row in self.data.iterrows():
+            text = f"{row.get('text', '')} {row.get('context', '')} {row.get('metadata', '')}"
+            encoding = self.tokenizer(
                 text,
                 truncation=True,
-                padding='max_length,               max_length=self.max_length,
+                padding='max_length',
+                max_length=self.max_length,
                 return_tensors='pt'
             )
             self.text_features.append({
-          input_ids: encoding[input_ids'].squeeze(),
-               attention_mask': encoding[attention_mask'].squeeze()
+                'input_ids': encoding['input_ids'].squeeze(),
+                'attention_mask': encoding['attention_mask'].squeeze()
             })
-        
         # Numerical features
         numerical_cols = [col for col in self.data.columns if self.data[col].dtype in ['int64', 'float64']]
         if numerical_cols:
@@ -126,35 +126,33 @@ class RetrainingDataset(Dataset):
             )
         else:
             self.numerical_features = np.zeros((len(self.data), 1))
-        
         # Categorical features
-        categorical_cols = [col for col in self.data.columns if self.data[col].dtype ==object']
-        self.categorical_features =         for col in categorical_cols:
+        categorical_cols = [col for col in self.data.columns if self.data[col].dtype == 'object']
+        self.categorical_features = []
+        for col in categorical_cols:
             if col in self.data.columns:
                 encoded = self.label_encoder.fit_transform(self.data[col].fillna('unknown'))
                 self.categorical_features.append(encoded)
-        
         # Labels
-        if self.task_type == classification':
-            self.labels = self.label_encoder.fit_transform(self.data['label].fillna('unknown'))
+        if self.task_type == 'classification':
+            self.labels = self.label_encoder.fit_transform(self.data['label'].fillna('unknown'))
         elif self.task_type == 'regression':
             self.labels = self.data['target'].values
         else:
             self.labels = np.zeros(len(self.data))
-    
+
     def _apply_augmentation(self):
-    data augmentation techniques"""
+        """Apply data augmentation techniques"""
         augmented_data = []
-        
         for i in range(len(self.data)):
             # Original sample
             augmented_data.append({
-              text_features': self.text_features[i],
-        numerical_features': self.numerical_features[i],
-          categorical_features:[cat[i] for cat in self.categorical_features] if self.categorical_features else [],
-             label': self.labels[i],
-            weight: 10  })
-            
+                'text_features': self.text_features[i],
+                'numerical_features': self.numerical_features[i],
+                'categorical_features': [cat[i] for cat in self.categorical_features] if self.categorical_features else [],
+                'label': self.labels[i],
+                'weight': 10
+            })
             # Augmented samples
             if self.labels[i] == 1:  # Minority class - add more samples
                 for _ in range(2):
@@ -163,41 +161,41 @@ class RetrainingDataset(Dataset):
                         augmentation_type='synonym_replacement'
                     )
                     augmented_data.append({
-                      text_features': {'input_ids': aug_sample,attention_mask: torch.ones_like(aug_sample)},
-                numerical_features': self.numerical_features[i] + np.random.normal(0, 0.01),
-                  categorical_features:[cat[i] for cat in self.categorical_features] if self.categorical_features else [],
-                     label': self.labels[i],
-                    weight                   })
-        
+                        'text_features': {'input_ids': aug_sample, 'attention_mask': torch.ones_like(aug_sample)},
+                        'numerical_features': self.numerical_features[i] + np.random.normal(0, 0.01),
+                        'categorical_features': [cat[i] for cat in self.categorical_features] if self.categorical_features else [],
+                        'label': self.labels[i],
+                        'weight': 10
+                    })
         # Update data
         self.augmented_data = augmented_data
-    
+
     def __len__(self):
         return len(self.augmented_data) if self.augment else len(self.data)
-    
+
     def __getitem__(self, idx):
         if self.augment:
             sample = self.augmented_data[idx]
-            return[object Object]
-          input_ids': sample[text_features]['input_ids'],
-               attention_mask': sample[text_features][attention_mask'],
-        numerical_features': torch.FloatTensor(sample['numerical_features']),
-          categorical_features': torch.LongTensor(sample['categorical_features']) if sample['categorical_features'] else torch.tensor([]),
-              label': torch.LongTensor([sample[label']]) if self.task_type == 'classification else torch.FloatTensor([sample['label']]),
-               weight': torch.FloatTensor([sample['weight']])
+            return {
+                'input_ids': sample['text_features']['input_ids'],
+                'attention_mask': sample['text_features']['attention_mask'],
+                'numerical_features': torch.FloatTensor(sample['numerical_features']),
+                'categorical_features': torch.LongTensor(sample['categorical_features']) if sample['categorical_features'] else torch.tensor([]),
+                'label': torch.LongTensor([sample['label']]) if self.task_type == 'classification' else torch.FloatTensor([sample['label']]),
+                'weight': torch.FloatTensor([sample['weight']])
             }
         else:
-            return[object Object]
-               input_ids': self.text_features[idx]['input_ids'],
-               attention_mask': self.text_features[idx]['attention_mask'],
-        numerical_features': torch.FloatTensor(self.numerical_features[idx]),
-          categorical_features': torch.LongTensor([cat[idx] for cat in self.categorical_features]) if self.categorical_features else torch.tensor([]),
-              label': torch.LongTensor([self.labels[idx]]) if self.task_type == 'classification else torch.FloatTensor([self.labels[idx]]),
-               weight': torch.FloatTensor([1.0])
+            return {
+                'input_ids': self.text_features[idx]['input_ids'],
+                'attention_mask': self.text_features[idx]['attention_mask'],
+                'numerical_features': torch.FloatTensor(self.numerical_features[idx]),
+                'categorical_features': torch.LongTensor([cat[idx] for cat in self.categorical_features]) if self.categorical_features else torch.tensor([]),
+                'label': torch.LongTensor([self.labels[idx]]) if self.task_type == 'classification' else torch.FloatTensor([self.labels[idx]]),
+                'weight': torch.FloatTensor([1.0])
             }
 
 class AdvancedRetrainingModel(nn.Module):
-   model architecture for retraining with multiple heads and adapters
+    """Model architecture for retraining with multiple heads and adapters"""
     def __init__(self, 
                  vocab_size: int,
                  hidden_size: int = 768,
@@ -205,28 +203,25 @@ class AdvancedRetrainingModel(nn.Module):
                  num_heads: int = 12,
                  dropout: float = 0.1,
                  num_classes: int = 10,
-                 task_type: str = classification,
+                 task_type: str = 'classification',
                  use_adapters: bool = True):
         super().__init__()
-        
         self.hidden_size = hidden_size
         self.task_type = task_type
         self.use_adapters = use_adapters
-        
         # Base transformer
         self.embedding = nn.Embedding(vocab_size, hidden_size)
-        self.position_encoding = nn.Parameter(torch.randn(1,100n_size))
-        
+        self.position_encoding = nn.Parameter(torch.randn(1, 100, hidden_size))
         # Transformer layers with optional adapters
         self.transformer_layers = nn.ModuleList()
         for i in range(num_layers):
             layer = nn.TransformerEncoderLayer(
                 d_model=hidden_size,
                 nhead=num_heads,
-                dim_feedforward=hidden_size * 4           dropout=dropout,
+                dim_feedforward=hidden_size * 4,
+                dropout=dropout,
                 batch_first=True
             )
-            
             if use_adapters:
                 # Add adapter layers
                 adapter = nn.Sequential(
@@ -236,16 +231,14 @@ class AdvancedRetrainingModel(nn.Module):
                     nn.Linear(hidden_size // 4, hidden_size)
                 )
                 layer.register_forward_hook(self._adapter_hook(adapter))
-            
             self.transformer_layers.append(layer)
-        
         # Feature fusion
-        self.numerical_projection = nn.Linear(10, hidden_size //2  self.categorical_projection = nn.Linear(5, hidden_size // 2)
-        
+        self.numerical_projection = nn.Linear(10, hidden_size // 2)
+        self.categorical_projection = nn.Linear(5, hidden_size // 2)
         # Task-specific heads
-        if task_type == classification':
+        if task_type == 'classification':
             self.classification_head = nn.Sequential(
-                nn.Linear(hidden_size *2),
+                nn.Linear(hidden_size * 2),
                 nn.ReLU(),
                 nn.Dropout(dropout),
                 nn.Linear(hidden_size, hidden_size // 2),
@@ -255,28 +248,30 @@ class AdvancedRetrainingModel(nn.Module):
             )
         elif task_type == 'regression':
             self.regression_head = nn.Sequential(
-                nn.Linear(hidden_size *2),
+                nn.Linear(hidden_size * 2),
                 nn.ReLU(),
                 nn.Dropout(dropout),
                 nn.Linear(hidden_size, hidden_size // 2),
                 nn.ReLU(),
                 nn.Dropout(dropout),
-                nn.Linear(hidden_size //21       )
-        
+                nn.Linear(hidden_size // 2)
+            )
         # Multi-task heads
         self.auxiliary_heads = nn.ModuleDict({
-           sentiment': nn.Linear(hidden_size * 23          complexity': nn.Linear(hidden_size * 25       domain': nn.Linear(hidden_size * 2      })
-        
+            'sentiment': nn.Linear(hidden_size * 23),
+            'complexity': nn.Linear(hidden_size * 25),
+            'domain': nn.Linear(hidden_size * 2)
+        })
         # Uncertainty estimation
         self.uncertainty_head = nn.Sequential(
-            nn.Linear(hidden_size * 2, hidden_size // 2
+            nn.Linear(hidden_size * 2, hidden_size // 2),
             nn.ReLU(),
-            nn.Linear(hidden_size // 21,
+            nn.Linear(hidden_size // 2, 1),
             nn.Sigmoid()
         )
     
     def _adapter_hook(self, adapter):
- for adapter layers""
+        """Hook for adapter layers"""
         def hook(module, input, output):
             return output + adapter(output)
         return hook
@@ -309,7 +304,7 @@ class AdvancedRetrainingModel(nn.Module):
         ], dim=1)
         
         # Main task prediction
-        if self.task_type == classification':
+        if self.task_type == 'classification':
             main_output = self.classification_head(combined_features)
         else:
             main_output = self.regression_head(combined_features)
@@ -317,23 +312,23 @@ class AdvancedRetrainingModel(nn.Module):
         # Auxiliary predictions
         auxiliary_outputs = {}
         for head_name, head in self.auxiliary_heads.items():
-            auxiliary_outputshead_name] = head(combined_features)
+            auxiliary_outputs[head_name] = head(combined_features)
         
         # Uncertainty estimation
         uncertainty = self.uncertainty_head(combined_features)
         
         return {
-        main_output': main_output,
-            auxiliary_outputs': auxiliary_outputs,
-        uncertainty': uncertainty,
-          hidden_states': hidden_states
+            'main_output': main_output,
+            'auxiliary_outputs': auxiliary_outputs,
+            'uncertainty': uncertainty,
+            'hidden_states': hidden_states
         }
 
 class AIRetrainingPipeline:
-    eal ML-powered retraining pipeline with advanced features
+    """Real ML-powered retraining pipeline with advanced features"""
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.device = torch.device('cuda if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         # Initialize ML components
         self.model_registry = ModelRegistry()
@@ -356,26 +351,33 @@ class AIRetrainingPipeline:
         
         # Retraining configuration
         self.retraining_config = {
-            batch_size:32         learning_rate':1e-4,
-        epochs:50           early_stopping_patience:10      validation_split': 0.2
-           test_split': 0.1
-         gradient_accumulation_steps': 4,
-            max_grad_norm': 10
-          warmup_steps':100       scheduler_type': 'cosine',
-            mixed_precision': True,
-        distributed_training': False,
-       checkpoint_frequency':5  evaluation_frequency': 2
+            'batch_size': 32,
+            'learning_rate': 1e-4,
+            'epochs': 50,
+            'early_stopping_patience': 10,
+            'validation_split': 0.2,
+            'test_split': 0.1,
+            'gradient_accumulation_steps': 4,
+            'max_grad_norm': 10,
+            'warmup_steps': 100,
+            'scheduler_type': 'cosine',
+            'mixed_precision': True,
+            'distributed_training': False,
+            'checkpoint_frequency': 5,
+            'evaluation_frequency': 2
         }
         
         # A/B testing configuration
-        self.ab_test_config = [object Object]          traffic_split': 00.5 evaluation_metrics': ['accuracy',precision,recall', 'f1', 'auc'],
-           statistical_significance':00.05       minimum_sample_size: 1000       }
+        self.ab_test_config = [
+            {'traffic_split': 0.5, 'evaluation_metrics': ['accuracy', 'precision', 'recall', 'f1', 'auc'],
+             'statistical_significance':0.05,       'minimum_sample_size': 1000}
+        ]
         
         # Model paths
         self.model_paths = {
-         production': models/production/,          staging: 'models/staging/',
-           experimental': 'models/experimental/',
-            backup:models/backup/'
+            'production': 'models/production/',          'staging': 'models/staging/',
+            'experimental': 'models/experimental/',
+            'backup': 'models/backup/'
         }
         
         # Ensure directories exist
@@ -383,14 +385,14 @@ class AIRetrainingPipeline:
             os.makedirs(path, exist_ok=True)
     
     def _setup_experiment_tracking(self):
-        "xperiment tracking with MLflow and WandB"""
+        """Experiment tracking with MLflow and WandB"""
         try:
             # MLflow setup
             mlflow.set_tracking_uri("sqlite:///mlflow.db")
             mlflow.set_experiment("ai_retraining_pipeline")
             
             # WandB setup (optional)
-            if os.getenv(WANDB_API_KEY):
+            if os.getenv('WANDB_API_KEY'):
                 wandb.init(project="ai-retraining-pipeline", entity=os.getenv('WANDB_ENTITY'))
             
             self.logger.info("Experiment tracking setup completed")
@@ -399,33 +401,33 @@ class AIRetrainingPipeline:
             self.logger.warning(f"Experiment tracking setup failed: {e}")
     
     def _load_model_configs(self) -> Dict:
-   del configurations
+        """Load configurations"""
         return {
-           classification':[object Object]
-             model_type: ,
-                hidden_size': 768
-               num_layers6
-               num_heads2
-              dropout1
-               num_classes': 10
-            task_type:classification'
+            'classification':{
+                'model_type': 'bert',
+                'hidden_size': 768,
+                'num_layers': 6,
+                'num_heads': 2,
+                'dropout': 1,
+                'num_classes': 10,
+                'task_type': 'classification'
             },
-          regression[object Object]
-             model_type: ,
-                hidden_size': 768
-               num_layers6
-               num_heads2
-              dropout1
-               task_type': 'regression'
+            'regression':{
+                'model_type': 'bert',
+                'hidden_size': 768,
+                'num_layers': 6,
+                'num_heads': 2,
+                'dropout': 1,
+                'task_type': 'regression'
             },
-         multitask[object Object]
-             model_type: ,
-                hidden_size': 768
-               num_layers6
-               num_heads2
-              dropout1
-             use_adapters': True,
-                task_type': 'multitask'
+            'multitask':{
+                'model_type': 'bert',
+                'hidden_size': 768,
+                'num_layers': 6,
+                'num_heads': 2,
+                'dropout': 1,
+                'use_adapters': True,
+                'task_type': 'multitask'
             }
         }
     
@@ -435,18 +437,18 @@ class AIRetrainingPipeline:
                           validation_data: List[Dict] = None,
                           test_data: List[Dict] = None,
                           config_overrides: Dict = None) -> Dict:
-      Retrain model with real ML pipeline"""
+        """Retrain model with real ML pipeline"""
         try:
             self.logger.info(f"Starting retraining for model: {model_name}")
             
             # Start experiment tracking
-            with mlflow.start_run(run_name=f"retrain_{model_name}_{datetime.now().strftime(%Y%m%d_%H%M%S')}"):
+            with mlflow.start_run(run_name=f"retrain_{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"):
                 # Log parameters
                 mlflow.log_params({
-               model_name': model_name,
-                   training_samples': len(training_data),
-             validation_samples': len(validation_data) if validation_data else 0,
-                 test_samples': len(test_data) if test_data else 0,
+                    'model_name': model_name,
+                    'training_samples': len(training_data),
+                    'validation_samples': len(validation_data) if validation_data else 0,
+                    'test_samples': len(test_data) if test_data else 0,
                     **self.retraining_config,
                     **(config_overrides or {})
                 })
@@ -484,10 +486,11 @@ class AIRetrainingPipeline:
                 mlflow.log_artifact(f"models/{model_name}/{model_version}/model.pth")
                 
                 return {
-                  model_version: model_version,                  training_results': training_results,
-             evaluation_results': evaluation_results,
-                   drift_analysis': drift_analysis,
-                  model_path: f"models/{model_name}/{model_version}/"
+                    'model_version': model_version,
+                    'training_results': training_results,
+                    'evaluation_results': evaluation_results,
+                    'drift_analysis': drift_analysis,
+                    'model_path': f"models/{model_name}/{model_version}/"
                 }
             
         except Exception as e:
@@ -496,7 +499,7 @@ class AIRetrainingPipeline:
             raise
     
     async def _preprocess_retraining_data(self, training_data: List[Dict], validation_data: List[Dict], test_data: List[Dict]) -> Dict:
-        reprocess data for retraining"""
+        """Reprocess data for retraining"""
         try:
             # Validate data
             validated_training = self.data_validator.validate_training_data(training_data)
@@ -511,11 +514,11 @@ class AIRetrainingPipeline:
             # Data quality analysis
             quality_metrics = self.data_processor.analyze_data_quality(processed_training)
             
-            return[object Object]
-         training': processed_training,
-           validation': processed_validation,
-               test': processed_test,
-                quality_metrics: quality_metrics
+            return {
+                'training': processed_training,
+                'validation': processed_validation,
+                'test': processed_test,
+                'quality_metrics': quality_metrics
             }
             
         except Exception as e:
@@ -523,7 +526,7 @@ class AIRetrainingPipeline:
             raise
     
     async def _analyze_data_drift(self, processed_data: Dict) -> Dict:
-     Analyze data drift between training and production data"""
+        """Analyze data drift between training and production data"""
         try:
             # Load production data statistics
             production_stats = self.drift_detector.load_production_statistics()
@@ -548,15 +551,15 @@ class AIRetrainingPipeline:
                 )
                 
                 drift_metrics = {
-                feature_drift_score: feature_drift,                   label_drift_score': label_drift,
-                    concept_drift_detected: concept_drift,                  drift_severity: self._calculate_drift_severity(feature_drift, label_drift, concept_drift)
+                    'feature_drift_score': feature_drift,                   'label_drift_score': label_drift,
+                    'concept_drift_detected': concept_drift,                  'drift_severity': self._calculate_drift_severity(feature_drift, label_drift, concept_drift)
                 }
             else:
                 drift_metrics = {
-                feature_drift_score': 0.0,
-                    label_drift_score': 0.0,
-                    concept_drift_detected': False,
-                   drift_severity': 'none'
+                    'feature_drift_score': 0.0,
+                    'label_drift_score': 0.0,
+                    'concept_drift_detected': False,
+                    'drift_severity': 'none'
                 }
             
             return drift_metrics
@@ -566,18 +569,18 @@ class AIRetrainingPipeline:
             return {'error': str(e)}
     
     def _calculate_drift_severity(self, feature_drift: float, label_drift: float, concept_drift: bool) -> str:
-  Calculate overall drift severity"""
+        """Calculate overall drift severity"""
         if concept_drift:
-            return critical'
-        elif feature_drift > 03 or label_drift > 0.3:
+            return 'critical'
+        elif feature_drift > 0.3 or label_drift > 0.3:
             return 'high'
-        elif feature_drift > 01 or label_drift > 0.1:
+        elif feature_drift > 0.1 or label_drift > 0.1:
             return 'medium'
         else:
             return 'low'
     
     async def _initialize_retraining_model(self, model_name: str, config_overrides: Dict = None) -> nn.Module:
-   itialize model for retraining"""
+        """Initialize model for retraining"""
         try:
             # Load base configuration
             config = self.model_configs.get(model_name, self.model_configs['classification'])
@@ -609,7 +612,7 @@ class AIRetrainingPipeline:
             raise
     
     async def _prepare_datasets(self, processed_data: Dict) -> Tuple[Dataset, Dataset, Dataset]:
-epare datasets for training"""
+        """Prepare datasets for training"""
         try:
             # Load tokenizer
             tokenizer = AutoTokenizer.from_pretrained('microsoft/DialoGPT-medium')
@@ -617,8 +620,8 @@ epare datasets for training"""
             
             # Convert to DataFrames
             train_df = pd.DataFrame(processed_data['training'])
-            val_df = pd.DataFrame(processed_data['validation']) if processed_data[validation'] else None
-            test_df = pd.DataFrame(processed_data['test']) if processed_datatestNone
+            val_df = pd.DataFrame(processed_data['validation']) if processed_data['validation'] else None
+            test_df = pd.DataFrame(processed_data['test']) if processed_data['test'] is not None else None
             
             # Create datasets
             train_dataset = RetrainingDataset(train_df, tokenizer, augment=True)
@@ -642,14 +645,14 @@ epare datasets for training"""
                                                 train_dataset: Dataset,
                                                 val_dataset: Dataset,
                                                 test_dataset: Dataset) -> Dict:
-    odel with advanced features"""
+        """Train model with advanced features"""
         try:
             # Prepare data loaders
             train_loader = DataLoader(
                 train_dataset,
                 batch_size=self.retraining_config['batch_size'],
                 shuffle=True,
-                num_workers=4               pin_memory=True
+                num_workers=4,               pin_memory=True
             )
             
             val_loader = None
@@ -665,17 +668,17 @@ epare datasets for training"""
             # Setup training components
             optimizer = torch.optim.AdamW(
                 model.parameters(),
-                lr=self.retraining_config[learning_rate],
-                weight_decay=00.01   )
+                lr=self.retraining_config['learning_rate'],
+                weight_decay=0.01   )
             
             # Learning rate scheduler
-            if self.retraining_config['scheduler_type'] == 'cosine:         scheduler = get_cosine_schedule_with_warmup(
+            if self.retraining_config['scheduler_type'] == 'cosine':         scheduler = get_cosine_schedule_with_warmup(
                     optimizer,
-                    num_warmup_steps=self.retraining_configwarmup_steps                   num_training_steps=len(train_loader) * self.retraining_config['epochs]                )
+                    num_warmup_steps=self.retraining_config['warmup_steps'],                   num_training_steps=len(train_loader) * self.retraining_config['epochs']                )
             else:
                 scheduler = get_linear_schedule_with_warmup(
                     optimizer,
-                    num_warmup_steps=self.retraining_configwarmup_steps                   num_training_steps=len(train_loader) * self.retraining_config['epochs]                )
+                    num_warmup_steps=self.retraining_config['warmup_steps'],                   num_training_steps=len(train_loader) * self.retraining_config['epochs']                )
             
             # Loss functions
             if hasattr(model, 'classification_head'):
@@ -684,18 +687,20 @@ epare datasets for training"""
                 criterion = nn.MSELoss()
             
             # Training loop
-            best_val_loss = float(inf          patience_counter = 0
+            best_val_loss = float('inf')
+            patience_counter = 0
             training_history = []
             
             for epoch in range(self.retraining_config['epochs']):
                 # Training phase
                 model.train()
-                train_loss = 00             train_metrics = {}
+                train_loss = 0
+                train_metrics = {}
                 
                 for batch_idx, batch in enumerate(train_loader):
                     # Move to device
                     input_ids = batch['input_ids'].to(self.device)
-                    attention_mask = batch[attention_mask'].to(self.device)
+                    attention_mask = batch['attention_mask'].to(self.device)
                     numerical_features = batch['numerical_features'].to(self.device)
                     categorical_features = batch['categorical_features'].to(self.device)
                     labels = batch['label'].to(self.device)
@@ -706,16 +711,16 @@ epare datasets for training"""
                     
                     # Calculate loss
                     if hasattr(model, 'classification_head'):
-                        loss = criterion(outputs['main_output],labels.squeeze())
-            else:
+                        loss = criterion(outputs['main_output'],labels.squeeze())
+                    else:
                         loss = criterion(outputs['main_output'], labels.float())
                     
                     # Add auxiliary losses
-                    if auxiliary_outputs' in outputs:
+                    if 'auxiliary_outputs' in outputs:
                         aux_loss = 0
-                        for aux_name, aux_output in outputsauxiliary_outputs'].items():
+                        for aux_name, aux_output in outputs['auxiliary_outputs'].items():
                             # Placeholder auxiliary targets
-                            aux_targets = torch.randint(0 aux_output.size(-1), (aux_output.size(0),)).to(self.device)
+                            aux_targets = torch.randint(0, aux_output.size(-1), (aux_output.size(0),)).to(self.device)
                             aux_loss += F.cross_entropy(aux_output, aux_targets)
                         loss += 0.1 * aux_loss
                     
@@ -729,7 +734,7 @@ epare datasets for training"""
                     if (batch_idx + 1) % self.retraining_config['gradient_accumulation_steps'] == 0:
                         torch.nn.utils.clip_grad_norm_(
                             model.parameters(),
-                            self.retraining_configmax_grad_norm                   )
+                            self.retraining_config['max_grad_norm']                   )
                         optimizer.step()
                         scheduler.step()
                         optimizer.zero_grad()
@@ -737,14 +742,15 @@ epare datasets for training"""
                     train_loss += loss.item()
                 
                 # Validation phase
-                val_loss = 00               val_metrics = {}
+                val_loss = 0
+                val_metrics = {}
                 
                 if val_loader:
                     model.eval()
                     with torch.no_grad():
                         for batch in val_loader:
                             input_ids = batch['input_ids'].to(self.device)
-                            attention_mask = batch[attention_mask'].to(self.device)
+                            attention_mask = batch['attention_mask'].to(self.device)
                             numerical_features = batch['numerical_features'].to(self.device)
                             categorical_features = batch['categorical_features'].to(self.device)
                             labels = batch['label'].to(self.device)
@@ -752,17 +758,19 @@ epare datasets for training"""
                             outputs = model(input_ids, attention_mask, numerical_features, categorical_features)
                             
                             if hasattr(model, 'classification_head'):
-                                loss = criterion(outputs['main_output],labels.squeeze())
-            else:
+                                loss = criterion(outputs['main_output'],labels.squeeze())
+                            else:
                                 loss = criterion(outputs['main_output'], labels.float())
                             
                             val_loss += loss.item()
                 
                 # Log metrics
                 epoch_metrics = {
-                  epoch              train_loss': train_loss / len(train_loader),
-                 val_loss': val_loss / len(val_loader) if val_loader else None,
-                  learning_rate': scheduler.get_last_lr()[0                }
+                    'epoch': epoch,
+                    'train_loss': train_loss / len(train_loader),
+                    'val_loss': val_loss / len(val_loader) if val_loader else None,
+                    'learning_rate': scheduler.get_last_lr()[0]
+                }
                 
                 training_history.append(epoch_metrics)
                 
@@ -773,31 +781,32 @@ epare datasets for training"""
                 if val_loader and val_loss < best_val_loss:
                     best_val_loss = val_loss
                     patience_counter = 0
-                    
                     # Save best model
-                    torch.save(model.state_dict(), models/best_model.pth)              else:
+                    torch.save(model.state_dict(), f"models/best_model.pth")
+                else:
                     patience_counter += 1
                 
                 if patience_counter >= self.retraining_config['early_stopping_patience']:
-                    self.logger.info(fEarly stopping at epoch {epoch}")
+                    self.logger.info(f"Early stopping at epoch {epoch}")
                     break
                 
                 # Checkpoint
                 if epoch % self.retraining_config['checkpoint_frequency'] == 0:
-                    torch.save(model.state_dict(), fmodels/checkpoint_epoch_{epoch}.pth')
+                    torch.save(model.state_dict(), f"models/checkpoint_epoch_{epoch}.pth")
             
-            return[object Object]
-               training_history': training_history,
-              best_val_loss: best_val_loss,
-               epochs_trained': epoch + 1
-             final_learning_rate': scheduler.get_last_lr()0   }
+            return {
+                'training_history': training_history,
+                'best_val_loss': best_val_loss,
+                'epochs_trained': epoch + 1,
+                'final_learning_rate': scheduler.get_last_lr()[0]
+            }
             
         except Exception as e:
             self.logger.error(f"Error during training: {e}")
             raise
     
     async def _evaluate_model(self, model: nn.Module, test_dataset: Dataset) -> Dict:
-        model performance"""
+        """Model performance"""
         try:
             if not test_dataset:
                 return {'error': 'No test dataset provided'}
@@ -810,13 +819,14 @@ epare datasets for training"""
             )
             
             model.eval()
-            all_predictions =         all_labels = ]
+            all_predictions = []
+            all_labels = []
             all_uncertainties = []
             
             with torch.no_grad():
                 for batch in test_loader:
                     input_ids = batch['input_ids'].to(self.device)
-                    attention_mask = batch[attention_mask'].to(self.device)
+                    attention_mask = batch['attention_mask'].to(self.device)
                     numerical_features = batch['numerical_features'].to(self.device)
                     categorical_features = batch['categorical_features'].to(self.device)
                     labels = batch['label'].to(self.device)
@@ -830,25 +840,29 @@ epare datasets for training"""
                     
                     all_predictions.extend(predictions.cpu().numpy())
                     all_labels.extend(labels.cpu().numpy())
-                    all_uncertainties.extend(outputs[uncertainty].cpu().numpy())
+                    all_uncertainties.extend(outputs['uncertainty'].cpu().numpy())
             
             # Calculate metrics
             if hasattr(model, 'classification_head'):
                 accuracy = accuracy_score(all_labels, all_predictions)
-                precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='weighted)               auc = roc_auc_score(all_labels, all_predictions, multi_class='ovr')
-                
+                precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='weighted')
+                auc = roc_auc_score(all_labels, all_predictions, multi_class='ovr')
                 metrics = {
-             accuracy': accuracy,
-              precision': precision,
-                    recall                 f1_score             auc                   avg_uncertainty: np.mean(all_uncertainties)
+                    'accuracy': accuracy,
+                    'precision': precision,
+                    'recall': recall,
+                    'f1': f1,
+                    'auc': auc,
+                    'avg_uncertainty': np.mean(all_uncertainties)
                 }
             else:
-                mse = np.mean((np.array(all_labels) - np.array(all_predictions)) ** 2
+                mse = np.mean((np.array(all_labels) - np.array(all_predictions)) ** 2)
                 mae = np.mean(np.abs(np.array(all_labels) - np.array(all_predictions)))
-                
                 metrics = {
-              mse             mae                  rmse': np.sqrt(mse),
-                    avg_uncertainty: np.mean(all_uncertainties)
+                    'mse': mse,
+                    'mae': mae,
+                    'rmse': np.sqrt(mse),
+                    'avg_uncertainty': np.mean(all_uncertainties)
                 }
             
             return metrics
@@ -862,7 +876,7 @@ epare datasets for training"""
                                         model_name: str,
                                         training_results: Dict,
                                         evaluation_results: Dict) -> str:
-    rsion and register the trained model"""
+        """Version and register the trained model"""
         try:
             # Generate version
             version = self.model_versioning.generate_version(
@@ -872,20 +886,21 @@ epare datasets for training"""
             )
             
             # Create model directory
-            model_dir = f"models/{model_name}/{version}          os.makedirs(model_dir, exist_ok=True)
+            model_dir = f"models/{model_name}/{version}"
+            os.makedirs(model_dir, exist_ok=True)
             
             # Save model
-            torch.save(model.state_dict(), f{model_dir}/model.pth")
+            torch.save(model.state_dict(), f"{model_dir}/model.pth")
             
             # Save metadata
-            metadata =[object Object]
-                version': version,
-           model_name': model_name,
-               training_results': training_results,
-         evaluation_results': evaluation_results,
-           created_at:datetime.now().isoformat(),
-             model_config:model.__class__.__name__,
-                device: str(self.device)
+            metadata = {
+                'version': version,
+                'model_name': model_name,
+                'training_results': training_results,
+                'evaluation_results': evaluation_results,
+                'created_at': datetime.now().isoformat(),
+                'model_config': model.__class__.__name__,
+                'device': str(self.device)
             }
             
             with open(f"{model_dir}/metadata.json", 'w') as f:
@@ -895,7 +910,7 @@ epare datasets for training"""
             self.model_registry.register_model(
                 model_name=model_name,
                 version=version,
-                model_path=f{model_dir}/model.pth,          metadata=metadata
+                model_path=f"{model_dir}/model.pth",          metadata=metadata
             )
             
             return version
@@ -909,16 +924,16 @@ epare datasets for training"""
                          model_b_version: str,
                          model_name: str,
                          test_duration_days: int = 7) -> Dict:
-     n A/B test between two model versions"""
+        """Run A/B test between two model versions"""
         try:
-            self.logger.info(fStarting A/B test: {model_a_version} vs {model_b_version}")
+            self.logger.info(f"Starting A/B test: {model_a_version} vs {model_b_version}")
             
             # Load models
             model_a = await self._load_model_version(model_name, model_a_version)
             model_b = await self._load_model_version(model_name, model_b_version)
             
             # Setup A/B test
-            ab_test_id = f"ab_test_{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S)}"      
+            ab_test_id = f"ab_test_{model_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"      
             # Initialize metrics tracking
             metrics_a = []
             metrics_b = []
@@ -929,7 +944,8 @@ epare datasets for training"""
             
             while datetime.now() < end_time:
                 # Simulate traffic split
-                traffic_a = self.ab_test_config['traffic_split]           traffic_b = 1 - traffic_a
+                traffic_a = self.ab_test_config[0]['traffic_split']
+                traffic_b = 1 - traffic_a
                 
                 # Collect metrics for each model
                 metrics_a.append(await self._collect_model_metrics(model_a, traffic_a))
@@ -944,22 +960,22 @@ epare datasets for training"""
             # Determine winner
             winner = await self._determine_ab_test_winner(analysis)
             
-            return[object Object]
-              ab_test_id': ab_test_id,
-                model_a_version: model_a_version,
-                model_b_version: model_b_version,
-              test_duration_days:test_duration_days,
-         analysis': analysis,
-                winnerr,
-               recommendation: self._generate_ab_test_recommendation(analysis, winner)
+            return {
+                'ab_test_id': ab_test_id,
+                'model_a_version': model_a_version,
+                'model_b_version': model_b_version,
+                'test_duration_days': test_duration_days,
+                'analysis': analysis,
+                'winner': winner,
+                'recommendation': self._generate_ab_test_recommendation(analysis, winner)
             }
             
         except Exception as e:
-            self.logger.error(fError running A/B test: {e}")
+            self.logger.error(f"Error running A/B test: {e}")
             raise
     
     async def _load_model_version(self, model_name: str, version: str) -> nn.Module:
-      oad specific model version"""
+        """Load specific model version"""
         try:
             model_path = f"models/{model_name}/{version}/model.pth"
             metadata_path = f"models/{model_name}/{version}/metadata.json"
@@ -974,7 +990,7 @@ epare datasets for training"""
             # Initialize model
             model = AdvancedRetrainingModel(
                 vocab_size=50257  # DialoGPT vocab size
-                **metadata.get('model_config,[object Object])
+                **metadata.get('model_config', {})
             ).to(self.device)
             
             # Load weights
@@ -987,22 +1003,22 @@ epare datasets for training"""
             raise
     
     async def _collect_model_metrics(self, model: nn.Module, traffic_share: float) -> Dict:
-        ollect metrics for A/B testing"""
+        """Collect metrics for A/B testing"""
         # Simulate metric collection
         return {
-      timestamp:datetime.now().isoformat(),
-          traffic_share: traffic_share,
-        accuracy': np.random.normal(0.85, 02,
-       latency': np.random.normal(100, 10        throughput': np.random.normal(1000,10          error_rate': np.random.normal(0.105        }
+            'timestamp': datetime.now().isoformat(),
+            'traffic_share': traffic_share,
+            'accuracy': np.random.normal(0.85, 0.02),
+            'latency': np.random.normal(100, 10),        'throughput': np.random.normal(1000,10),          'error_rate': np.random.normal(0.105)        }
     
     async def _analyze_ab_test_results(self, metrics_a: List[Dict], metrics_b: List[Dict]) -> Dict:
-    e A/B test results with statistical significance"""
+        """Analyze A/B test results with statistical significance"""
         try:
             # Extract metrics
             accuracies_a = [m['accuracy'] for m in metrics_a]
             accuracies_b = [m['accuracy'] for m in metrics_b]
-            latencies_a =m['latency'] for m in metrics_a]
-            latencies_b =m['latency'] for m in metrics_b]
+            latencies_a = [m['latency'] for m in metrics_a]
+            latencies_b = [m['latency'] for m in metrics_b]
             
             # Statistical analysis
             from scipy import stats
@@ -1013,66 +1029,66 @@ epare datasets for training"""
             # T-test for latency
             t_stat_lat, p_value_lat = stats.ttest_ind(latencies_a, latencies_b)
             
-            return[object Object]
-                accuracy_a_mean': np.mean(accuracies_a),
-                accuracy_b_mean': np.mean(accuracies_b),
-               accuracy_p_value': p_value_acc,
-            accuracy_significant': p_value_acc < self.ab_test_config['statistical_significance'],
-               latency_a_mean': np.mean(latencies_a),
-               latency_b_mean': np.mean(latencies_b),
-                latency_p_value': p_value_lat,
-           latency_significant': p_value_lat < self.ab_test_config['statistical_significance'],
-              sample_size_a': len(metrics_a),
-              sample_size_b: len(metrics_b)
+            return {
+                'accuracy_a_mean': np.mean(accuracies_a),
+                'accuracy_b_mean': np.mean(accuracies_b),
+                'accuracy_p_value': p_value_acc,
+                'accuracy_significant': p_value_acc < self.ab_test_config[0]['statistical_significance'],
+                'latency_a_mean': np.mean(latencies_a),
+                'latency_b_mean': np.mean(latencies_b),
+                'latency_p_value': p_value_lat,
+                'latency_significant': p_value_lat < self.ab_test_config[0]['statistical_significance'],
+                'sample_size_a': len(metrics_a),
+                'sample_size_b': len(metrics_b)
             }
             
         except Exception as e:
-            self.logger.error(fError analyzing A/B test results: {e}")
+            self.logger.error(f"Error analyzing A/B test results: {e}")
             return {'error': str(e)}
     
     async def _determine_ab_test_winner(self, analysis: Dict) -> str:
-      Determine A/B test winner"""
+        """Determine A/B test winner"""
         if 'error' in analysis:
-            return 'inconclusive        
+            return 'inconclusive'
         # Check if results are statistically significant
         if not analysis['accuracy_significant']:
-            return 'inconclusive        
+            return 'inconclusive'
         # Determine winner based on accuracy
-        if analysis[accuracy_a_mean'] > analysis[accuracy_b_mean']:
-            returnmodel_a'
-            else:
-            return model_b'
+        if analysis['accuracy_a_mean'] > analysis['accuracy_b_mean']:
+            return 'model_a'
+        else:
+            return 'model_b'
     
     def _generate_ab_test_recommendation(self, analysis: Dict, winner: str) -> str:
- ate recommendation based on A/B test results"""
+        """Generate recommendation based on A/B test results"""
         if winner == 'inconclusive':
-            returnContinue testing with larger sample size or longer duration"
+            return "Continue testing with larger sample size or longer duration"
         elif winner == 'model_a':
-            return Deploy model A to production"
+            return "Deploy model A to production"
         else:
-            return Deploy model B to production"
+            return "Deploy model B to production"
     
     async def get_system_health(self) -> Dict:
-   Get system health metrics"""
+        """Get system health metrics"""
         try:
-            health_metrics =[object Object]
-                status': 'healthy,
-                device:str(self.device),
-             memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0
-                gpu_utilization': GPUtil.getGPUs()[0load if torch.cuda.is_available() else 0
-                cpu_utilization': psutil.cpu_percent(),
-              disk_usage': psutil.disk_usage('/').percent,
-             model_registry_status': self.model_registry.get_status(),
-           experiment_tracking_status': active if mlflow.active_run() else 'inactive,
-           performance_metrics': self.performance_monitor.get_latest_metrics(),
-              drift_detection_status': self.drift_detector.get_status()
+            health_metrics = {
+                'status': 'healthy',
+                'device': str(self.device),
+                'memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0,
+                'gpu_utilization': GPUtil.getGPUs()[0].load if torch.cuda.is_available() else 0,
+                'cpu_utilization': psutil.cpu_percent(),
+                'disk_usage': psutil.disk_usage('/').percent,
+                'model_registry_status': self.model_registry.get_status(),
+                'experiment_tracking_status': 'active' if mlflow.active_run() else 'inactive',
+                'performance_metrics': self.performance_monitor.get_latest_metrics(),
+                'drift_detection_status': self.drift_detector.get_status()
             }
             
             return health_metrics
             
         except Exception as e:
             self.logger.error(f"Error getting system health: {e}")
-            return[object Object]status:error', error': str(e)}
+            return {'status': 'error', 'error': str(e)}
 
 # Initialize service
 ai_retraining_pipeline = AIRetrainingPipeline() 

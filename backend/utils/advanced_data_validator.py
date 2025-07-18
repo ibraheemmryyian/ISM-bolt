@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 from jsonschema import validate, ValidationError
-from backend.utils.distributed_logger import DistributedLogger
+from utils.distributed_logger import DistributedLogger
 
 class AdvancedDataValidator:
     """Distributed, schema-based, and ML-specific data validator"""

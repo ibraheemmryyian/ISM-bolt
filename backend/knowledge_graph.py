@@ -1,8 +1,8 @@
 import torch
-from backend.ml_core.models import TransE, DistMult
-from backend.ml_core.training import train_graph_embedding
-from backend.ml_core.inference import predict_graph_embedding
-from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from .ml_core.models import TransE, DistMult
+from .ml_core.training import train_graph_embedding
+from .ml_core.inference import predict_graph_embedding
+from .ml_core.monitoring import log_metrics, save_checkpoint
 import numpy as np
 import os
 

@@ -25,10 +25,10 @@ from bs4 import BeautifulSoup
 import schedule
 import queue
 import torch
-from backend.ml_core.models import BaseNN, BaseRLAgent
-from backend.ml_core.training import train_supervised, train_rl
-from backend.ml_core.inference import predict_supervised
-from backend.ml_core.monitoring import log_metrics, save_checkpoint
+from ml_core.models import BaseNN, BaseRLAgent
+from ml_core.training import train_supervised, train_rl
+from ml_core.inference import predict_supervised
+from ml_core.monitoring import log_metrics, save_checkpoint
 from torch.utils.data import DataLoader, TensorDataset
 import os
 import torch.nn as nn
@@ -40,10 +40,19 @@ from ml_core.models import ModelFactory
 from ml_core.utils import ModelRegistry
 from ml_core.monitoring import MLMetricsTracker
 from ml_core.optimization import HyperparameterOptimizer
-from backend.utils.distributed_logger import DistributedLogger
-from backend.utils.advanced_data_validator import AdvancedDataValidator
+from utils.distributed_logger import DistributedLogger
+from utils.advanced_data_validator import AdvancedDataValidator
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from ml_core.optimization_base import SearchSpace
+from ml_core.optimization import HyperparameterOptimizer
+
+model_factory = ModelFactory()
+model = model_factory.create_model('simple_nn', {'input_dim': 10, 'output_dim': 2})
+config = {'learning_rate': 1e-3, 'epochs': 10}
+search_space = SearchSpace({'learning_rate': [1e-4, 1e-3, 1e-2], 'batch_size': [16, 32, 64]})
+optimizer = HyperparameterOptimizer(model, config, search_space)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -55,7 +64,6 @@ api = Api(app, version='1.0', title='AI Pricing Orchestrator', description='Insa
 logger = DistributedLogger('AIPricingOrchestrator', log_file='logs/ai_pricing_orchestrator.log')
 model_registry = ModelRegistry()
 metrics_tracker = MLMetricsTracker()
-optimizer = HyperparameterOptimizer()
 data_validator = AdvancedDataValidator(logger=logger)
 
 class PriceSource(Enum):

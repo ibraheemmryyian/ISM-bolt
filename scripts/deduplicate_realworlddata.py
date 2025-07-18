@@ -1,19 +1,52 @@
 import json
-from collections import Counter
+import re
+from collections import OrderedDict
 
-with open('fixed_realworlddata.json', 'r', encoding='utf-8') as f:
-    data = json.load(f)
+INPUT_FILE = 'realworlddata.json'
+OUTPUT_FILE = 'realworlddata_deduped.json'
 
-names = [company.get('name', '').strip() for company in data]
-name_counts = Counter(names)
+def tolerant_json_load(filename):
+    """Load JSON file, fixing common issues like trailing commas and missing brackets."""
+    with open(filename, 'r', encoding='utf-8') as f:
+        content = f.read()
+    # Remove trailing commas before closing brackets
+    content = re.sub(r',\s*([}\]])', r'\1', content)
+    # Remove duplicate commas
+    content = re.sub(r',\s*,', ',', content)
+    # Fix unclosed arrays/objects (best effort)
+    if not content.strip().endswith(']'):
+        content += '\n]'
+    try:
+        data = json.loads(content)
+    except Exception as e:
+        # Try to fix common issues
+        content = content.replace('\n', '').replace('\r', '')
+        data = json.loads(content)
+    return data
 
-print(f"Total companies: {len(names)}")
-print(f"Unique company names: {len(set(names))}")
+def deduplicate_companies(companies):
+    seen = OrderedDict()
+    for company in companies:
+        name = company.get('name')
+        # Use full JSON string as a hash for exact duplicates
+        company_str = json.dumps(company, sort_keys=True)
+        if name in seen:
+            # If exact duplicate, skip
+            if seen[name][-1] == company_str:
+                continue
+            # If not exact, replace with the newer version
+            seen[name] = (company, company_str)
+        else:
+            seen[name] = (company, company_str)
+    # Only keep the company dicts
+    return [v[0] for v in seen.values()]
 
-duplicates = [name for name, count in name_counts.items() if count > 1]
-if duplicates:
-    print("Duplicate company names:")
-    for name in duplicates:
-        print(f"- {name} (appears {name_counts[name]} times)")
-else:
-    print("No duplicate company names found.")
+def main():
+    companies = tolerant_json_load(INPUT_FILE)
+    cleaned = deduplicate_companies(companies)
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+        json.dump(cleaned, f, indent=2, ensure_ascii=False)
+    print(f"Deduplication complete. {len(companies) - len(cleaned)} duplicates removed. Cleaned data written to {OUTPUT_FILE}.")
+
+if __name__ == '__main__':
+    main() 

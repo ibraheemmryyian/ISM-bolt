@@ -8,7 +8,7 @@ import logging
 import torch
 import flwr as fl
 from ml_core.models import ModelFactory
-from ml_core.training import ModelTrainer
+from ml_core.training import ModelTrainer, TrainingConfig
 from ml_core.data_processing import DataProcessor
 from ml_core.monitoring import MLMetricsTracker
 from ml_core.utils import ModelRegistry
@@ -18,7 +18,12 @@ logger = logging.getLogger(__name__)
 model_registry = ModelRegistry()
 metrics_tracker = MLMetricsTracker()
 data_processor = DataProcessor()
-trainer = ModelTrainer()
+
+model_factory = ModelFactory()
+model = model_factory.create_model('simple_nn', {'input_dim': 10, 'output_dim': 2})
+config = TrainingConfig(epochs=10, batch_size=32, learning_rate=1e-3)
+loss_fn = torch.nn.CrossEntropyLoss()  # Replace with appropriate loss for your task
+trainer = ModelTrainer(model, config, loss_fn)
 
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, model, train_data, val_data):

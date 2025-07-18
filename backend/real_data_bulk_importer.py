@@ -19,8 +19,8 @@ import sys
 import argparse
 from datetime import datetime
 from typing import Dict, List, Any
-from backend.utils.advanced_data_validator import AdvancedDataValidator
-from backend.utils.distributed_logger import DistributedLogger
+from .utils.advanced_data_validator import AdvancedDataValidator
+from .utils.distributed_logger import DistributedLogger
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 

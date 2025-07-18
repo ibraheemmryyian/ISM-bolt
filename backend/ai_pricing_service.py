@@ -11,9 +11,11 @@ from datetime import datetime
 
 # Import the pricing integration modules
 try:
-    from ai_pricing_orchestrator import AI_PricingOrchestrator
+    from backend.ai_pricing_orchestrator import AI_PricingOrchestrator
     # Temporarily disable pricing integration manager to avoid circular imports
     # from ai_pricing_integration import PricingIntegrationManager, pricing_integration_manager
+except ImportError:
+    from ai_pricing_orchestrator import AI_PricingOrchestrator
 except ImportError as e:
     logging.error(f"Failed to import pricing modules: {e}")
 
