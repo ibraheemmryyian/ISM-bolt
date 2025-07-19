@@ -39,14 +39,20 @@ class TrainingMetrics:
     custom_metrics: Dict[str, List[float]] = field(default_factory=dict)
 
 class ModelTrainer:
-    def __init__(self, model=None, config=None, loss_fn=None, metrics_fn=None):
+    def __init__(self, model, config, loss_fn):
         if model is None or config is None or loss_fn is None:
             raise ValueError('ModelTrainer requires model, config, and loss_fn arguments.')
         self.model = model
-        self.config = config
         self.loss_fn = loss_fn
-        self.metrics_fn = metrics_fn
-        self.device = config.device
+        self.metrics_fn = None # Placeholder, will be set later if needed
+        
+        # Handle config as either dict or TrainingConfig object
+        if isinstance(config, dict):
+            self.config = TrainingConfig(**config)
+        else:
+            self.config = config
+            
+        self.device = self.config.device
         self.model.to(self.device)
         self.optimizer = self._get_optimizer()
         self.scheduler = self._get_scheduler()
@@ -171,3 +177,6 @@ def train_rl(agent, env, episodes=100):
         rewards.append(total_reward)
         print(f"[RL] Episode {episode+1}/{episodes} Total Reward: {total_reward:.2f}")
     return agent, rewards 
+
+def train_gnn(*args, **kwargs):
+    pass  # TODO: Replace with real implementation 

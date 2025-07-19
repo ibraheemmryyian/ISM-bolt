@@ -65,3 +65,23 @@ class FeedbackOptimizer:
         pass
     def optimize(self, *args, **kwargs):
         return {} 
+
+# Add missing RecommendationOptimizer class
+class RecommendationOptimizer:
+    def __init__(self, *args, **kwargs):
+        pass
+    def optimize(self, *args, **kwargs):
+        return {}
+
+# Add missing ServiceOptimizer class
+class ServiceOptimizer:
+    def __init__(self, *args, **kwargs):
+        pass
+    def optimize(self, *args, **kwargs):
+        return {}
+
+# Stub for ForecastingOptimizer to prevent ImportError
+class ForecastingOptimizer:
+    def __init__(self, *args, **kwargs):
+        pass
+# TODO: Replace with real implementation 

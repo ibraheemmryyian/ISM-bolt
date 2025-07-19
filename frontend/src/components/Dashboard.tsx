@@ -37,11 +37,17 @@ import {
   CheckCircle,
   Sparkles,
   Loader2,
-  Store
+  Store,
+  Truck,
+  Network,
+  Workflow
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useNotifications } from '../lib/notificationContext';
 import { activityService } from '../lib/activityService';
+import { LogisticsIntegration } from './LogisticsIntegration';
+import { AIServicesIntegration } from './AIServicesIntegration';
+import { OrchestrationDashboard } from './OrchestrationDashboard';
 
 interface CompanyProfile {
   id: string;
@@ -122,6 +128,7 @@ const Dashboard: React.FC = () => {
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
   const [materialListings, setMaterialListings] = useState<MaterialListing[]>([]);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [activeIntegrationTab, setActiveIntegrationTab] = useState<'logistics' | 'ai' | 'orchestration'>('logistics');
 
   useEffect(() => {
     loadDashboardData();
@@ -131,24 +138,32 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-
       // Get authenticated user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         navigate('/');
         return;
       }
-
-      // Fetch real company data from database
+      // Fetch company data
       const { data: company, error: companyError } = await supabase
         .from('companies')
         .select('*')
         .eq('id', user.id)
         .single();
-
       if (companyError) {
-        console.error('Error fetching company data:', companyError);
-        throw new Error('Failed to load company data');
+        setHasCompletedOnboarding(false);
+        setPortfolioData(null);
+        setMaterialListings([]);
+        setLoading(false);
+        return;
+      }
+      setHasCompletedOnboarding(!!company.onboarding_completed);
+      // If onboarding not completed, do not fetch further data
+      if (!company.onboarding_completed) {
+        setPortfolioData(null);
+        setMaterialListings([]);
+        setLoading(false);
+        return;
       }
 
       // Fetch real user activities
@@ -241,9 +256,9 @@ const Dashboard: React.FC = () => {
         })));
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading dashboard data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+      setError(err.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -542,8 +557,8 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-500"></div>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     );
   }
@@ -568,20 +583,136 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  if (!portfolioData) {
-  return (
-      <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
-        <CardContent className="p-6 text-center">
-          <p className="text-gray-300">No portfolio data available. Complete AI onboarding to generate your personalized portfolio.</p>
-          <Button 
-            onClick={() => navigate('/ai-onboarding')}
-            className="mt-4 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
+  if (!hasCompletedOnboarding) {
+    return (
+      <div className="space-y-6">
+        {/* Onboarding Call-to-Action Banner */}
+        <div className="bg-emerald-50 border-l-4 border-emerald-400 p-4 rounded flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-emerald-800">Complete AI Onboarding</h2>
+            <p className="text-emerald-700 text-sm">Unlock personalized insights, recommendations, and full dashboard features by completing your onboarding.</p>
+          </div>
+          <Button className="bg-emerald-500 hover:bg-emerald-600 text-white" onClick={() => navigate('/adaptive-onboarding')}>
             Start AI Onboarding
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Stats Cards (empty) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Total Savings</CardTitle>
+              <DollarSign className="h-4 w-4 text-emerald-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">--</div>
+              <p className="text-xs text-gray-400 mt-1">Complete onboarding to see your savings</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Carbon Reduced</CardTitle>
+              <Leaf className="h-4 w-4 text-emerald-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">--</div>
+              <p className="text-xs text-gray-400 mt-1">Complete onboarding to see your impact</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-slate-800 border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Matches Completed</CardTitle>
+              <Recycle className="h-4 w-4 text-emerald-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">--</div>
+              <p className="text-xs text-gray-400 mt-1">Complete onboarding to see your matches</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recommendations (empty) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Lightbulb className="w-5 h-5" />
+              <span>AI-Powered Recommendations</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-gray-400 py-8">
+              <p>No recommendations yet. Complete onboarding to unlock personalized AI insights.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity (empty) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-gray-400 py-8">
+              <p>No activity yet. Your recent actions will appear here after onboarding.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Next Milestones (empty) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Next Milestones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-gray-400 py-8">
+              <p>Milestones will be shown here after onboarding.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions (still available) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/marketplace')}>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Store className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Browse Marketplace</h3>
+                  <p className="text-sm text-gray-600">Find materials and partners</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/adaptive-onboarding')}>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Brain className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">AI Onboarding</h3>
+                  <p className="text-sm text-gray-600">Complete your profile with AI</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/marketplace')}>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Package className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Add Material</h3>
+                  <p className="text-sm text-gray-600">List your materials</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     );
   }
 
@@ -793,7 +924,7 @@ const Dashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {portfolioData.recommendations.map((rec) => (
+            {portfolioData && portfolioData.recommendations.map((rec) => (
               <Card key={rec.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -861,20 +992,16 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
           <div className="space-y-3">
-            {portfolioData.recent_activity.map((activity) => (
+            {portfolioData && portfolioData.recent_activity.map((activity) => (
               <div key={activity.id} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg">
-                <div className={`p-2 rounded-full ${getActivityColor(activity.category)}`}>
-                  {getActivityIcon(activity.category)}
-                </div>
+                <div className={`p-2 rounded-full ${getActivityColor(activity.category)}`}>{getActivityIcon(activity.category)}</div>
                 <div className="flex-1">
                   <p className="font-medium">{activity.action}</p>
                   <p className="text-sm text-gray-600">{activity.impact}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">{new Date(activity.date).toLocaleDateString()}</p>
-                  <Badge className={getActivityColor(activity.category)}>
-                    {activity.category}
-                  </Badge>
+                  <Badge className={getActivityColor(activity.category)}>{activity.category}</Badge>
                 </div>
               </div>
             ))}
@@ -889,7 +1016,7 @@ const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
           <div className="space-y-3">
-            {portfolioData.next_milestones.map((milestone, index) => (
+            {portfolioData && portfolioData.next_milestones.map((milestone, index) => (
               <div key={index} className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
                 <Target className="w-5 h-5 text-blue-600" />
                 <span className="font-medium">{milestone}</span>
@@ -906,12 +1033,12 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Store className="h-5 w-5 text-blue-600" />
-                        </div>
+              </div>
               <div>
                 <h3 className="font-semibold">Browse Marketplace</h3>
                 <p className="text-sm text-gray-600">Find materials and partners</p>
-                      </div>
-                    </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -920,28 +1047,87 @@ const Dashboard: React.FC = () => {
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Brain className="h-5 w-5 text-purple-600" />
-                  </div>
+              </div>
               <div>
                 <h3 className="font-semibold">AI Onboarding</h3>
                 <p className="text-sm text-gray-600">Complete your profile with AI</p>
               </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/marketplace')}>
           <CardContent className="p-4">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-green-100 rounded-lg">
                 <Package className="h-5 w-5 text-green-600" />
-                    </div>
+              </div>
               <div>
                 <h3 className="font-semibold">Add Material</h3>
                 <p className="text-sm text-gray-600">List your materials</p>
-                    </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Backend Integration Tabs */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-900">Backend Services Integration</h2>
+          <div className="flex space-x-2">
+            <Button variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh All
+            </Button>
+          </div>
+        </div>
+
+        {/* Integration Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveIntegrationTab('logistics')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeIntegrationTab === 'logistics'
+                  ? 'border-emerald-500 text-emerald-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Truck className="h-4 w-4 inline mr-2" />
+              Logistics
+            </button>
+            <button
+              onClick={() => setActiveIntegrationTab('ai')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeIntegrationTab === 'ai'
+                  ? 'border-emerald-500 text-emerald-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Brain className="h-4 w-4 inline mr-2" />
+              AI Services
+            </button>
+            <button
+              onClick={() => setActiveIntegrationTab('orchestration')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeIntegrationTab === 'orchestration'
+                  ? 'border-emerald-500 text-emerald-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Workflow className="h-4 w-4 inline mr-2" />
+              Orchestration
+            </button>
+          </nav>
+        </div>
+
+        {/* Integration Content */}
+        <div className="bg-white rounded-lg border border-gray-200">
+          {activeIntegrationTab === 'logistics' && <LogisticsIntegration />}
+          {activeIntegrationTab === 'ai' && <AIServicesIntegration />}
+          {activeIntegrationTab === 'orchestration' && <OrchestrationDashboard />}
+        </div>
       </div>
     </div>
   );

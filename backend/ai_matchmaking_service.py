@@ -12,6 +12,11 @@ from ml_core.models import ModelFactory
 from ml_core.utils import ModelRegistry
 from ml_core.monitoring import MLMetricsTracker
 from ml_core.optimization import HyperparameterOptimizer
+from prometheus_client import Counter, Histogram
+from opentracing_instrumentation.request_context import get_current_span
+from opentracing import Tracer, global_tracer
+from ml_core.data_processing import from_heterodata_dict
+from utils.advanced_data_validator import AdvancedDataValidator
 # from .utils.distributed_logger import DistributedLogger
 # from .utils.advanced_data_validator import AdvancedDataValidator
 
@@ -30,8 +35,23 @@ api = Api(app, version='1.0', title='AI Matchmaking Service', description='Insan
 logger = DistributedLogger('AIMatchmakingService', log_file='logs/ai_matchmaking_service.log')
 model_registry = ModelRegistry()
 metrics_tracker = MLMetricsTracker()
-optimizer = HyperparameterOptimizer()
-data_validator = AdvancedDataValidator(logger=logger)
+optimizer = HyperparameterOptimizer(None, None, None)  # TODO: Replace None with actual model, config, search_space
+
+match_request_counter = Counter('match_requests_total', 'Total matchmaking requests')
+match_error_counter = Counter('match_errors_total', 'Total matchmaking errors')
+match_duration_histogram = Histogram('match_duration_seconds', 'Matchmaking duration')
+
+data_validator = AdvancedDataValidator()
+
+# Add a fallback for logger.info if not present
+if not hasattr(logger, 'info'):
+    def info(self, msg):
+        if hasattr(self, 'log'):
+            self.log(msg)
+        else:
+            import logging
+            logging.info(msg)
+    logger.info = info.__get__(logger)
 
 def get_model(model_id):
     model_info = model_registry.get_model(model_id)
@@ -54,44 +74,64 @@ class Match(Resource):
     @api.response(400, 'Invalid input data')
     @api.response(500, 'Internal error')
     def post(self):
-        try:
-            data = request.json
-            model_id = data.get('model_id')
-            input_data = data.get('input_data')
-            # Schema-based validation
-            schema = {
-                'type': 'object',
-                'properties': {
-                    'features': {'type': 'array'},
-                    'graph': {'type': 'object'}
-                },
-                'anyOf': [
-                    {'required': ['features']},
-                    {'required': ['graph']}
-                ]
-            }
-            data_validator.set_schema(schema)
-            if not data_validator.validate(input_data):
-                logger.error("Input data failed schema validation.")
-                return {'error': 'Invalid input data'}, 400
-            model = get_model(model_id)
-            # Use GNN if graph, else transformer/MLP
-            if 'graph' in input_data:
-                # Assume input_data['graph'] is a torch_geometric.data.Data object
-                graph_data = input_data['graph']
-                with torch.no_grad():
-                    output = model(graph_data)
-            else:
-                features = torch.FloatTensor(input_data['features']).unsqueeze(0)
-                with torch.no_grad():
-                    output = model(features)
-            metrics_tracker.record_inference_metrics({'model_id': model_id, 'success': True})
-            logger.info(f"Matchmaking successful for model {model_id}")
-            return {'match_result': output.cpu().numpy().tolist()}
-        except Exception as e:
-            logger.error(f"Matchmaking error: {e}")
-            metrics_tracker.record_inference_metrics({'model_id': request.json.get('model_id', 'unknown'), 'success': False, 'error': str(e)})
-            return {'error': str(e)}, 500
+        tracer = global_tracer()
+        span = tracer.start_span('MatchAPI.post', child_of=get_current_span())
+        match_request_counter.inc()
+        with match_duration_histogram.time():
+            try:
+                data = request.json
+                model_id = data.get('model_id')
+                input_data = data.get('input_data')
+                # Schema-based validation
+                schema = {
+                    'type': 'object',
+                    'properties': {
+                        'features': {'type': 'array'},
+                        'graph': {'type': 'object'}
+                    },
+                    'anyOf': [
+                        {'required': ['features']},
+                        {'required': ['graph']}
+                    ]
+                }
+                data_validator.set_schema(schema)
+                if not data_validator.validate(input_data):
+                    logger.error("Input data failed schema validation.")
+                    match_error_counter.inc()
+                    span.set_tag('error', True)
+                    span.log_kv({'event': 'validation_error'})
+                    return {'error': 'Invalid input data'}, 400
+                model = get_model(model_id)
+                # Use GNN if graph, else transformer/MLP
+                if 'graph' in input_data:
+                    # Robust deserialization of HeteroData
+                    try:
+                        graph_data = from_heterodata_dict(input_data['graph'])
+                    except Exception as e:
+                        logger.error(f"Failed to deserialize HeteroData: {e}")
+                        match_error_counter.inc()
+                        span.set_tag('error', True)
+                        span.log_kv({'event': 'deserialization_error', 'error.object': e})
+                        return {'error': 'Failed to deserialize graph data'}, 400
+                    with torch.no_grad():
+                        output = model(graph_data)
+                else:
+                    features = torch.FloatTensor(input_data['features']).unsqueeze(0)
+                    with torch.no_grad():
+                        output = model(features)
+                metrics_tracker.record_inference_metrics({'model_id': model_id, 'success': True})
+                logger.info(f"Matchmaking successful for model {model_id}")
+                span.set_tag('result', True)
+                return {'output': output.cpu().numpy().tolist()}
+            except Exception as e:
+                logger.error(f"Matchmaking error: {e}")
+                match_error_counter.inc()
+                metrics_tracker.record_inference_metrics({'model_id': data.get('model_id', 'unknown'), 'success': False, 'error': str(e)})
+                span.set_tag('error', True)
+                span.log_kv({'event': 'error', 'error.object': e})
+                return {'error': str(e)}, 500
+            finally:
+                span.finish()
 
 @api.route('/explain')
 class Explain(Resource):

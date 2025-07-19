@@ -27,6 +27,26 @@ const freightosService = new FreightosLogisticsService();
 const requestWithRetry = require('./utils/requestWithRetry');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const client = require('prom-client');
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics();
+
+const endpointRequestCounter = new client.Counter({
+  name: 'endpoint_requests_total',
+  help: 'Total requests per endpoint',
+  labelNames: ['endpoint']
+});
+const endpointErrorCounter = new client.Counter({
+  name: 'endpoint_errors_total',
+  help: 'Total errors per endpoint',
+  labelNames: ['endpoint']
+});
+const endpointLatencyHistogram = new client.Histogram({
+  name: 'endpoint_latency_seconds',
+  help: 'Request latency per endpoint',
+  labelNames: ['endpoint']
+});
+
 // Adaptive onboarding is handled via proxy to Python Flask server
 
 const app = express();
@@ -4113,96 +4133,110 @@ app.get('/api/admin/stats', async (req, res) => {
 // ADVANCED PYTHON AI SERVICE ENDPOINTS
 // ============================================================================
 
+const Ajv = require('ajv');
+const ajv = new Ajv({ allErrors: true });
+
+// HeteroData/graph schema for validation
+const heteroDataSchema = {
+  type: 'object',
+  properties: {
+    x_dict: { type: 'object' },
+    edge_index_dict: { type: 'object' },
+    y_dict: { type: 'object' }
+  },
+  required: ['x_dict', 'edge_index_dict'],
+  additionalProperties: true
+};
+const validateHeteroData = ajv.compile(heteroDataSchema);
+
+// Utility for validation and error response
+function validateGraphPayload(payload, res, endpoint) {
+  if (!validateHeteroData(payload)) {
+    console.error(`[${endpoint}] Invalid HeteroData payload:`, validateHeteroData.errors);
+    return res.status(400).json({
+      error: 'Invalid graph/HeteroData payload',
+      details: validateHeteroData.errors
+    });
+  }
+  return null;
+}
+
 // GNN Reasoning Engine Endpoints
-app.post('/api/ai/gnn/create-graph', async (req, res) => {
-    try {
-        const { participants, graph_type = 'industrial' } = req.body;
-        
-        if (!participants || !Array.isArray(participants)) {
-            return res.status(400).json({ error: 'Participants array is required' });
-        }
-
-        const gnnResult = await runPythonScript('gnn_reasoning_engine.py', {
-            action: 'create_graph',
-            participants: participants,
-            graph_type: graph_type
-        });
-
-        res.json({
-            success: true,
-            graph_data: gnnResult.graph_data,
-            node_count: gnnResult.node_count,
-            edge_count: gnnResult.edge_count,
-            message: 'Industrial graph created successfully'
-        });
-
-    } catch (error) {
-        console.error('GNN Graph Creation Error:', error);
-        res.status(500).json({ error: 'Failed to create industrial graph' });
+app.post('/api/ai/gnn/create-graph', withMetrics('/api/ai/gnn/create-graph', async (req, res) => {
+  try {
+    const { participants, graph_type = 'industrial' } = req.body;
+    if (!participants || !Array.isArray(participants)) {
+      return res.status(400).json({ error: 'Participants array is required' });
     }
-});
+    // No graph payload to validate here (graph is created, not received)
+    const gnnResult = await runPythonScript('gnn_reasoning_engine.py', {
+      action: 'create_graph',
+      participants: participants,
+      graph_type: graph_type
+    });
+    res.json({
+      success: true,
+      graph_data: gnnResult.graph_data,
+      node_count: gnnResult.node_count,
+      edge_count: gnnResult.edge_count,
+      message: 'Industrial graph created successfully'
+    });
+  } catch (error) {
+    console.error('GNN Graph Creation Error:', error);
+    res.status(500).json({ error: 'Failed to create industrial graph' });
+  }
+}));
 
-app.post('/api/ai/gnn/train-model', async (req, res) => {
-    try {
-        const { 
-            graph_data, 
-            model_name = 'default', 
-            model_type = 'GCN', 
-            task_type = 'node_classification' 
-        } = req.body;
+app.post('/api/ai/gnn/train-model', withMetrics('/api/ai/gnn/train-model', async (req, res) => {
+  try {
+    const { graph_data, model_name = 'default', model_type = 'GCN', task_type = 'node_classification' } = req.body;
+    // Validate graph_data
+    if (validateGraphPayload(graph_data, res, '/api/ai/gnn/train-model')) return;
+    const trainingResult = await runPythonScript('gnn_reasoning_engine.py', {
+      action: 'train_model',
+      graph_data: graph_data,
+      model_name: model_name,
+      model_type: model_type,
+      task_type: task_type
+    });
+    res.json({
+      success: true,
+      model_name: model_name,
+      training_metrics: trainingResult.metrics,
+      model_performance: trainingResult.performance,
+      message: 'GNN model trained successfully'
+    });
+  } catch (error) {
+    console.error('GNN Training Error:', error);
+    res.status(500).json({ error: 'Failed to train GNN model' });
+  }
+}));
 
-        const trainingResult = await runPythonScript('gnn_reasoning_engine.py', {
-            action: 'train_model',
-            graph_data: graph_data,
-            model_name: model_name,
-            model_type: model_type,
-            task_type: task_type
-        });
+app.post('/api/ai/gnn/infer', withMetrics('/api/ai/gnn/infer', async (req, res) => {
+  try {
+    const { graph_data, model_name = 'default', inference_type = 'node_embeddings' } = req.body;
+    // Validate graph_data
+    if (validateGraphPayload(graph_data, res, '/api/ai/gnn/infer')) return;
+    const inferenceResult = await runPythonScript('gnn_reasoning_engine.py', {
+      action: 'infer',
+      graph_data: graph_data,
+      model_name: model_name,
+      inference_type: inference_type
+    });
+    res.json({
+      success: true,
+      embeddings: inferenceResult.embeddings,
+      predictions: inferenceResult.predictions,
+      confidence_scores: inferenceResult.confidence_scores,
+      message: 'GNN inference completed successfully'
+    });
+  } catch (error) {
+    console.error('GNN Inference Error:', error);
+    res.status(500).json({ error: 'Failed to perform GNN inference' });
+  }
+}));
 
-        res.json({
-            success: true,
-            model_name: model_name,
-            training_metrics: trainingResult.metrics,
-            model_performance: trainingResult.performance,
-            message: 'GNN model trained successfully'
-        });
-
-    } catch (error) {
-        console.error('GNN Training Error:', error);
-        res.status(500).json({ error: 'Failed to train GNN model' });
-    }
-});
-
-app.post('/api/ai/gnn/infer', async (req, res) => {
-    try {
-        const { 
-            graph_data, 
-            model_name = 'default', 
-            inference_type = 'node_embeddings' 
-        } = req.body;
-
-        const inferenceResult = await runPythonScript('gnn_reasoning_engine.py', {
-            action: 'infer',
-            graph_data: graph_data,
-            model_name: model_name,
-            inference_type: inference_type
-        });
-
-        res.json({
-            success: true,
-            embeddings: inferenceResult.embeddings,
-            predictions: inferenceResult.predictions,
-            confidence_scores: inferenceResult.confidence_scores,
-            message: 'GNN inference completed successfully'
-        });
-
-    } catch (error) {
-        console.error('GNN Inference Error:', error);
-        res.status(500).json({ error: 'Failed to perform GNN inference' });
-    }
-});
-
-app.get('/api/ai/gnn/models', async (req, res) => {
+app.get('/api/ai/gnn/models', withMetrics('/api/ai/gnn/models', async (req, res) => {
     try {
         const modelsResult = await runPythonScript('gnn_reasoning_engine.py', {
             action: 'list_models'
@@ -4219,7 +4253,7 @@ app.get('/api/ai/gnn/models', async (req, res) => {
         console.error('GNN Models Error:', error);
         res.status(500).json({ error: 'Failed to retrieve GNN models' });
     }
-});
+}));
 
 // Revolutionary AI Matching Endpoints
 app.post('/api/ai/revolutionary/match', async (req, res) => {
@@ -4321,30 +4355,30 @@ app.post('/api/ai/revolutionary/feedback', async (req, res) => {
 });
 
 // Knowledge Graph Endpoints
-app.post('/api/ai/knowledge-graph/build', async (req, res) => {
-    try {
-        const { companies, materials, relationships } = req.body;
-
-        const kgResult = await runPythonScript('knowledge_graph.py', {
-            action: 'build_graph',
-            companies: companies,
-            materials: materials,
-            relationships: relationships
-        });
-
-        res.json({
-            success: true,
-            graph_nodes: kgResult.node_count,
-            graph_edges: kgResult.edge_count,
-            knowledge_base: kgResult.knowledge_base,
-            message: 'Knowledge graph built successfully'
-        });
-
-    } catch (error) {
-        console.error('Knowledge Graph Build Error:', error);
-        res.status(500).json({ error: 'Failed to build knowledge graph' });
-    }
-});
+app.post('/api/ai/knowledge-graph/build', withMetrics('/api/ai/knowledge-graph/build', async (req, res) => {
+  try {
+    const { companies, materials, relationships, graph_data } = req.body;
+    // If graph_data is present, validate it
+    if (graph_data && validateGraphPayload(graph_data, res, '/api/ai/knowledge-graph/build')) return;
+    const kgResult = await runPythonScript('knowledge_graph.py', {
+      action: 'build_graph',
+      companies: companies,
+      materials: materials,
+      relationships: relationships,
+      graph_data: graph_data
+    });
+    res.json({
+      success: true,
+      graph_nodes: kgResult.node_count,
+      graph_edges: kgResult.edge_count,
+      knowledge_base: kgResult.knowledge_base,
+      message: 'Knowledge graph built successfully'
+    });
+  } catch (error) {
+    console.error('Knowledge Graph Build Error:', error);
+    res.status(500).json({ error: 'Failed to build knowledge graph' });
+  }
+}));
 
 app.post('/api/ai/knowledge-graph/query', async (req, res) => {
     try {
@@ -4429,35 +4463,33 @@ app.post('/api/ai/federated/train', async (req, res) => {
 });
 
 // Multi-hop Symbiosis Network Endpoints
-app.post('/api/ai/multi-hop/analyze', async (req, res) => {
-    try {
-        const { companies, max_hops = 3, analysis_type = 'symbiosis' } = req.body;
-
-        if (!companies || !Array.isArray(companies)) {
-            return res.status(400).json({ error: 'Companies array is required' });
-        }
-
-        const multiHopResult = await runPythonScript('multi_hop_symbiosis_network.py', {
-            action: 'analyze_network',
-            companies: companies,
-            max_hops: max_hops,
-            analysis_type: analysis_type
-        });
-
-        res.json({
-            success: true,
-            network_graph: multiHopResult.network_graph,
-            symbiosis_paths: multiHopResult.symbiosis_paths,
-            value_chain_analysis: multiHopResult.value_chain_analysis,
-            circular_opportunities: multiHopResult.circular_opportunities,
-            message: 'Multi-hop symbiosis analysis completed successfully'
-        });
-
-    } catch (error) {
-        console.error('Multi-hop Analysis Error:', error);
-        res.status(500).json({ error: 'Failed to perform multi-hop symbiosis analysis' });
+app.post('/api/ai/multi-hop/analyze', withMetrics('/api/ai/multi-hop/analyze', async (req, res) => {
+  try {
+    const { companies, max_hops = 3, analysis_type = 'symbiosis', graph_data } = req.body;
+    if (graph_data && validateGraphPayload(graph_data, res, '/api/ai/multi-hop/analyze')) return;
+    if (!companies || !Array.isArray(companies)) {
+      return res.status(400).json({ error: 'Companies array is required' });
     }
-});
+    const multiHopResult = await runPythonScript('multi_hop_symbiosis_network.py', {
+      action: 'analyze_network',
+      companies: companies,
+      max_hops: max_hops,
+      analysis_type: analysis_type,
+      graph_data: graph_data
+    });
+    res.json({
+      success: true,
+      network_graph: multiHopResult.network_graph,
+      symbiosis_paths: multiHopResult.symbiosis_paths,
+      value_chain_analysis: multiHopResult.value_chain_analysis,
+      circular_opportunities: multiHopResult.circular_opportunities,
+      message: 'Multi-hop symbiosis analysis completed successfully'
+    });
+  } catch (error) {
+    console.error('Multi-hop Analysis Error:', error);
+    res.status(500).json({ error: 'Failed to perform multi-hop symbiosis analysis' });
+  }
+}));
 
 app.post('/api/ai/multi-hop/optimize', async (req, res) => {
     try {
@@ -4485,42 +4517,35 @@ app.post('/api/ai/multi-hop/optimize', async (req, res) => {
 });
 
 // Advanced AI Integration Endpoints
-app.post('/api/ai/integration/comprehensive-analysis', async (req, res) => {
-    try {
-        const { 
-            company_data, 
-            analysis_type = 'full', 
-            include_gnn = true, 
-            include_knowledge_graph = true 
-        } = req.body;
-
-        if (!company_data) {
-            return res.status(400).json({ error: 'Company data is required' });
-        }
-
-        const analysisResult = await runPythonScript('advanced_ai_integration.py', {
-            action: 'comprehensive_analysis',
-            company_data: company_data,
-            analysis_type: analysis_type,
-            include_gnn: include_gnn,
-            include_knowledge_graph: include_knowledge_graph
-        });
-
-        res.json({
-            success: true,
-            analysis_results: analysisResult.results,
-            recommendations: analysisResult.recommendations,
-            risk_assessment: analysisResult.risk_assessment,
-            opportunity_analysis: analysisResult.opportunity_analysis,
-            implementation_roadmap: analysisResult.implementation_roadmap,
-            message: 'Comprehensive AI analysis completed successfully'
-        });
-
-    } catch (error) {
-        console.error('Comprehensive Analysis Error:', error);
-        res.status(500).json({ error: 'Failed to perform comprehensive analysis' });
+app.post('/api/ai/integration/comprehensive-analysis', withMetrics('/api/ai/integration/comprehensive-analysis', async (req, res) => {
+  try {
+    const { company_data, analysis_type = 'full', include_gnn = true, include_knowledge_graph = true, graph_data } = req.body;
+    if (graph_data && validateGraphPayload(graph_data, res, '/api/ai/integration/comprehensive-analysis')) return;
+    if (!company_data) {
+      return res.status(400).json({ error: 'Company data is required' });
     }
-});
+    const analysisResult = await runPythonScript('advanced_ai_integration.py', {
+      action: 'comprehensive_analysis',
+      company_data: company_data,
+      analysis_type: analysis_type,
+      include_gnn: include_gnn,
+      include_knowledge_graph: include_knowledge_graph,
+      graph_data: graph_data
+    });
+    res.json({
+      success: true,
+      analysis_results: analysisResult.results,
+      recommendations: analysisResult.recommendations,
+      risk_assessment: analysisResult.risk_assessment,
+      opportunity_analysis: analysisResult.opportunity_analysis,
+      implementation_roadmap: analysisResult.implementation_roadmap,
+      message: 'Comprehensive AI analysis completed successfully'
+    });
+  } catch (error) {
+    console.error('Comprehensive Analysis Error:', error);
+    res.status(500).json({ error: 'Failed to perform comprehensive analysis' });
+  }
+}));
 
 // AI Service Health and Status Endpoints
 app.get('/api/ai/services/status', (req, res) => {
@@ -4988,3 +5013,26 @@ app.get('/api/ai-matching/insights/:id', async (req, res) => {
     return sendResponse(res, { success: false, error: error.message }, 500);
   }
 });
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
+});
+
+// Helper for metrics
+function withMetrics(endpoint, handler) {
+  return function(req, res, next) {
+    endpointRequestCounter.labels(endpoint).inc();
+    const end = endpointLatencyHistogram.labels(endpoint).startTimer();
+    Promise.resolve(handler(req, res, next))
+      .catch(err => {
+        endpointErrorCounter.labels(endpoint).inc();
+        end();
+        next(err);
+      })
+      .finally(() => {
+        end();
+      });
+  };
+}

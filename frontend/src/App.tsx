@@ -17,7 +17,6 @@ import { NotificationsPanel } from './components/NotificationsPanel';
 import { ChatsPanel } from './components/ChatsPanel';
 import { AdminAccessPage } from './components/AdminAccessPage';
 import { ReviewAIListings } from './components/ReviewAIListings';
-import { AIAdvancedDashboard } from './components/AIAdvancedDashboard';
 import { AdaptiveAIOnboarding } from './components/AdaptiveAIOnboarding';
 
 import ErrorBoundary from './components/ErrorBoundary';
@@ -236,8 +235,20 @@ function App() {
               />
             } />
             <Route path="/dashboard" element={
-              <PersonalPortfolio />
+              session ? (
+                <PersonalPortfolio />
+              ) : (
+                <Navigate to="/" replace />
+              )
             } />
+            {/* Optionally keep /portfolio as an alias, or remove if not needed */}
+            {/* <Route path="/portfolio" element={
+              session ? (
+                <PersonalPortfolio />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } /> */}
             <Route path="/marketplace" element={
               session ? (
                 <Marketplace onSignOut={handleSignOut} />
@@ -247,6 +258,16 @@ function App() {
             } />
             <Route path="/admin" element={<AdminAccessPage />} />
             <Route path="/onboarding" element={
+              session ? (
+                <AdaptiveAIOnboarding
+                  onClose={() => window.location.href = '/dashboard'}
+                  onComplete={() => window.location.href = '/dashboard'}
+                />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            <Route path="/adaptive-onboarding" element={
               session ? (
                 <AdaptiveAIOnboarding
                   onClose={() => window.location.href = '/dashboard'}

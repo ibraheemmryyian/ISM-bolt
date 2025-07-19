@@ -81,6 +81,22 @@ class ServiceAuthenticator:
         except jwt.InvalidTokenError as e:
             raise Exception(f"Invalid token: {e}")
 
+global http_requests_total
+if 'http_requests_total' not in globals():
+    http_requests_total = Counter('http_requests_total', 'Total HTTP requests', ['service', 'method', 'status'])
+
+global http_request_duration
+if 'http_request_duration' not in globals():
+    http_request_duration = Histogram('http_request_duration_seconds', 'HTTP request duration', ['service', 'method'])
+
+global http_errors_total
+if 'http_errors_total' not in globals():
+    http_errors_total = Counter('http_errors_total', 'Total HTTP errors', ['service', 'error_type'])
+
+global http_retries_total
+if 'http_retries_total' not in globals():
+    http_retries_total = Counter('http_retries_total', 'Total HTTP retries', ['service'])
+
 class HTTPClient:
     """Advanced HTTP client with retry, circuit breaker, and metrics"""
     
@@ -91,10 +107,7 @@ class HTTPClient:
         
         # Metrics
         self.metrics = {
-            'requests_total': Counter('http_requests_total', 'Total HTTP requests', ['service', 'method', 'status']),
-            'request_duration': Histogram('http_request_duration_seconds', 'HTTP request duration', ['service', 'method']),
-            'errors_total': Counter('http_errors_total', 'Total HTTP errors', ['service', 'error_type']),
-            'retries_total': Counter('http_retries_total', 'Total HTTP retries', ['service'])
+            'retries_total': http_retries_total
         }
     
     async def __aenter__(self):
@@ -136,14 +149,14 @@ class HTTPClient:
                     result = await response.json()
                     
                     duration = time.time() - start_time
-                    self.metrics['request_duration'].labels(self.service_id, method).observe(duration)
-                    self.metrics['requests_total'].labels(self.service_id, method, 'success').inc()
+                    http_request_duration.labels(self.service_id, method).observe(duration)
+                    http_requests_total.labels(self.service_id, method, 'success').inc()
                     
                     return result
                     
             except aiohttp.ClientError as e:
                 last_exception = e
-                self.metrics['errors_total'].labels(self.service_id, type(e).__name__).inc()
+                http_errors_total.labels(self.service_id, type(e).__name__).inc()
                 
                 if attempt < retry_attempts:
                     self.metrics['retries_total'].labels(self.service_id).inc()
@@ -153,7 +166,7 @@ class HTTPClient:
                     break
             except Exception as e:
                 last_exception = e
-                self.metrics['errors_total'].labels(self.service_id, type(e).__name__).inc()
+                http_errors_total.labels(self.service_id, type(e).__name__).inc()
                 break
         
         raise last_exception or Exception("Request failed")

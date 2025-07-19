@@ -3,10 +3,10 @@ ML Core Inference: Inference utilities for all model types
 """
 import torch
 
-def predict_supervised(model, x, device='cpu'):
+def predict_supervised(model, x):
+    """Make predictions using a supervised model"""
     model.eval()
     with torch.no_grad():
-        x = x.to(device)
         return model(x)
 
 def predict_gnn(model, data, device='cpu'):

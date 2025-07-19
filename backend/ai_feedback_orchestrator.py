@@ -146,7 +146,8 @@ from ml_core.monitoring import (
 from ml_core.utils import (
     ModelRegistry,
     FeedbackManager,
-    ConfigManager
+    ConfigManager,
+    model_save_counter
 )
 
 class FeedbackDataset(Dataset):

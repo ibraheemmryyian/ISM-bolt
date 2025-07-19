@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 import pandas as pd
+from torch_geometric.data import HeteroData
 
 class DataProcessor:
     def __init__(self, transforms: Optional[List[Callable]] = None, validation_fn: Optional[Callable] = None):
@@ -96,3 +97,41 @@ class PromptDataProcessor:
     def process(self, prompts, *args, **kwargs):
         # Placeholder: implement advanced prompt cleaning, tokenization, etc.
         return prompts 
+
+# Stub for MaterialsDataProcessor to prevent ImportError
+class MaterialsDataProcessor:
+    def __init__(self, *args, **kwargs):
+        pass
+# TODO: Replace with real implementation
+
+# Stub for TimeSeriesProcessor to prevent ImportError
+class TimeSeriesProcessor:
+    def __init__(self, *args, **kwargs):
+        pass
+# TODO: Replace with real implementation
+
+def to_heterodata_dict(hetero_data: HeteroData) -> dict:
+    """Serialize HeteroData to a dict for API or storage."""
+    out = {'x_dict': {}, 'edge_index_dict': {}, 'y_dict': {}}
+    for ntype, x in hetero_data.x_dict.items():
+        out['x_dict'][ntype] = x.cpu().numpy().tolist()
+    for etype, edge_index in hetero_data.edge_index_dict.items():
+        out['edge_index_dict'][str(etype)] = edge_index.cpu().numpy().tolist()
+    if hasattr(hetero_data, 'y_dict'):
+        for ntype, y in hetero_data.y_dict.items():
+            out['y_dict'][ntype] = y.cpu().numpy().tolist()
+    return out
+
+def from_heterodata_dict(d: dict) -> HeteroData:
+    """Deserialize dict to HeteroData object."""
+    data = HeteroData()
+    import torch
+    for ntype, x in d['x_dict'].items():
+        data[ntype].x = torch.tensor(x, dtype=torch.float)
+    for etype_str, edge_index in d['edge_index_dict'].items():
+        etype = eval(etype_str) if isinstance(etype_str, str) and etype_str.startswith('(') else etype_str
+        data[etype].edge_index = torch.tensor(edge_index, dtype=torch.long)
+    if 'y_dict' in d:
+        for ntype, y in d['y_dict'].items():
+            data[ntype].y = torch.tensor(y, dtype=torch.long)
+    return data 

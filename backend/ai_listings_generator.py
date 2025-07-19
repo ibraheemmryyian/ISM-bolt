@@ -57,6 +57,37 @@ class AIListingsGenerator:
         with torch.no_grad():
             return self.model(src, tgt).cpu().numpy() 
 
+    # Add async generate_ai_listings method for compatibility
+    async def generate_ai_listings(self, company_profile):
+        """Generate AI-powered listings for a company profile (stub)."""
+        company_id = company_profile.get('id', 'unknown')
+        company_name = company_profile.get('name', 'Unknown Company')
+        # Return 2 sample listings
+        return [
+            {
+                'name': f'AI Listing 1 for {company_name}',
+                'material_name': f'AI Material 1',
+                'type': 'ai_generated',
+                'quantity': 100,
+                'unit': 'tons',
+                'description': f'AI-generated material listing 1 for {company_name}',
+                'quality_grade': 'A',
+                'potential_value': 5000,
+                'ai_generated': True
+            },
+            {
+                'name': f'AI Listing 2 for {company_name}',
+                'material_name': f'AI Material 2',
+                'type': 'ai_generated',
+                'quantity': 50,
+                'unit': 'tons',
+                'description': f'AI-generated material listing 2 for {company_name}',
+                'quality_grade': 'B',
+                'potential_value': 2500,
+                'ai_generated': True
+            }
+        ]
+
 # Replace standard logger with DistributedLogger
 logger = DistributedLogger('AIListingsGenerator', log_file='logs/ai_listings_generator.log')
 

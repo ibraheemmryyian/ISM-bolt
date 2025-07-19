@@ -28,7 +28,7 @@ except ImportError:
             self.logger.error(msg)
         def warning(self, msg):
             self.logger.warning(msg)
-from backend.utils.advanced_data_validator import AdvancedDataValidator
+from utils.advanced_data_validator import AdvancedDataValidator
 from ml_core.optimization import HyperparameterOptimizer
 import shap
 from flask_restx import Api, Resource, fields
@@ -41,7 +41,7 @@ logger = DistributedLogger('AIGateway', log_file='logs/ai_gateway.log')
 model_registry = ModelRegistry()
 metrics_tracker = MLMetricsTracker()
 data_validator = AdvancedDataValidator(logger=logger)
-optimizer = HyperparameterOptimizer()
+optimizer = HyperparameterOptimizer(None, None, None)  # TODO: Replace None with actual model, config, search_space
 tokenizer = AutoTokenizer.from_pretrained('microsoft/DialoGPT-medium')
 tokenizer.pad_token = tokenizer.eos_token
 

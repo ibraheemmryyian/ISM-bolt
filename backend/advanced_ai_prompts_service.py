@@ -395,7 +395,7 @@ class AdvancedAIPromptsService:
         # Initialize ML components
         self.model_registry = ModelRegistry()
         self.data_processor = PromptDataProcessor()
-        self.trainer = ModelTrainer()
+        self.trainer = ModelTrainer(None, None, None)  # TODO: Replace None with actual model, config, loss_fn
         self.optimizer = HyperparameterOptimizer()
         self.metrics_tracker = MLMetricsTracker()
         self.data_validator = DataValidator()

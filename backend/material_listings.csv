@@ -1,0 +1,604 @@
+company_id,company_name,material_name,material_type,quantity,unit,description,quality_grade,potential_value,ai_generated,generated_at
+,Saudi Aramco,Steel Scrap,waste,150,tons,Steel scrap from Saudi Aramco manufacturing,B,45000,True,2025-07-20T00:39:19.724376
+,Saudi Aramco,Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Aramco operations,A,75000,True,2025-07-20T00:39:19.724376
+,Saudi Aramco,AI Listing 1 for Saudi Aramco,ai_generated,100,tons,AI-generated material listing 1 for Saudi Aramco,A,5000,True,2025-07-20T00:39:19.724376
+,Saudi Aramco,AI Listing 2 for Saudi Aramco,ai_generated,50,tons,AI-generated material listing 2 for Saudi Aramco,B,2500,True,2025-07-20T00:39:19.724376
+,Saudi Aramco,Generic Material - Saudi Aramco,unknown,100,tons,Generic material from Saudi Aramco,C,2000,True,2025-07-20T00:39:19.724376
+,SABIC,Steel Scrap,waste,150,tons,Steel scrap from SABIC manufacturing,B,45000,True,2025-07-20T00:39:19.735318
+,SABIC,Aluminum Waste,waste,50,tons,Aluminum waste from SABIC operations,A,75000,True,2025-07-20T00:39:19.735318
+,SABIC,AI Listing 1 for SABIC,ai_generated,100,tons,AI-generated material listing 1 for SABIC,A,5000,True,2025-07-20T00:39:19.735318
+,SABIC,AI Listing 2 for SABIC,ai_generated,50,tons,AI-generated material listing 2 for SABIC,B,2500,True,2025-07-20T00:39:19.735318
+,SABIC,Generic Material - SABIC,unknown,100,tons,Generic material from SABIC,C,2000,True,2025-07-20T00:39:19.735318
+,Ma'aden,Steel Scrap,waste,150,tons,Steel scrap from Ma'aden manufacturing,B,45000,True,2025-07-20T00:39:19.745857
+,Ma'aden,Aluminum Waste,waste,50,tons,Aluminum waste from Ma'aden operations,A,75000,True,2025-07-20T00:39:19.745857
+,Ma'aden,AI Listing 1 for Ma'aden,ai_generated,100,tons,AI-generated material listing 1 for Ma'aden,A,5000,True,2025-07-20T00:39:19.745857
+,Ma'aden,AI Listing 2 for Ma'aden,ai_generated,50,tons,AI-generated material listing 2 for Ma'aden,B,2500,True,2025-07-20T00:39:19.745857
+,Ma'aden,Generic Material - Ma'aden,unknown,100,tons,Generic material from Ma'aden,C,2000,True,2025-07-20T00:39:19.745857
+,Almarai Co. Ltd.,Steel Scrap,waste,150,tons,Steel scrap from Almarai Co. Ltd. manufacturing,B,45000,True,2025-07-20T00:39:19.759886
+,Almarai Co. Ltd.,Aluminum Waste,waste,50,tons,Aluminum waste from Almarai Co. Ltd. operations,A,75000,True,2025-07-20T00:39:19.759886
+,Almarai Co. Ltd.,AI Listing 1 for Almarai Co. Ltd.,ai_generated,100,tons,AI-generated material listing 1 for Almarai Co. Ltd.,A,5000,True,2025-07-20T00:39:19.759886
+,Almarai Co. Ltd.,AI Listing 2 for Almarai Co. Ltd.,ai_generated,50,tons,AI-generated material listing 2 for Almarai Co. Ltd.,B,2500,True,2025-07-20T00:39:19.759886
+,Almarai Co. Ltd.,Generic Material - Almarai Co. Ltd.,unknown,100,tons,Generic material from Almarai Co. Ltd.,C,2000,True,2025-07-20T00:39:19.759886
+,Saudi Binladin Group,General Waste,waste,100,tons,General waste from Saudi Binladin Group operations,C,20000,True,2025-07-20T00:39:19.772433
+,Saudi Binladin Group,AI Listing 1 for Saudi Binladin Group,ai_generated,100,tons,AI-generated material listing 1 for Saudi Binladin Group,A,5000,True,2025-07-20T00:39:19.772433
+,Saudi Binladin Group,AI Listing 2 for Saudi Binladin Group,ai_generated,50,tons,AI-generated material listing 2 for Saudi Binladin Group,B,2500,True,2025-07-20T00:39:19.772433
+,Saudi Binladin Group,Generic Material - Saudi Binladin Group,unknown,100,tons,Generic material from Saudi Binladin Group,C,2000,True,2025-07-20T00:39:19.772433
+,ADNOC,Steel Scrap,waste,150,tons,Steel scrap from ADNOC manufacturing,B,45000,True,2025-07-20T00:39:19.784947
+,ADNOC,Aluminum Waste,waste,50,tons,Aluminum waste from ADNOC operations,A,75000,True,2025-07-20T00:39:19.784947
+,ADNOC,AI Listing 1 for ADNOC,ai_generated,100,tons,AI-generated material listing 1 for ADNOC,A,5000,True,2025-07-20T00:39:19.784947
+,ADNOC,AI Listing 2 for ADNOC,ai_generated,50,tons,AI-generated material listing 2 for ADNOC,B,2500,True,2025-07-20T00:39:19.784947
+,ADNOC,Generic Material - ADNOC,unknown,100,tons,Generic material from ADNOC,C,2000,True,2025-07-20T00:39:19.784947
+,Emirates Global Aluminium (EGA),Steel Scrap,waste,150,tons,Steel scrap from Emirates Global Aluminium (EGA) manufacturing,B,45000,True,2025-07-20T00:39:19.798977
+,Emirates Global Aluminium (EGA),Aluminum Waste,waste,50,tons,Aluminum waste from Emirates Global Aluminium (EGA) operations,A,75000,True,2025-07-20T00:39:19.798977
+,Emirates Global Aluminium (EGA),AI Listing 1 for Emirates Global Aluminium (EGA),ai_generated,100,tons,AI-generated material listing 1 for Emirates Global Aluminium (EGA),A,5000,True,2025-07-20T00:39:19.798977
+,Emirates Global Aluminium (EGA),AI Listing 2 for Emirates Global Aluminium (EGA),ai_generated,50,tons,AI-generated material listing 2 for Emirates Global Aluminium (EGA),B,2500,True,2025-07-20T00:39:19.798977
+,Emirates Global Aluminium (EGA),Generic Material - Emirates Global Aluminium (EGA),unknown,100,tons,Generic material from Emirates Global Aluminium (EGA),C,2000,True,2025-07-20T00:39:19.798977
+,Union Cement Company (UCC),Steel Scrap,waste,150,tons,Steel scrap from Union Cement Company (UCC) manufacturing,B,45000,True,2025-07-20T00:39:19.813028
+,Union Cement Company (UCC),Aluminum Waste,waste,50,tons,Aluminum waste from Union Cement Company (UCC) operations,A,75000,True,2025-07-20T00:39:19.814030
+,Union Cement Company (UCC),AI Listing 1 for Union Cement Company (UCC),ai_generated,100,tons,AI-generated material listing 1 for Union Cement Company (UCC),A,5000,True,2025-07-20T00:39:19.814030
+,Union Cement Company (UCC),AI Listing 2 for Union Cement Company (UCC),ai_generated,50,tons,AI-generated material listing 2 for Union Cement Company (UCC),B,2500,True,2025-07-20T00:39:19.814030
+,Union Cement Company (UCC),Generic Material - Union Cement Company (UCC),unknown,100,tons,Generic material from Union Cement Company (UCC),C,2000,True,2025-07-20T00:39:19.814030
+,Emirates Food Industries (EFI),Steel Scrap,waste,150,tons,Steel scrap from Emirates Food Industries (EFI) manufacturing,B,45000,True,2025-07-20T00:39:19.828545
+,Emirates Food Industries (EFI),Aluminum Waste,waste,50,tons,Aluminum waste from Emirates Food Industries (EFI) operations,A,75000,True,2025-07-20T00:39:19.828545
+,Emirates Food Industries (EFI),AI Listing 1 for Emirates Food Industries (EFI),ai_generated,100,tons,AI-generated material listing 1 for Emirates Food Industries (EFI),A,5000,True,2025-07-20T00:39:19.828545
+,Emirates Food Industries (EFI),AI Listing 2 for Emirates Food Industries (EFI),ai_generated,50,tons,AI-generated material listing 2 for Emirates Food Industries (EFI),B,2500,True,2025-07-20T00:39:19.828545
+,Emirates Food Industries (EFI),Generic Material - Emirates Food Industries (EFI),unknown,100,tons,Generic material from Emirates Food Industries (EFI),C,2000,True,2025-07-20T00:39:19.828545
+,DP World,General Waste,waste,100,tons,General waste from DP World operations,C,20000,True,2025-07-20T00:39:19.842583
+,DP World,AI Listing 1 for DP World,ai_generated,100,tons,AI-generated material listing 1 for DP World,A,5000,True,2025-07-20T00:39:19.842583
+,DP World,AI Listing 2 for DP World,ai_generated,50,tons,AI-generated material listing 2 for DP World,B,2500,True,2025-07-20T00:39:19.842583
+,DP World,Generic Material - DP World,unknown,100,tons,Generic material from DP World,C,2000,True,2025-07-20T00:39:19.842583
+,Dubai Aluminium (DUBAL),Steel Scrap,waste,150,tons,Steel scrap from Dubai Aluminium (DUBAL) manufacturing,B,45000,True,2025-07-20T00:39:19.853093
+,Dubai Aluminium (DUBAL),Aluminum Waste,waste,50,tons,Aluminum waste from Dubai Aluminium (DUBAL) operations,A,75000,True,2025-07-20T00:39:19.853093
+,Dubai Aluminium (DUBAL),AI Listing 1 for Dubai Aluminium (DUBAL),ai_generated,100,tons,AI-generated material listing 1 for Dubai Aluminium (DUBAL),A,5000,True,2025-07-20T00:39:19.853093
+,Dubai Aluminium (DUBAL),AI Listing 2 for Dubai Aluminium (DUBAL),ai_generated,50,tons,AI-generated material listing 2 for Dubai Aluminium (DUBAL),B,2500,True,2025-07-20T00:39:19.853093
+,Dubai Aluminium (DUBAL),Generic Material - Dubai Aluminium (DUBAL),unknown,100,tons,Generic material from Dubai Aluminium (DUBAL),C,2000,True,2025-07-20T00:39:19.853093
+,Saudi Electricity Company (SEC),General Waste,waste,100,tons,General waste from Saudi Electricity Company (SEC) operations,C,20000,True,2025-07-20T00:39:19.869264
+,Saudi Electricity Company (SEC),AI Listing 1 for Saudi Electricity Company (SEC),ai_generated,100,tons,AI-generated material listing 1 for Saudi Electricity Company (SEC),A,5000,True,2025-07-20T00:39:19.869264
+,Saudi Electricity Company (SEC),AI Listing 2 for Saudi Electricity Company (SEC),ai_generated,50,tons,AI-generated material listing 2 for Saudi Electricity Company (SEC),B,2500,True,2025-07-20T00:39:19.869264
+,Saudi Electricity Company (SEC),Generic Material - Saudi Electricity Company (SEC),unknown,100,tons,Generic material from Saudi Electricity Company (SEC),C,2000,True,2025-07-20T00:39:19.869264
+,ACWA Power,General Waste,waste,100,tons,General waste from ACWA Power operations,C,20000,True,2025-07-20T00:39:19.882347
+,ACWA Power,AI Listing 1 for ACWA Power,ai_generated,100,tons,AI-generated material listing 1 for ACWA Power,A,5000,True,2025-07-20T00:39:19.882347
+,ACWA Power,AI Listing 2 for ACWA Power,ai_generated,50,tons,AI-generated material listing 2 for ACWA Power,B,2500,True,2025-07-20T00:39:19.882347
+,ACWA Power,Generic Material - ACWA Power,unknown,100,tons,Generic material from ACWA Power,C,2000,True,2025-07-20T00:39:19.882347
+,QatarEnergy,Steel Scrap,waste,150,tons,Steel scrap from QatarEnergy manufacturing,B,45000,True,2025-07-20T00:39:19.891879
+,QatarEnergy,Aluminum Waste,waste,50,tons,Aluminum waste from QatarEnergy operations,A,75000,True,2025-07-20T00:39:19.891879
+,QatarEnergy,AI Listing 1 for QatarEnergy,ai_generated,100,tons,AI-generated material listing 1 for QatarEnergy,A,5000,True,2025-07-20T00:39:19.891879
+,QatarEnergy,AI Listing 2 for QatarEnergy,ai_generated,50,tons,AI-generated material listing 2 for QatarEnergy,B,2500,True,2025-07-20T00:39:19.891879
+,QatarEnergy,Generic Material - QatarEnergy,unknown,100,tons,Generic material from QatarEnergy,C,2000,True,2025-07-20T00:39:19.891879
+,Qatar Fertiliser Company (QAFCO),Steel Scrap,waste,150,tons,Steel scrap from Qatar Fertiliser Company (QAFCO) manufacturing,B,45000,True,2025-07-20T00:39:19.902502
+,Qatar Fertiliser Company (QAFCO),Aluminum Waste,waste,50,tons,Aluminum waste from Qatar Fertiliser Company (QAFCO) operations,A,75000,True,2025-07-20T00:39:19.902502
+,Qatar Fertiliser Company (QAFCO),AI Listing 1 for Qatar Fertiliser Company (QAFCO),ai_generated,100,tons,AI-generated material listing 1 for Qatar Fertiliser Company (QAFCO),A,5000,True,2025-07-20T00:39:19.902502
+,Qatar Fertiliser Company (QAFCO),AI Listing 2 for Qatar Fertiliser Company (QAFCO),ai_generated,50,tons,AI-generated material listing 2 for Qatar Fertiliser Company (QAFCO),B,2500,True,2025-07-20T00:39:19.902502
+,Qatar Fertiliser Company (QAFCO),Generic Material - Qatar Fertiliser Company (QAFCO),unknown,100,tons,Generic material from Qatar Fertiliser Company (QAFCO),C,2000,True,2025-07-20T00:39:19.902502
+,Oman Oil Company (OOC) / OQ,Steel Scrap,waste,150,tons,Steel scrap from Oman Oil Company (OOC) / OQ manufacturing,B,45000,True,2025-07-20T00:39:19.913379
+,Oman Oil Company (OOC) / OQ,Aluminum Waste,waste,50,tons,Aluminum waste from Oman Oil Company (OOC) / OQ operations,A,75000,True,2025-07-20T00:39:19.913379
+,Oman Oil Company (OOC) / OQ,AI Listing 1 for Oman Oil Company (OOC) / OQ,ai_generated,100,tons,AI-generated material listing 1 for Oman Oil Company (OOC) / OQ,A,5000,True,2025-07-20T00:39:19.913379
+,Oman Oil Company (OOC) / OQ,AI Listing 2 for Oman Oil Company (OOC) / OQ,ai_generated,50,tons,AI-generated material listing 2 for Oman Oil Company (OOC) / OQ,B,2500,True,2025-07-20T00:39:19.913379
+,Oman Oil Company (OOC) / OQ,Generic Material - Oman Oil Company (OOC) / OQ,unknown,100,tons,Generic material from Oman Oil Company (OOC) / OQ,C,2000,True,2025-07-20T00:39:19.913379
+,Kuwait National Petroleum Company (KNPC),Steel Scrap,waste,150,tons,Steel scrap from Kuwait National Petroleum Company (KNPC) manufacturing,B,45000,True,2025-07-20T00:39:19.925905
+,Kuwait National Petroleum Company (KNPC),Aluminum Waste,waste,50,tons,Aluminum waste from Kuwait National Petroleum Company (KNPC) operations,A,75000,True,2025-07-20T00:39:19.925905
+,Kuwait National Petroleum Company (KNPC),AI Listing 1 for Kuwait National Petroleum Company (KNPC),ai_generated,100,tons,AI-generated material listing 1 for Kuwait National Petroleum Company (KNPC),A,5000,True,2025-07-20T00:39:19.925905
+,Kuwait National Petroleum Company (KNPC),AI Listing 2 for Kuwait National Petroleum Company (KNPC),ai_generated,50,tons,AI-generated material listing 2 for Kuwait National Petroleum Company (KNPC),B,2500,True,2025-07-20T00:39:19.925905
+,Kuwait National Petroleum Company (KNPC),Generic Material - Kuwait National Petroleum Company (KNPC),unknown,100,tons,Generic material from Kuwait National Petroleum Company (KNPC),C,2000,True,2025-07-20T00:39:19.925905
+,Aluminium Bahrain (Alba),Steel Scrap,waste,150,tons,Steel scrap from Aluminium Bahrain (Alba) manufacturing,B,45000,True,2025-07-20T00:39:19.938448
+,Aluminium Bahrain (Alba),Aluminum Waste,waste,50,tons,Aluminum waste from Aluminium Bahrain (Alba) operations,A,75000,True,2025-07-20T00:39:19.938448
+,Aluminium Bahrain (Alba),AI Listing 1 for Aluminium Bahrain (Alba),ai_generated,100,tons,AI-generated material listing 1 for Aluminium Bahrain (Alba),A,5000,True,2025-07-20T00:39:19.938448
+,Aluminium Bahrain (Alba),AI Listing 2 for Aluminium Bahrain (Alba),ai_generated,50,tons,AI-generated material listing 2 for Aluminium Bahrain (Alba),B,2500,True,2025-07-20T00:39:19.938448
+,Aluminium Bahrain (Alba),Generic Material - Aluminium Bahrain (Alba),unknown,100,tons,Generic material from Aluminium Bahrain (Alba),C,2000,True,2025-07-20T00:39:19.938448
+,Saudi Basic Industries Corporation (SABIC),Steel Scrap,waste,150,tons,Steel scrap from Saudi Basic Industries Corporation (SABIC) manufacturing,B,45000,True,2025-07-20T00:39:19.952519
+,Saudi Basic Industries Corporation (SABIC),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Basic Industries Corporation (SABIC) operations,A,75000,True,2025-07-20T00:39:19.952519
+,Saudi Basic Industries Corporation (SABIC),AI Listing 1 for Saudi Basic Industries Corporation (SABIC),ai_generated,100,tons,AI-generated material listing 1 for Saudi Basic Industries Corporation (SABIC),A,5000,True,2025-07-20T00:39:19.952519
+,Saudi Basic Industries Corporation (SABIC),AI Listing 2 for Saudi Basic Industries Corporation (SABIC),ai_generated,50,tons,AI-generated material listing 2 for Saudi Basic Industries Corporation (SABIC),B,2500,True,2025-07-20T00:39:19.952519
+,Saudi Basic Industries Corporation (SABIC),Generic Material - Saudi Basic Industries Corporation (SABIC),unknown,100,tons,Generic material from Saudi Basic Industries Corporation (SABIC),C,2000,True,2025-07-20T00:39:19.952519
+,Saudi Arabian Mining Company (Ma'aden),Steel Scrap,waste,150,tons,Steel scrap from Saudi Arabian Mining Company (Ma'aden) manufacturing,B,45000,True,2025-07-20T00:39:19.965059
+,Saudi Arabian Mining Company (Ma'aden),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Arabian Mining Company (Ma'aden) operations,A,75000,True,2025-07-20T00:39:19.965059
+,Saudi Arabian Mining Company (Ma'aden),AI Listing 1 for Saudi Arabian Mining Company (Ma'aden),ai_generated,100,tons,AI-generated material listing 1 for Saudi Arabian Mining Company (Ma'aden),A,5000,True,2025-07-20T00:39:19.965059
+,Saudi Arabian Mining Company (Ma'aden),AI Listing 2 for Saudi Arabian Mining Company (Ma'aden),ai_generated,50,tons,AI-generated material listing 2 for Saudi Arabian Mining Company (Ma'aden),B,2500,True,2025-07-20T00:39:19.965059
+,Saudi Arabian Mining Company (Ma'aden),Generic Material - Saudi Arabian Mining Company (Ma'aden),unknown,100,tons,Generic material from Saudi Arabian Mining Company (Ma'aden),C,2000,True,2025-07-20T00:39:19.965059
+,Emirates Steel,Steel Scrap,waste,150,tons,Steel scrap from Emirates Steel manufacturing,B,45000,True,2025-07-20T00:39:19.978589
+,Emirates Steel,Aluminum Waste,waste,50,tons,Aluminum waste from Emirates Steel operations,A,75000,True,2025-07-20T00:39:19.978589
+,Emirates Steel,AI Listing 1 for Emirates Steel,ai_generated,100,tons,AI-generated material listing 1 for Emirates Steel,A,5000,True,2025-07-20T00:39:19.978589
+,Emirates Steel,AI Listing 2 for Emirates Steel,ai_generated,50,tons,AI-generated material listing 2 for Emirates Steel,B,2500,True,2025-07-20T00:39:19.978589
+,Emirates Steel,Generic Material - Emirates Steel,unknown,100,tons,Generic material from Emirates Steel,C,2000,True,2025-07-20T00:39:19.978589
+,Qatar Steel,Steel Scrap,waste,150,tons,Steel scrap from Qatar Steel manufacturing,B,45000,True,2025-07-20T00:39:19.991644
+,Qatar Steel,Aluminum Waste,waste,50,tons,Aluminum waste from Qatar Steel operations,A,75000,True,2025-07-20T00:39:19.991644
+,Qatar Steel,AI Listing 1 for Qatar Steel,ai_generated,100,tons,AI-generated material listing 1 for Qatar Steel,A,5000,True,2025-07-20T00:39:19.991644
+,Qatar Steel,AI Listing 2 for Qatar Steel,ai_generated,50,tons,AI-generated material listing 2 for Qatar Steel,B,2500,True,2025-07-20T00:39:19.991644
+,Qatar Steel,Generic Material - Qatar Steel,unknown,100,tons,Generic material from Qatar Steel,C,2000,True,2025-07-20T00:39:19.991644
+,Arab Potash Company (APC),Steel Scrap,waste,150,tons,Steel scrap from Arab Potash Company (APC) manufacturing,B,45000,True,2025-07-20T00:39:20.003354
+,Arab Potash Company (APC),Aluminum Waste,waste,50,tons,Aluminum waste from Arab Potash Company (APC) operations,A,75000,True,2025-07-20T00:39:20.003354
+,Arab Potash Company (APC),AI Listing 1 for Arab Potash Company (APC),ai_generated,100,tons,AI-generated material listing 1 for Arab Potash Company (APC),A,5000,True,2025-07-20T00:39:20.003354
+,Arab Potash Company (APC),AI Listing 2 for Arab Potash Company (APC),ai_generated,50,tons,AI-generated material listing 2 for Arab Potash Company (APC),B,2500,True,2025-07-20T00:39:20.003354
+,Arab Potash Company (APC),Generic Material - Arab Potash Company (APC),unknown,100,tons,Generic material from Arab Potash Company (APC),C,2000,True,2025-07-20T00:39:20.003354
+,Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,Steel Scrap,waste,150,tons,Steel scrap from Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries manufacturing,B,45000,True,2025-07-20T00:39:20.013874
+,Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,Aluminum Waste,waste,50,tons,Aluminum waste from Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries operations,A,75000,True,2025-07-20T00:39:20.013874
+,Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,AI Listing 1 for Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,ai_generated,100,tons,AI-generated material listing 1 for Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,A,5000,True,2025-07-20T00:39:20.013874
+,Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,AI Listing 2 for Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,ai_generated,50,tons,AI-generated material listing 2 for Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,B,2500,True,2025-07-20T00:39:20.013874
+,Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,Generic Material - Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,unknown,100,tons,Generic material from Oman Refineries and Petroleum Industries Company (ORPIC) / OQ Refineries,C,2000,True,2025-07-20T00:39:20.013874
+,Saudi Arabian Fertiliser Company (SAFCO),Steel Scrap,waste,150,tons,Steel scrap from Saudi Arabian Fertiliser Company (SAFCO) manufacturing,B,45000,True,2025-07-20T00:39:20.026025
+,Saudi Arabian Fertiliser Company (SAFCO),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Arabian Fertiliser Company (SAFCO) operations,A,75000,True,2025-07-20T00:39:20.026025
+,Saudi Arabian Fertiliser Company (SAFCO),AI Listing 1 for Saudi Arabian Fertiliser Company (SAFCO),ai_generated,100,tons,AI-generated material listing 1 for Saudi Arabian Fertiliser Company (SAFCO),A,5000,True,2025-07-20T00:39:20.026025
+,Saudi Arabian Fertiliser Company (SAFCO),AI Listing 2 for Saudi Arabian Fertiliser Company (SAFCO),ai_generated,50,tons,AI-generated material listing 2 for Saudi Arabian Fertiliser Company (SAFCO),B,2500,True,2025-07-20T00:39:20.026025
+,Saudi Arabian Fertiliser Company (SAFCO),Generic Material - Saudi Arabian Fertiliser Company (SAFCO),unknown,100,tons,Generic material from Saudi Arabian Fertiliser Company (SAFCO),C,2000,True,2025-07-20T00:39:20.026025
+,Gulf Petrochemicals Industries Company (GPIC),Steel Scrap,waste,150,tons,Steel scrap from Gulf Petrochemicals Industries Company (GPIC) manufacturing,B,45000,True,2025-07-20T00:39:20.036544
+,Gulf Petrochemicals Industries Company (GPIC),Aluminum Waste,waste,50,tons,Aluminum waste from Gulf Petrochemicals Industries Company (GPIC) operations,A,75000,True,2025-07-20T00:39:20.036544
+,Gulf Petrochemicals Industries Company (GPIC),AI Listing 1 for Gulf Petrochemicals Industries Company (GPIC),ai_generated,100,tons,AI-generated material listing 1 for Gulf Petrochemicals Industries Company (GPIC),A,5000,True,2025-07-20T00:39:20.036544
+,Gulf Petrochemicals Industries Company (GPIC),AI Listing 2 for Gulf Petrochemicals Industries Company (GPIC),ai_generated,50,tons,AI-generated material listing 2 for Gulf Petrochemicals Industries Company (GPIC),B,2500,True,2025-07-20T00:39:20.036544
+,Gulf Petrochemicals Industries Company (GPIC),Generic Material - Gulf Petrochemicals Industries Company (GPIC),unknown,100,tons,Generic material from Gulf Petrochemicals Industries Company (GPIC),C,2000,True,2025-07-20T00:39:20.036544
+,Nesma & Partners,General Waste,waste,100,tons,General waste from Nesma & Partners operations,C,20000,True,2025-07-20T00:39:20.048081
+,Nesma & Partners,AI Listing 1 for Nesma & Partners,ai_generated,100,tons,AI-generated material listing 1 for Nesma & Partners,A,5000,True,2025-07-20T00:39:20.048081
+,Nesma & Partners,AI Listing 2 for Nesma & Partners,ai_generated,50,tons,AI-generated material listing 2 for Nesma & Partners,B,2500,True,2025-07-20T00:39:20.048081
+,Nesma & Partners,Generic Material - Nesma & Partners,unknown,100,tons,Generic material from Nesma & Partners,C,2000,True,2025-07-20T00:39:20.048081
+,Agthia Group PJSC,Steel Scrap,waste,150,tons,Steel scrap from Agthia Group PJSC manufacturing,B,45000,True,2025-07-20T00:39:20.058611
+,Agthia Group PJSC,Aluminum Waste,waste,50,tons,Aluminum waste from Agthia Group PJSC operations,A,75000,True,2025-07-20T00:39:20.058611
+,Agthia Group PJSC,AI Listing 1 for Agthia Group PJSC,ai_generated,100,tons,AI-generated material listing 1 for Agthia Group PJSC,A,5000,True,2025-07-20T00:39:20.058611
+,Agthia Group PJSC,AI Listing 2 for Agthia Group PJSC,ai_generated,50,tons,AI-generated material listing 2 for Agthia Group PJSC,B,2500,True,2025-07-20T00:39:20.058611
+,Agthia Group PJSC,Generic Material - Agthia Group PJSC,unknown,100,tons,Generic material from Agthia Group PJSC,C,2000,True,2025-07-20T00:39:20.058611
+,Equate Petrochemical Company,Steel Scrap,waste,150,tons,Steel scrap from Equate Petrochemical Company manufacturing,B,45000,True,2025-07-20T00:39:20.071349
+,Equate Petrochemical Company,Aluminum Waste,waste,50,tons,Aluminum waste from Equate Petrochemical Company operations,A,75000,True,2025-07-20T00:39:20.071349
+,Equate Petrochemical Company,AI Listing 1 for Equate Petrochemical Company,ai_generated,100,tons,AI-generated material listing 1 for Equate Petrochemical Company,A,5000,True,2025-07-20T00:39:20.071349
+,Equate Petrochemical Company,AI Listing 2 for Equate Petrochemical Company,ai_generated,50,tons,AI-generated material listing 2 for Equate Petrochemical Company,B,2500,True,2025-07-20T00:39:20.071349
+,Equate Petrochemical Company,Generic Material - Equate Petrochemical Company,unknown,100,tons,Generic material from Equate Petrochemical Company,C,2000,True,2025-07-20T00:39:20.071349
+,Saudi Cement Company,Steel Scrap,waste,150,tons,Steel scrap from Saudi Cement Company manufacturing,B,45000,True,2025-07-20T00:39:20.081877
+,Saudi Cement Company,Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Cement Company operations,A,75000,True,2025-07-20T00:39:20.081877
+,Saudi Cement Company,AI Listing 1 for Saudi Cement Company,ai_generated,100,tons,AI-generated material listing 1 for Saudi Cement Company,A,5000,True,2025-07-20T00:39:20.081877
+,Saudi Cement Company,AI Listing 2 for Saudi Cement Company,ai_generated,50,tons,AI-generated material listing 2 for Saudi Cement Company,B,2500,True,2025-07-20T00:39:20.081877
+,Saudi Cement Company,Generic Material - Saudi Cement Company,unknown,100,tons,Generic material from Saudi Cement Company,C,2000,True,2025-07-20T00:39:20.081877
+,QatarEnergy,Steel Scrap,waste,150,tons,Steel scrap from QatarEnergy manufacturing,B,45000,True,2025-07-20T00:39:20.094333
+,QatarEnergy,Aluminum Waste,waste,50,tons,Aluminum waste from QatarEnergy operations,A,75000,True,2025-07-20T00:39:20.094333
+,QatarEnergy,AI Listing 1 for QatarEnergy,ai_generated,100,tons,AI-generated material listing 1 for QatarEnergy,A,5000,True,2025-07-20T00:39:20.094333
+,QatarEnergy,AI Listing 2 for QatarEnergy,ai_generated,50,tons,AI-generated material listing 2 for QatarEnergy,B,2500,True,2025-07-20T00:39:20.094333
+,QatarEnergy,Generic Material - QatarEnergy,unknown,100,tons,Generic material from QatarEnergy,C,2000,True,2025-07-20T00:39:20.094333
+,Oman Cement Company,Steel Scrap,waste,150,tons,Steel scrap from Oman Cement Company manufacturing,B,45000,True,2025-07-20T00:39:20.105368
+,Oman Cement Company,Aluminum Waste,waste,50,tons,Aluminum waste from Oman Cement Company operations,A,75000,True,2025-07-20T00:39:20.105368
+,Oman Cement Company,AI Listing 1 for Oman Cement Company,ai_generated,100,tons,AI-generated material listing 1 for Oman Cement Company,A,5000,True,2025-07-20T00:39:20.105368
+,Oman Cement Company,AI Listing 2 for Oman Cement Company,ai_generated,50,tons,AI-generated material listing 2 for Oman Cement Company,B,2500,True,2025-07-20T00:39:20.105368
+,Oman Cement Company,Generic Material - Oman Cement Company,unknown,100,tons,Generic material from Oman Cement Company,C,2000,True,2025-07-20T00:39:20.105368
+,Qatar Aluminium (Qatalum),Steel Scrap,waste,150,tons,Steel scrap from Qatar Aluminium (Qatalum) manufacturing,B,45000,True,2025-07-20T00:39:20.115890
+,Qatar Aluminium (Qatalum),Aluminum Waste,waste,50,tons,Aluminum waste from Qatar Aluminium (Qatalum) operations,A,75000,True,2025-07-20T00:39:20.115890
+,Qatar Aluminium (Qatalum),AI Listing 1 for Qatar Aluminium (Qatalum),ai_generated,100,tons,AI-generated material listing 1 for Qatar Aluminium (Qatalum),A,5000,True,2025-07-20T00:39:20.115890
+,Qatar Aluminium (Qatalum),AI Listing 2 for Qatar Aluminium (Qatalum),ai_generated,50,tons,AI-generated material listing 2 for Qatar Aluminium (Qatalum),B,2500,True,2025-07-20T00:39:20.115890
+,Qatar Aluminium (Qatalum),Generic Material - Qatar Aluminium (Qatalum),unknown,100,tons,Generic material from Qatar Aluminium (Qatalum),C,2000,True,2025-07-20T00:39:20.115890
+,Jordan Phosphate Mines Company (JPMC),Steel Scrap,waste,150,tons,Steel scrap from Jordan Phosphate Mines Company (JPMC) manufacturing,B,45000,True,2025-07-20T00:39:20.128007
+,Jordan Phosphate Mines Company (JPMC),Aluminum Waste,waste,50,tons,Aluminum waste from Jordan Phosphate Mines Company (JPMC) operations,A,75000,True,2025-07-20T00:39:20.128007
+,Jordan Phosphate Mines Company (JPMC),AI Listing 1 for Jordan Phosphate Mines Company (JPMC),ai_generated,100,tons,AI-generated material listing 1 for Jordan Phosphate Mines Company (JPMC),A,5000,True,2025-07-20T00:39:20.128007
+,Jordan Phosphate Mines Company (JPMC),AI Listing 2 for Jordan Phosphate Mines Company (JPMC),ai_generated,50,tons,AI-generated material listing 2 for Jordan Phosphate Mines Company (JPMC),B,2500,True,2025-07-20T00:39:20.128007
+,Jordan Phosphate Mines Company (JPMC),Generic Material - Jordan Phosphate Mines Company (JPMC),unknown,100,tons,Generic material from Jordan Phosphate Mines Company (JPMC),C,2000,True,2025-07-20T00:39:20.128007
+,Gulf Petrochemical Industries Company (GPIC),Steel Scrap,waste,150,tons,Steel scrap from Gulf Petrochemical Industries Company (GPIC) manufacturing,B,45000,True,2025-07-20T00:39:20.140159
+,Gulf Petrochemical Industries Company (GPIC),Aluminum Waste,waste,50,tons,Aluminum waste from Gulf Petrochemical Industries Company (GPIC) operations,A,75000,True,2025-07-20T00:39:20.140159
+,Gulf Petrochemical Industries Company (GPIC),AI Listing 1 for Gulf Petrochemical Industries Company (GPIC),ai_generated,100,tons,AI-generated material listing 1 for Gulf Petrochemical Industries Company (GPIC),A,5000,True,2025-07-20T00:39:20.140159
+,Gulf Petrochemical Industries Company (GPIC),AI Listing 2 for Gulf Petrochemical Industries Company (GPIC),ai_generated,50,tons,AI-generated material listing 2 for Gulf Petrochemical Industries Company (GPIC),B,2500,True,2025-07-20T00:39:20.140159
+,Gulf Petrochemical Industries Company (GPIC),Generic Material - Gulf Petrochemical Industries Company (GPIC),unknown,100,tons,Generic material from Gulf Petrochemical Industries Company (GPIC),C,2000,True,2025-07-20T00:39:20.140159
+,Saudi Aramco Shell Refinery Company (SASREF),Steel Scrap,waste,150,tons,Steel scrap from Saudi Aramco Shell Refinery Company (SASREF) manufacturing,B,45000,True,2025-07-20T00:39:20.151210
+,Saudi Aramco Shell Refinery Company (SASREF),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Aramco Shell Refinery Company (SASREF) operations,A,75000,True,2025-07-20T00:39:20.151210
+,Saudi Aramco Shell Refinery Company (SASREF),AI Listing 1 for Saudi Aramco Shell Refinery Company (SASREF),ai_generated,100,tons,AI-generated material listing 1 for Saudi Aramco Shell Refinery Company (SASREF),A,5000,True,2025-07-20T00:39:20.151210
+,Saudi Aramco Shell Refinery Company (SASREF),AI Listing 2 for Saudi Aramco Shell Refinery Company (SASREF),ai_generated,50,tons,AI-generated material listing 2 for Saudi Aramco Shell Refinery Company (SASREF),B,2500,True,2025-07-20T00:39:20.151210
+,Saudi Aramco Shell Refinery Company (SASREF),Generic Material - Saudi Aramco Shell Refinery Company (SASREF),unknown,100,tons,Generic material from Saudi Aramco Shell Refinery Company (SASREF),C,2000,True,2025-07-20T00:39:20.151210
+,Saudi Aramco Total Refining and Petrochemical Company (SATORP),Steel Scrap,waste,150,tons,Steel scrap from Saudi Aramco Total Refining and Petrochemical Company (SATORP) manufacturing,B,45000,True,2025-07-20T00:39:20.163601
+,Saudi Aramco Total Refining and Petrochemical Company (SATORP),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Aramco Total Refining and Petrochemical Company (SATORP) operations,A,75000,True,2025-07-20T00:39:20.163601
+,Saudi Aramco Total Refining and Petrochemical Company (SATORP),AI Listing 1 for Saudi Aramco Total Refining and Petrochemical Company (SATORP),ai_generated,100,tons,AI-generated material listing 1 for Saudi Aramco Total Refining and Petrochemical Company (SATORP),A,5000,True,2025-07-20T00:39:20.163601
+,Saudi Aramco Total Refining and Petrochemical Company (SATORP),AI Listing 2 for Saudi Aramco Total Refining and Petrochemical Company (SATORP),ai_generated,50,tons,AI-generated material listing 2 for Saudi Aramco Total Refining and Petrochemical Company (SATORP),B,2500,True,2025-07-20T00:39:20.163601
+,Saudi Aramco Total Refining and Petrochemical Company (SATORP),Generic Material - Saudi Aramco Total Refining and Petrochemical Company (SATORP),unknown,100,tons,Generic material from Saudi Aramco Total Refining and Petrochemical Company (SATORP),C,2000,True,2025-07-20T00:39:20.163601
+,Saudi Kayan Petrochemical Company,Steel Scrap,waste,150,tons,Steel scrap from Saudi Kayan Petrochemical Company manufacturing,B,45000,True,2025-07-20T00:39:20.175122
+,Saudi Kayan Petrochemical Company,Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Kayan Petrochemical Company operations,A,75000,True,2025-07-20T00:39:20.176120
+,Saudi Kayan Petrochemical Company,AI Listing 1 for Saudi Kayan Petrochemical Company,ai_generated,100,tons,AI-generated material listing 1 for Saudi Kayan Petrochemical Company,A,5000,True,2025-07-20T00:39:20.176120
+,Saudi Kayan Petrochemical Company,AI Listing 2 for Saudi Kayan Petrochemical Company,ai_generated,50,tons,AI-generated material listing 2 for Saudi Kayan Petrochemical Company,B,2500,True,2025-07-20T00:39:20.176120
+,Saudi Kayan Petrochemical Company,Generic Material - Saudi Kayan Petrochemical Company,unknown,100,tons,Generic material from Saudi Kayan Petrochemical Company,C,2000,True,2025-07-20T00:39:20.176120
+,National Industrialization Company (Tasnee),Steel Scrap,waste,150,tons,Steel scrap from National Industrialization Company (Tasnee) manufacturing,B,45000,True,2025-07-20T00:39:20.183647
+,National Industrialization Company (Tasnee),Aluminum Waste,waste,50,tons,Aluminum waste from National Industrialization Company (Tasnee) operations,A,75000,True,2025-07-20T00:39:20.183647
+,National Industrialization Company (Tasnee),AI Listing 1 for National Industrialization Company (Tasnee),ai_generated,100,tons,AI-generated material listing 1 for National Industrialization Company (Tasnee),A,5000,True,2025-07-20T00:39:20.183647
+,National Industrialization Company (Tasnee),AI Listing 2 for National Industrialization Company (Tasnee),ai_generated,50,tons,AI-generated material listing 2 for National Industrialization Company (Tasnee),B,2500,True,2025-07-20T00:39:20.183647
+,National Industrialization Company (Tasnee),Generic Material - National Industrialization Company (Tasnee),unknown,100,tons,Generic material from National Industrialization Company (Tasnee),C,2000,True,2025-07-20T00:39:20.183647
+,Saudi International Petrochemical Company (SIPCHEM),Steel Scrap,waste,150,tons,Steel scrap from Saudi International Petrochemical Company (SIPCHEM) manufacturing,B,45000,True,2025-07-20T00:39:20.193171
+,Saudi International Petrochemical Company (SIPCHEM),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi International Petrochemical Company (SIPCHEM) operations,A,75000,True,2025-07-20T00:39:20.193171
+,Saudi International Petrochemical Company (SIPCHEM),AI Listing 1 for Saudi International Petrochemical Company (SIPCHEM),ai_generated,100,tons,AI-generated material listing 1 for Saudi International Petrochemical Company (SIPCHEM),A,5000,True,2025-07-20T00:39:20.193171
+,Saudi International Petrochemical Company (SIPCHEM),AI Listing 2 for Saudi International Petrochemical Company (SIPCHEM),ai_generated,50,tons,AI-generated material listing 2 for Saudi International Petrochemical Company (SIPCHEM),B,2500,True,2025-07-20T00:39:20.193171
+,Saudi International Petrochemical Company (SIPCHEM),Generic Material - Saudi International Petrochemical Company (SIPCHEM),unknown,100,tons,Generic material from Saudi International Petrochemical Company (SIPCHEM),C,2000,True,2025-07-20T00:39:20.193171
+,Petrochemical Industries Company (PIC) Kuwait,Steel Scrap,waste,150,tons,Steel scrap from Petrochemical Industries Company (PIC) Kuwait manufacturing,B,45000,True,2025-07-20T00:39:20.203244
+,Petrochemical Industries Company (PIC) Kuwait,Aluminum Waste,waste,50,tons,Aluminum waste from Petrochemical Industries Company (PIC) Kuwait operations,A,75000,True,2025-07-20T00:39:20.203244
+,Petrochemical Industries Company (PIC) Kuwait,AI Listing 1 for Petrochemical Industries Company (PIC) Kuwait,ai_generated,100,tons,AI-generated material listing 1 for Petrochemical Industries Company (PIC) Kuwait,A,5000,True,2025-07-20T00:39:20.203244
+,Petrochemical Industries Company (PIC) Kuwait,AI Listing 2 for Petrochemical Industries Company (PIC) Kuwait,ai_generated,50,tons,AI-generated material listing 2 for Petrochemical Industries Company (PIC) Kuwait,B,2500,True,2025-07-20T00:39:20.203244
+,Petrochemical Industries Company (PIC) Kuwait,Generic Material - Petrochemical Industries Company (PIC) Kuwait,unknown,100,tons,Generic material from Petrochemical Industries Company (PIC) Kuwait,C,2000,True,2025-07-20T00:39:20.203244
+,Saudi Steel Pipe Company,Steel Scrap,waste,150,tons,Steel scrap from Saudi Steel Pipe Company manufacturing,B,45000,True,2025-07-20T00:39:20.212334
+,Saudi Steel Pipe Company,Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Steel Pipe Company operations,A,75000,True,2025-07-20T00:39:20.212334
+,Saudi Steel Pipe Company,AI Listing 1 for Saudi Steel Pipe Company,ai_generated,100,tons,AI-generated material listing 1 for Saudi Steel Pipe Company,A,5000,True,2025-07-20T00:39:20.212334
+,Saudi Steel Pipe Company,AI Listing 2 for Saudi Steel Pipe Company,ai_generated,50,tons,AI-generated material listing 2 for Saudi Steel Pipe Company,B,2500,True,2025-07-20T00:39:20.212334
+,Saudi Steel Pipe Company,Generic Material - Saudi Steel Pipe Company,unknown,100,tons,Generic material from Saudi Steel Pipe Company,C,2000,True,2025-07-20T00:39:20.212334
+,Arabtec Holding PJSC,General Waste,waste,100,tons,General waste from Arabtec Holding PJSC operations,C,20000,True,2025-07-20T00:39:20.221854
+,Arabtec Holding PJSC,AI Listing 1 for Arabtec Holding PJSC,ai_generated,100,tons,AI-generated material listing 1 for Arabtec Holding PJSC,A,5000,True,2025-07-20T00:39:20.221854
+,Arabtec Holding PJSC,AI Listing 2 for Arabtec Holding PJSC,ai_generated,50,tons,AI-generated material listing 2 for Arabtec Holding PJSC,B,2500,True,2025-07-20T00:39:20.221854
+,Arabtec Holding PJSC,Generic Material - Arabtec Holding PJSC,unknown,100,tons,Generic material from Arabtec Holding PJSC,C,2000,True,2025-07-20T00:39:20.221854
+,National Industrialization Company (Tasnee),Steel Scrap,waste,150,tons,Steel scrap from National Industrialization Company (Tasnee) manufacturing,B,45000,True,2025-07-20T00:39:20.228858
+,National Industrialization Company (Tasnee),Aluminum Waste,waste,50,tons,Aluminum waste from National Industrialization Company (Tasnee) operations,A,75000,True,2025-07-20T00:39:20.228858
+,National Industrialization Company (Tasnee),AI Listing 1 for National Industrialization Company (Tasnee),ai_generated,100,tons,AI-generated material listing 1 for National Industrialization Company (Tasnee),A,5000,True,2025-07-20T00:39:20.228858
+,National Industrialization Company (Tasnee),AI Listing 2 for National Industrialization Company (Tasnee),ai_generated,50,tons,AI-generated material listing 2 for National Industrialization Company (Tasnee),B,2500,True,2025-07-20T00:39:20.228858
+,National Industrialization Company (Tasnee),Generic Material - National Industrialization Company (Tasnee),unknown,100,tons,Generic material from National Industrialization Company (Tasnee),C,2000,True,2025-07-20T00:39:20.228858
+,Saudi Arabian Fertiliser Company (SAFCO),Steel Scrap,waste,150,tons,Steel scrap from Saudi Arabian Fertiliser Company (SAFCO) manufacturing,B,45000,True,2025-07-20T00:39:20.236050
+,Saudi Arabian Fertiliser Company (SAFCO),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Arabian Fertiliser Company (SAFCO) operations,A,75000,True,2025-07-20T00:39:20.236050
+,Saudi Arabian Fertiliser Company (SAFCO),AI Listing 1 for Saudi Arabian Fertiliser Company (SAFCO),ai_generated,100,tons,AI-generated material listing 1 for Saudi Arabian Fertiliser Company (SAFCO),A,5000,True,2025-07-20T00:39:20.236050
+,Saudi Arabian Fertiliser Company (SAFCO),AI Listing 2 for Saudi Arabian Fertiliser Company (SAFCO),ai_generated,50,tons,AI-generated material listing 2 for Saudi Arabian Fertiliser Company (SAFCO),B,2500,True,2025-07-20T00:39:20.236050
+,Saudi Arabian Fertiliser Company (SAFCO),Generic Material - Saudi Arabian Fertiliser Company (SAFCO),unknown,100,tons,Generic material from Saudi Arabian Fertiliser Company (SAFCO),C,2000,True,2025-07-20T00:39:20.236050
+,Gulf Aluminium Rolling Mills (GARMCO),Steel Scrap,waste,150,tons,Steel scrap from Gulf Aluminium Rolling Mills (GARMCO) manufacturing,B,45000,True,2025-07-20T00:39:20.245409
+,Gulf Aluminium Rolling Mills (GARMCO),Aluminum Waste,waste,50,tons,Aluminum waste from Gulf Aluminium Rolling Mills (GARMCO) operations,A,75000,True,2025-07-20T00:39:20.245409
+,Gulf Aluminium Rolling Mills (GARMCO),AI Listing 1 for Gulf Aluminium Rolling Mills (GARMCO),ai_generated,100,tons,AI-generated material listing 1 for Gulf Aluminium Rolling Mills (GARMCO),A,5000,True,2025-07-20T00:39:20.245409
+,Gulf Aluminium Rolling Mills (GARMCO),AI Listing 2 for Gulf Aluminium Rolling Mills (GARMCO),ai_generated,50,tons,AI-generated material listing 2 for Gulf Aluminium Rolling Mills (GARMCO),B,2500,True,2025-07-20T00:39:20.245409
+,Gulf Aluminium Rolling Mills (GARMCO),Generic Material - Gulf Aluminium Rolling Mills (GARMCO),unknown,100,tons,Generic material from Gulf Aluminium Rolling Mills (GARMCO),C,2000,True,2025-07-20T00:39:20.245409
+,Saudi Arabian Glass Company (SAGCO),Steel Scrap,waste,150,tons,Steel scrap from Saudi Arabian Glass Company (SAGCO) manufacturing,B,45000,True,2025-07-20T00:39:20.254965
+,Saudi Arabian Glass Company (SAGCO),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Arabian Glass Company (SAGCO) operations,A,75000,True,2025-07-20T00:39:20.254965
+,Saudi Arabian Glass Company (SAGCO),AI Listing 1 for Saudi Arabian Glass Company (SAGCO),ai_generated,100,tons,AI-generated material listing 1 for Saudi Arabian Glass Company (SAGCO),A,5000,True,2025-07-20T00:39:20.254965
+,Saudi Arabian Glass Company (SAGCO),AI Listing 2 for Saudi Arabian Glass Company (SAGCO),ai_generated,50,tons,AI-generated material listing 2 for Saudi Arabian Glass Company (SAGCO),B,2500,True,2025-07-20T00:39:20.254965
+,Saudi Arabian Glass Company (SAGCO),Generic Material - Saudi Arabian Glass Company (SAGCO),unknown,100,tons,Generic material from Saudi Arabian Glass Company (SAGCO),C,2000,True,2025-07-20T00:39:20.254965
+,Kuwait Oil Company (KOC),General Waste,waste,100,tons,General waste from Kuwait Oil Company (KOC) operations,C,20000,True,2025-07-20T00:39:20.265047
+,Kuwait Oil Company (KOC),AI Listing 1 for Kuwait Oil Company (KOC),ai_generated,100,tons,AI-generated material listing 1 for Kuwait Oil Company (KOC),A,5000,True,2025-07-20T00:39:20.265047
+,Kuwait Oil Company (KOC),AI Listing 2 for Kuwait Oil Company (KOC),ai_generated,50,tons,AI-generated material listing 2 for Kuwait Oil Company (KOC),B,2500,True,2025-07-20T00:39:20.265047
+,Kuwait Oil Company (KOC),Generic Material - Kuwait Oil Company (KOC),unknown,100,tons,Generic material from Kuwait Oil Company (KOC),C,2000,True,2025-07-20T00:39:20.265047
+,Al Ghurair Foods,Steel Scrap,waste,150,tons,Steel scrap from Al Ghurair Foods manufacturing,B,45000,True,2025-07-20T00:39:20.276132
+,Al Ghurair Foods,Aluminum Waste,waste,50,tons,Aluminum waste from Al Ghurair Foods operations,A,75000,True,2025-07-20T00:39:20.276132
+,Al Ghurair Foods,AI Listing 1 for Al Ghurair Foods,ai_generated,100,tons,AI-generated material listing 1 for Al Ghurair Foods,A,5000,True,2025-07-20T00:39:20.276132
+,Al Ghurair Foods,AI Listing 2 for Al Ghurair Foods,ai_generated,50,tons,AI-generated material listing 2 for Al Ghurair Foods,B,2500,True,2025-07-20T00:39:20.276132
+,Al Ghurair Foods,Generic Material - Al Ghurair Foods,unknown,100,tons,Generic material from Al Ghurair Foods,C,2000,True,2025-07-20T00:39:20.276132
+,National Cement Company (UAE),Steel Scrap,waste,150,tons,Steel scrap from National Cement Company (UAE) manufacturing,B,45000,True,2025-07-20T00:39:20.285656
+,National Cement Company (UAE),Aluminum Waste,waste,50,tons,Aluminum waste from National Cement Company (UAE) operations,A,75000,True,2025-07-20T00:39:20.285656
+,National Cement Company (UAE),AI Listing 1 for National Cement Company (UAE),ai_generated,100,tons,AI-generated material listing 1 for National Cement Company (UAE),A,5000,True,2025-07-20T00:39:20.285656
+,National Cement Company (UAE),AI Listing 2 for National Cement Company (UAE),ai_generated,50,tons,AI-generated material listing 2 for National Cement Company (UAE),B,2500,True,2025-07-20T00:39:20.285656
+,National Cement Company (UAE),Generic Material - National Cement Company (UAE),unknown,100,tons,Generic material from National Cement Company (UAE),C,2000,True,2025-07-20T00:39:20.285656
+,Qatar Petrochemical Company (QAPCO),Steel Scrap,waste,150,tons,Steel scrap from Qatar Petrochemical Company (QAPCO) manufacturing,B,45000,True,2025-07-20T00:39:20.296342
+,Qatar Petrochemical Company (QAPCO),Aluminum Waste,waste,50,tons,Aluminum waste from Qatar Petrochemical Company (QAPCO) operations,A,75000,True,2025-07-20T00:39:20.296342
+,Qatar Petrochemical Company (QAPCO),AI Listing 1 for Qatar Petrochemical Company (QAPCO),ai_generated,100,tons,AI-generated material listing 1 for Qatar Petrochemical Company (QAPCO),A,5000,True,2025-07-20T00:39:20.296342
+,Qatar Petrochemical Company (QAPCO),AI Listing 2 for Qatar Petrochemical Company (QAPCO),ai_generated,50,tons,AI-generated material listing 2 for Qatar Petrochemical Company (QAPCO),B,2500,True,2025-07-20T00:39:20.296342
+,Qatar Petrochemical Company (QAPCO),Generic Material - Qatar Petrochemical Company (QAPCO),unknown,100,tons,Generic material from Qatar Petrochemical Company (QAPCO),C,2000,True,2025-07-20T00:39:20.296342
+,Ma'aden Phosphate Company,Steel Scrap,waste,150,tons,Steel scrap from Ma'aden Phosphate Company manufacturing,B,45000,True,2025-07-20T00:39:20.307032
+,Ma'aden Phosphate Company,Aluminum Waste,waste,50,tons,Aluminum waste from Ma'aden Phosphate Company operations,A,75000,True,2025-07-20T00:39:20.307032
+,Ma'aden Phosphate Company,AI Listing 1 for Ma'aden Phosphate Company,ai_generated,100,tons,AI-generated material listing 1 for Ma'aden Phosphate Company,A,5000,True,2025-07-20T00:39:20.307032
+,Ma'aden Phosphate Company,AI Listing 2 for Ma'aden Phosphate Company,ai_generated,50,tons,AI-generated material listing 2 for Ma'aden Phosphate Company,B,2500,True,2025-07-20T00:39:20.307032
+,Ma'aden Phosphate Company,Generic Material - Ma'aden Phosphate Company,unknown,100,tons,Generic material from Ma'aden Phosphate Company,C,2000,True,2025-07-20T00:39:20.307032
+,Bahrain Petroleum Company (BAPCO),Steel Scrap,waste,150,tons,Steel scrap from Bahrain Petroleum Company (BAPCO) manufacturing,B,45000,True,2025-07-20T00:39:20.317564
+,Bahrain Petroleum Company (BAPCO),Aluminum Waste,waste,50,tons,Aluminum waste from Bahrain Petroleum Company (BAPCO) operations,A,75000,True,2025-07-20T00:39:20.317564
+,Bahrain Petroleum Company (BAPCO),AI Listing 1 for Bahrain Petroleum Company (BAPCO),ai_generated,100,tons,AI-generated material listing 1 for Bahrain Petroleum Company (BAPCO),A,5000,True,2025-07-20T00:39:20.317564
+,Bahrain Petroleum Company (BAPCO),AI Listing 2 for Bahrain Petroleum Company (BAPCO),ai_generated,50,tons,AI-generated material listing 2 for Bahrain Petroleum Company (BAPCO),B,2500,True,2025-07-20T00:39:20.317564
+,Bahrain Petroleum Company (BAPCO),Generic Material - Bahrain Petroleum Company (BAPCO),unknown,100,tons,Generic material from Bahrain Petroleum Company (BAPCO),C,2000,True,2025-07-20T00:39:20.317564
+,SABIC (Jubail Operations),Steel Scrap,waste,150,tons,Steel scrap from SABIC (Jubail Operations) manufacturing,B,45000,True,2025-07-20T00:39:20.330615
+,SABIC (Jubail Operations),Aluminum Waste,waste,50,tons,Aluminum waste from SABIC (Jubail Operations) operations,A,75000,True,2025-07-20T00:39:20.330615
+,SABIC (Jubail Operations),AI Listing 1 for SABIC (Jubail Operations),ai_generated,100,tons,AI-generated material listing 1 for SABIC (Jubail Operations),A,5000,True,2025-07-20T00:39:20.330615
+,SABIC (Jubail Operations),AI Listing 2 for SABIC (Jubail Operations),ai_generated,50,tons,AI-generated material listing 2 for SABIC (Jubail Operations),B,2500,True,2025-07-20T00:39:20.330615
+,SABIC (Jubail Operations),Generic Material - SABIC (Jubail Operations),unknown,100,tons,Generic material from SABIC (Jubail Operations),C,2000,True,2025-07-20T00:39:20.330615
+,Kuwait Oil Company (KOC),General Waste,waste,100,tons,General waste from Kuwait Oil Company (KOC) operations,C,20000,True,2025-07-20T00:39:20.340130
+,Kuwait Oil Company (KOC),AI Listing 1 for Kuwait Oil Company (KOC),ai_generated,100,tons,AI-generated material listing 1 for Kuwait Oil Company (KOC),A,5000,True,2025-07-20T00:39:20.340130
+,Kuwait Oil Company (KOC),AI Listing 2 for Kuwait Oil Company (KOC),ai_generated,50,tons,AI-generated material listing 2 for Kuwait Oil Company (KOC),B,2500,True,2025-07-20T00:39:20.340130
+,Kuwait Oil Company (KOC),Generic Material - Kuwait Oil Company (KOC),unknown,100,tons,Generic material from Kuwait Oil Company (KOC),C,2000,True,2025-07-20T00:39:20.340130
+,Emirates Building Systems (EBS),Steel Scrap,waste,150,tons,Steel scrap from Emirates Building Systems (EBS) manufacturing,B,45000,True,2025-07-20T00:39:20.348142
+,Emirates Building Systems (EBS),Aluminum Waste,waste,50,tons,Aluminum waste from Emirates Building Systems (EBS) operations,A,75000,True,2025-07-20T00:39:20.348142
+,Emirates Building Systems (EBS),AI Listing 1 for Emirates Building Systems (EBS),ai_generated,100,tons,AI-generated material listing 1 for Emirates Building Systems (EBS),A,5000,True,2025-07-20T00:39:20.348142
+,Emirates Building Systems (EBS),AI Listing 2 for Emirates Building Systems (EBS),ai_generated,50,tons,AI-generated material listing 2 for Emirates Building Systems (EBS),B,2500,True,2025-07-20T00:39:20.348142
+,Emirates Building Systems (EBS),Generic Material - Emirates Building Systems (EBS),unknown,100,tons,Generic material from Emirates Building Systems (EBS),C,2000,True,2025-07-20T00:39:20.348142
+,Jordan Petroleum Refinery Co. Ltd.,Steel Scrap,waste,150,tons,Steel scrap from Jordan Petroleum Refinery Co. Ltd. manufacturing,B,45000,True,2025-07-20T00:39:20.357661
+,Jordan Petroleum Refinery Co. Ltd.,Aluminum Waste,waste,50,tons,Aluminum waste from Jordan Petroleum Refinery Co. Ltd. operations,A,75000,True,2025-07-20T00:39:20.357661
+,Jordan Petroleum Refinery Co. Ltd.,AI Listing 1 for Jordan Petroleum Refinery Co. Ltd.,ai_generated,100,tons,AI-generated material listing 1 for Jordan Petroleum Refinery Co. Ltd.,A,5000,True,2025-07-20T00:39:20.357661
+,Jordan Petroleum Refinery Co. Ltd.,AI Listing 2 for Jordan Petroleum Refinery Co. Ltd.,ai_generated,50,tons,AI-generated material listing 2 for Jordan Petroleum Refinery Co. Ltd.,B,2500,True,2025-07-20T00:39:20.357661
+,Jordan Petroleum Refinery Co. Ltd.,Generic Material - Jordan Petroleum Refinery Co. Ltd.,unknown,100,tons,Generic material from Jordan Petroleum Refinery Co. Ltd.,C,2000,True,2025-07-20T00:39:20.357661
+,Qatar Petrochemical Company (QAPCO),Steel Scrap,waste,150,tons,Steel scrap from Qatar Petrochemical Company (QAPCO) manufacturing,B,45000,True,2025-07-20T00:39:20.370189
+,Qatar Petrochemical Company (QAPCO),Aluminum Waste,waste,50,tons,Aluminum waste from Qatar Petrochemical Company (QAPCO) operations,A,75000,True,2025-07-20T00:39:20.370189
+,Qatar Petrochemical Company (QAPCO),AI Listing 1 for Qatar Petrochemical Company (QAPCO),ai_generated,100,tons,AI-generated material listing 1 for Qatar Petrochemical Company (QAPCO),A,5000,True,2025-07-20T00:39:20.370189
+,Qatar Petrochemical Company (QAPCO),AI Listing 2 for Qatar Petrochemical Company (QAPCO),ai_generated,50,tons,AI-generated material listing 2 for Qatar Petrochemical Company (QAPCO),B,2500,True,2025-07-20T00:39:20.370189
+,Qatar Petrochemical Company (QAPCO),Generic Material - Qatar Petrochemical Company (QAPCO),unknown,100,tons,Generic material from Qatar Petrochemical Company (QAPCO),C,2000,True,2025-07-20T00:39:20.370189
+,Oman Cables Industry,Steel Scrap,waste,150,tons,Steel scrap from Oman Cables Industry manufacturing,B,45000,True,2025-07-20T00:39:20.380844
+,Oman Cables Industry,Aluminum Waste,waste,50,tons,Aluminum waste from Oman Cables Industry operations,A,75000,True,2025-07-20T00:39:20.380844
+,Oman Cables Industry,AI Listing 1 for Oman Cables Industry,ai_generated,100,tons,AI-generated material listing 1 for Oman Cables Industry,A,5000,True,2025-07-20T00:39:20.380844
+,Oman Cables Industry,AI Listing 2 for Oman Cables Industry,ai_generated,50,tons,AI-generated material listing 2 for Oman Cables Industry,B,2500,True,2025-07-20T00:39:20.380844
+,Oman Cables Industry,Generic Material - Oman Cables Industry,unknown,100,tons,Generic material from Oman Cables Industry,C,2000,True,2025-07-20T00:39:20.380844
+,Fine Hygienic Holding,Steel Scrap,waste,150,tons,Steel scrap from Fine Hygienic Holding manufacturing,B,45000,True,2025-07-20T00:39:20.392261
+,Fine Hygienic Holding,Aluminum Waste,waste,50,tons,Aluminum waste from Fine Hygienic Holding operations,A,75000,True,2025-07-20T00:39:20.392261
+,Fine Hygienic Holding,AI Listing 1 for Fine Hygienic Holding,ai_generated,100,tons,AI-generated material listing 1 for Fine Hygienic Holding,A,5000,True,2025-07-20T00:39:20.392261
+,Fine Hygienic Holding,AI Listing 2 for Fine Hygienic Holding,ai_generated,50,tons,AI-generated material listing 2 for Fine Hygienic Holding,B,2500,True,2025-07-20T00:39:20.392261
+,Fine Hygienic Holding,Generic Material - Fine Hygienic Holding,unknown,100,tons,Generic material from Fine Hygienic Holding,C,2000,True,2025-07-20T00:39:20.392261
+,Kuwait Cement Company,Steel Scrap,waste,150,tons,Steel scrap from Kuwait Cement Company manufacturing,B,45000,True,2025-07-20T00:39:20.403337
+,Kuwait Cement Company,Aluminum Waste,waste,50,tons,Aluminum waste from Kuwait Cement Company operations,A,75000,True,2025-07-20T00:39:20.403337
+,Kuwait Cement Company,AI Listing 1 for Kuwait Cement Company,ai_generated,100,tons,AI-generated material listing 1 for Kuwait Cement Company,A,5000,True,2025-07-20T00:39:20.403337
+,Kuwait Cement Company,AI Listing 2 for Kuwait Cement Company,ai_generated,50,tons,AI-generated material listing 2 for Kuwait Cement Company,B,2500,True,2025-07-20T00:39:20.403337
+,Kuwait Cement Company,Generic Material - Kuwait Cement Company,unknown,100,tons,Generic material from Kuwait Cement Company,C,2000,True,2025-07-20T00:39:20.403337
+,Bahrain Flour Mills Company,Steel Scrap,waste,150,tons,Steel scrap from Bahrain Flour Mills Company manufacturing,B,45000,True,2025-07-20T00:39:20.416876
+,Bahrain Flour Mills Company,Aluminum Waste,waste,50,tons,Aluminum waste from Bahrain Flour Mills Company operations,A,75000,True,2025-07-20T00:39:20.416876
+,Bahrain Flour Mills Company,AI Listing 1 for Bahrain Flour Mills Company,ai_generated,100,tons,AI-generated material listing 1 for Bahrain Flour Mills Company,A,5000,True,2025-07-20T00:39:20.416876
+,Bahrain Flour Mills Company,AI Listing 2 for Bahrain Flour Mills Company,ai_generated,50,tons,AI-generated material listing 2 for Bahrain Flour Mills Company,B,2500,True,2025-07-20T00:39:20.416876
+,Bahrain Flour Mills Company,Generic Material - Bahrain Flour Mills Company,unknown,100,tons,Generic material from Bahrain Flour Mills Company,C,2000,True,2025-07-20T00:39:20.416876
+,Advanced Petrochemical Company,Steel Scrap,waste,150,tons,Steel scrap from Advanced Petrochemical Company manufacturing,B,45000,True,2025-07-20T00:39:20.429967
+,Advanced Petrochemical Company,Aluminum Waste,waste,50,tons,Aluminum waste from Advanced Petrochemical Company operations,A,75000,True,2025-07-20T00:39:20.429967
+,Advanced Petrochemical Company,AI Listing 1 for Advanced Petrochemical Company,ai_generated,100,tons,AI-generated material listing 1 for Advanced Petrochemical Company,A,5000,True,2025-07-20T00:39:20.429967
+,Advanced Petrochemical Company,AI Listing 2 for Advanced Petrochemical Company,ai_generated,50,tons,AI-generated material listing 2 for Advanced Petrochemical Company,B,2500,True,2025-07-20T00:39:20.429967
+,Advanced Petrochemical Company,Generic Material - Advanced Petrochemical Company,unknown,100,tons,Generic material from Advanced Petrochemical Company,C,2000,True,2025-07-20T00:39:20.429967
+,Sohar Aluminium,Steel Scrap,waste,150,tons,Steel scrap from Sohar Aluminium manufacturing,B,45000,True,2025-07-20T00:39:20.443097
+,Sohar Aluminium,Aluminum Waste,waste,50,tons,Aluminum waste from Sohar Aluminium operations,A,75000,True,2025-07-20T00:39:20.443097
+,Sohar Aluminium,AI Listing 1 for Sohar Aluminium,ai_generated,100,tons,AI-generated material listing 1 for Sohar Aluminium,A,5000,True,2025-07-20T00:39:20.443097
+,Sohar Aluminium,AI Listing 2 for Sohar Aluminium,ai_generated,50,tons,AI-generated material listing 2 for Sohar Aluminium,B,2500,True,2025-07-20T00:39:20.443097
+,Sohar Aluminium,Generic Material - Sohar Aluminium,unknown,100,tons,Generic material from Sohar Aluminium,C,2000,True,2025-07-20T00:39:20.443097
+,Savola Group,General Waste,waste,100,tons,General waste from Savola Group operations,C,20000,True,2025-07-20T00:39:20.452274
+,Savola Group,AI Listing 1 for Savola Group,ai_generated,100,tons,AI-generated material listing 1 for Savola Group,A,5000,True,2025-07-20T00:39:20.452274
+,Savola Group,AI Listing 2 for Savola Group,ai_generated,50,tons,AI-generated material listing 2 for Savola Group,B,2500,True,2025-07-20T00:39:20.452274
+,Savola Group,Generic Material - Savola Group,unknown,100,tons,Generic material from Savola Group,C,2000,True,2025-07-20T00:39:20.452274
+,Oman Flour Mills Co. SAOG,Steel Scrap,waste,150,tons,Steel scrap from Oman Flour Mills Co. SAOG manufacturing,B,45000,True,2025-07-20T00:39:20.463830
+,Oman Flour Mills Co. SAOG,Aluminum Waste,waste,50,tons,Aluminum waste from Oman Flour Mills Co. SAOG operations,A,75000,True,2025-07-20T00:39:20.463830
+,Oman Flour Mills Co. SAOG,AI Listing 1 for Oman Flour Mills Co. SAOG,ai_generated,100,tons,AI-generated material listing 1 for Oman Flour Mills Co. SAOG,A,5000,True,2025-07-20T00:39:20.463830
+,Oman Flour Mills Co. SAOG,AI Listing 2 for Oman Flour Mills Co. SAOG,ai_generated,50,tons,AI-generated material listing 2 for Oman Flour Mills Co. SAOG,B,2500,True,2025-07-20T00:39:20.463830
+,Oman Flour Mills Co. SAOG,Generic Material - Oman Flour Mills Co. SAOG,unknown,100,tons,Generic material from Oman Flour Mills Co. SAOG,C,2000,True,2025-07-20T00:39:20.463830
+,Qatar Steel,Steel Scrap,waste,150,tons,Steel scrap from Qatar Steel manufacturing,B,45000,True,2025-07-20T00:39:20.478116
+,Qatar Steel,Aluminum Waste,waste,50,tons,Aluminum waste from Qatar Steel operations,A,75000,True,2025-07-20T00:39:20.478116
+,Qatar Steel,AI Listing 1 for Qatar Steel,ai_generated,100,tons,AI-generated material listing 1 for Qatar Steel,A,5000,True,2025-07-20T00:39:20.478116
+,Qatar Steel,AI Listing 2 for Qatar Steel,ai_generated,50,tons,AI-generated material listing 2 for Qatar Steel,B,2500,True,2025-07-20T00:39:20.478116
+,Qatar Steel,Generic Material - Qatar Steel,unknown,100,tons,Generic material from Qatar Steel,C,2000,True,2025-07-20T00:39:20.478116
+,Saudi Aramco Ras Tanura Refinery,Steel Scrap,waste,150,tons,Steel scrap from Saudi Aramco Ras Tanura Refinery manufacturing,B,45000,True,2025-07-20T00:39:20.489290
+,Saudi Aramco Ras Tanura Refinery,Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Aramco Ras Tanura Refinery operations,A,75000,True,2025-07-20T00:39:20.489290
+,Saudi Aramco Ras Tanura Refinery,AI Listing 1 for Saudi Aramco Ras Tanura Refinery,ai_generated,100,tons,AI-generated material listing 1 for Saudi Aramco Ras Tanura Refinery,A,5000,True,2025-07-20T00:39:20.489290
+,Saudi Aramco Ras Tanura Refinery,AI Listing 2 for Saudi Aramco Ras Tanura Refinery,ai_generated,50,tons,AI-generated material listing 2 for Saudi Aramco Ras Tanura Refinery,B,2500,True,2025-07-20T00:39:20.489290
+,Saudi Aramco Ras Tanura Refinery,Generic Material - Saudi Aramco Ras Tanura Refinery,unknown,100,tons,Generic material from Saudi Aramco Ras Tanura Refinery,C,2000,True,2025-07-20T00:39:20.489290
+,Ma'aden Aluminum,Steel Scrap,waste,150,tons,Steel scrap from Ma'aden Aluminum manufacturing,B,45000,True,2025-07-20T00:39:20.503882
+,Ma'aden Aluminum,Aluminum Waste,waste,50,tons,Aluminum waste from Ma'aden Aluminum operations,A,75000,True,2025-07-20T00:39:20.503882
+,Ma'aden Aluminum,AI Listing 1 for Ma'aden Aluminum,ai_generated,100,tons,AI-generated material listing 1 for Ma'aden Aluminum,A,5000,True,2025-07-20T00:39:20.503882
+,Ma'aden Aluminum,AI Listing 2 for Ma'aden Aluminum,ai_generated,50,tons,AI-generated material listing 2 for Ma'aden Aluminum,B,2500,True,2025-07-20T00:39:20.503882
+,Ma'aden Aluminum,Generic Material - Ma'aden Aluminum,unknown,100,tons,Generic material from Ma'aden Aluminum,C,2000,True,2025-07-20T00:39:20.503882
+,Saudi Aramco Yanbu Refinery,Steel Scrap,waste,150,tons,Steel scrap from Saudi Aramco Yanbu Refinery manufacturing,B,45000,True,2025-07-20T00:39:20.515017
+,Saudi Aramco Yanbu Refinery,Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Aramco Yanbu Refinery operations,A,75000,True,2025-07-20T00:39:20.515017
+,Saudi Aramco Yanbu Refinery,AI Listing 1 for Saudi Aramco Yanbu Refinery,ai_generated,100,tons,AI-generated material listing 1 for Saudi Aramco Yanbu Refinery,A,5000,True,2025-07-20T00:39:20.515017
+,Saudi Aramco Yanbu Refinery,AI Listing 2 for Saudi Aramco Yanbu Refinery,ai_generated,50,tons,AI-generated material listing 2 for Saudi Aramco Yanbu Refinery,B,2500,True,2025-07-20T00:39:20.515017
+,Saudi Aramco Yanbu Refinery,Generic Material - Saudi Aramco Yanbu Refinery,unknown,100,tons,Generic material from Saudi Aramco Yanbu Refinery,C,2000,True,2025-07-20T00:39:20.515017
+,Emirates Steel,Steel Scrap,waste,150,tons,Steel scrap from Emirates Steel manufacturing,B,45000,True,2025-07-20T00:39:20.524442
+,Emirates Steel,Aluminum Waste,waste,50,tons,Aluminum waste from Emirates Steel operations,A,75000,True,2025-07-20T00:39:20.524442
+,Emirates Steel,AI Listing 1 for Emirates Steel,ai_generated,100,tons,AI-generated material listing 1 for Emirates Steel,A,5000,True,2025-07-20T00:39:20.524442
+,Emirates Steel,AI Listing 2 for Emirates Steel,ai_generated,50,tons,AI-generated material listing 2 for Emirates Steel,B,2500,True,2025-07-20T00:39:20.524442
+,Emirates Steel,Generic Material - Emirates Steel,unknown,100,tons,Generic material from Emirates Steel,C,2000,True,2025-07-20T00:39:20.524442
+,SABIC (Yanbu),Steel Scrap,waste,150,tons,Steel scrap from SABIC (Yanbu) manufacturing,B,45000,True,2025-07-20T00:39:20.537975
+,SABIC (Yanbu),Aluminum Waste,waste,50,tons,Aluminum waste from SABIC (Yanbu) operations,A,75000,True,2025-07-20T00:39:20.537975
+,SABIC (Yanbu),AI Listing 1 for SABIC (Yanbu),ai_generated,100,tons,AI-generated material listing 1 for SABIC (Yanbu),A,5000,True,2025-07-20T00:39:20.537975
+,SABIC (Yanbu),AI Listing 2 for SABIC (Yanbu),ai_generated,50,tons,AI-generated material listing 2 for SABIC (Yanbu),B,2500,True,2025-07-20T00:39:20.537975
+,SABIC (Yanbu),Generic Material - SABIC (Yanbu),unknown,100,tons,Generic material from SABIC (Yanbu),C,2000,True,2025-07-20T00:39:20.537975
+,SABIC Agri-Nutrients (formerly SAFCO),Steel Scrap,waste,150,tons,Steel scrap from SABIC Agri-Nutrients (formerly SAFCO) manufacturing,B,45000,True,2025-07-20T00:39:20.552396
+,SABIC Agri-Nutrients (formerly SAFCO),Aluminum Waste,waste,50,tons,Aluminum waste from SABIC Agri-Nutrients (formerly SAFCO) operations,A,75000,True,2025-07-20T00:39:20.552396
+,SABIC Agri-Nutrients (formerly SAFCO),AI Listing 1 for SABIC Agri-Nutrients (formerly SAFCO),ai_generated,100,tons,AI-generated material listing 1 for SABIC Agri-Nutrients (formerly SAFCO),A,5000,True,2025-07-20T00:39:20.552396
+,SABIC Agri-Nutrients (formerly SAFCO),AI Listing 2 for SABIC Agri-Nutrients (formerly SAFCO),ai_generated,50,tons,AI-generated material listing 2 for SABIC Agri-Nutrients (formerly SAFCO),B,2500,True,2025-07-20T00:39:20.552396
+,SABIC Agri-Nutrients (formerly SAFCO),Generic Material - SABIC Agri-Nutrients (formerly SAFCO),unknown,100,tons,Generic material from SABIC Agri-Nutrients (formerly SAFCO),C,2000,True,2025-07-20T00:39:20.552396
+,SHUAIBA INDUSTRIAL COMPANY KPSC,Steel Scrap,waste,150,tons,Steel scrap from SHUAIBA INDUSTRIAL COMPANY KPSC manufacturing,B,45000,True,2025-07-20T00:39:20.563933
+,SHUAIBA INDUSTRIAL COMPANY KPSC,Aluminum Waste,waste,50,tons,Aluminum waste from SHUAIBA INDUSTRIAL COMPANY KPSC operations,A,75000,True,2025-07-20T00:39:20.563933
+,SHUAIBA INDUSTRIAL COMPANY KPSC,AI Listing 1 for SHUAIBA INDUSTRIAL COMPANY KPSC,ai_generated,100,tons,AI-generated material listing 1 for SHUAIBA INDUSTRIAL COMPANY KPSC,A,5000,True,2025-07-20T00:39:20.563933
+,SHUAIBA INDUSTRIAL COMPANY KPSC,AI Listing 2 for SHUAIBA INDUSTRIAL COMPANY KPSC,ai_generated,50,tons,AI-generated material listing 2 for SHUAIBA INDUSTRIAL COMPANY KPSC,B,2500,True,2025-07-20T00:39:20.563933
+,SHUAIBA INDUSTRIAL COMPANY KPSC,Generic Material - SHUAIBA INDUSTRIAL COMPANY KPSC,unknown,100,tons,Generic material from SHUAIBA INDUSTRIAL COMPANY KPSC,C,2000,True,2025-07-20T00:39:20.563933
+,Kuwait National Petroleum Company (Mina Abdullah Refinery),General Waste,waste,100,tons,General waste from Kuwait National Petroleum Company (Mina Abdullah Refinery) operations,C,20000,True,2025-07-20T00:39:20.577111
+,Kuwait National Petroleum Company (Mina Abdullah Refinery),AI Listing 1 for Kuwait National Petroleum Company (Mina Abdullah Refinery),ai_generated,100,tons,AI-generated material listing 1 for Kuwait National Petroleum Company (Mina Abdullah Refinery),A,5000,True,2025-07-20T00:39:20.577111
+,Kuwait National Petroleum Company (Mina Abdullah Refinery),AI Listing 2 for Kuwait National Petroleum Company (Mina Abdullah Refinery),ai_generated,50,tons,AI-generated material listing 2 for Kuwait National Petroleum Company (Mina Abdullah Refinery),B,2500,True,2025-07-20T00:39:20.577111
+,Kuwait National Petroleum Company (Mina Abdullah Refinery),Generic Material - Kuwait National Petroleum Company (Mina Abdullah Refinery),unknown,100,tons,Generic material from Kuwait National Petroleum Company (Mina Abdullah Refinery),C,2000,True,2025-07-20T00:39:20.577111
+,Oman Oil Refineries and Petroleum Industries Company (OQ),Steel Scrap,waste,150,tons,Steel scrap from Oman Oil Refineries and Petroleum Industries Company (OQ) manufacturing,B,45000,True,2025-07-20T00:39:20.587246
+,Oman Oil Refineries and Petroleum Industries Company (OQ),Aluminum Waste,waste,50,tons,Aluminum waste from Oman Oil Refineries and Petroleum Industries Company (OQ) operations,A,75000,True,2025-07-20T00:39:20.587246
+,Oman Oil Refineries and Petroleum Industries Company (OQ),AI Listing 1 for Oman Oil Refineries and Petroleum Industries Company (OQ),ai_generated,100,tons,AI-generated material listing 1 for Oman Oil Refineries and Petroleum Industries Company (OQ),A,5000,True,2025-07-20T00:39:20.587246
+,Oman Oil Refineries and Petroleum Industries Company (OQ),AI Listing 2 for Oman Oil Refineries and Petroleum Industries Company (OQ),ai_generated,50,tons,AI-generated material listing 2 for Oman Oil Refineries and Petroleum Industries Company (OQ),B,2500,True,2025-07-20T00:39:20.587246
+,Oman Oil Refineries and Petroleum Industries Company (OQ),Generic Material - Oman Oil Refineries and Petroleum Industries Company (OQ),unknown,100,tons,Generic material from Oman Oil Refineries and Petroleum Industries Company (OQ),C,2000,True,2025-07-20T00:39:20.587246
+,Qatar Electricity & Water Company (QEWC),General Waste,waste,100,tons,General waste from Qatar Electricity & Water Company (QEWC) operations,C,20000,True,2025-07-20T00:39:20.598901
+,Qatar Electricity & Water Company (QEWC),AI Listing 1 for Qatar Electricity & Water Company (QEWC),ai_generated,100,tons,AI-generated material listing 1 for Qatar Electricity & Water Company (QEWC),A,5000,True,2025-07-20T00:39:20.598901
+,Qatar Electricity & Water Company (QEWC),AI Listing 2 for Qatar Electricity & Water Company (QEWC),ai_generated,50,tons,AI-generated material listing 2 for Qatar Electricity & Water Company (QEWC),B,2500,True,2025-07-20T00:39:20.598901
+,Qatar Electricity & Water Company (QEWC),Generic Material - Qatar Electricity & Water Company (QEWC),unknown,100,tons,Generic material from Qatar Electricity & Water Company (QEWC),C,2000,True,2025-07-20T00:39:20.598901
+,Saudi Ceramics Company,Steel Scrap,waste,150,tons,Steel scrap from Saudi Ceramics Company manufacturing,B,45000,True,2025-07-20T00:39:20.609941
+,Saudi Ceramics Company,Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Ceramics Company operations,A,75000,True,2025-07-20T00:39:20.609941
+,Saudi Ceramics Company,AI Listing 1 for Saudi Ceramics Company,ai_generated,100,tons,AI-generated material listing 1 for Saudi Ceramics Company,A,5000,True,2025-07-20T00:39:20.609941
+,Saudi Ceramics Company,AI Listing 2 for Saudi Ceramics Company,ai_generated,50,tons,AI-generated material listing 2 for Saudi Ceramics Company,B,2500,True,2025-07-20T00:39:20.609941
+,Saudi Ceramics Company,Generic Material - Saudi Ceramics Company,unknown,100,tons,Generic material from Saudi Ceramics Company,C,2000,True,2025-07-20T00:39:20.609941
+,Ducab,Steel Scrap,waste,150,tons,Steel scrap from Ducab manufacturing,B,45000,True,2025-07-20T00:39:20.621489
+,Ducab,Aluminum Waste,waste,50,tons,Aluminum waste from Ducab operations,A,75000,True,2025-07-20T00:39:20.621489
+,Ducab,AI Listing 1 for Ducab,ai_generated,100,tons,AI-generated material listing 1 for Ducab,A,5000,True,2025-07-20T00:39:20.621489
+,Ducab,AI Listing 2 for Ducab,ai_generated,50,tons,AI-generated material listing 2 for Ducab,B,2500,True,2025-07-20T00:39:20.621489
+,Ducab,Generic Material - Ducab,unknown,100,tons,Generic material from Ducab,C,2000,True,2025-07-20T00:39:20.621489
+,Saudi Arabian Glass Company (SAGCO),Steel Scrap,waste,150,tons,Steel scrap from Saudi Arabian Glass Company (SAGCO) manufacturing,B,45000,True,2025-07-20T00:39:20.634065
+,Saudi Arabian Glass Company (SAGCO),Aluminum Waste,waste,50,tons,Aluminum waste from Saudi Arabian Glass Company (SAGCO) operations,A,75000,True,2025-07-20T00:39:20.634065
+,Saudi Arabian Glass Company (SAGCO),AI Listing 1 for Saudi Arabian Glass Company (SAGCO),ai_generated,100,tons,AI-generated material listing 1 for Saudi Arabian Glass Company (SAGCO),A,5000,True,2025-07-20T00:39:20.634065
+,Saudi Arabian Glass Company (SAGCO),AI Listing 2 for Saudi Arabian Glass Company (SAGCO),ai_generated,50,tons,AI-generated material listing 2 for Saudi Arabian Glass Company (SAGCO),B,2500,True,2025-07-20T00:39:20.634065
+,Saudi Arabian Glass Company (SAGCO),Generic Material - Saudi Arabian Glass Company (SAGCO),unknown,100,tons,Generic material from Saudi Arabian Glass Company (SAGCO),C,2000,True,2025-07-20T00:39:20.634065
+,Saudia Dairy & Foodstuff Company (SADAFCO),Steel Scrap,waste,150,tons,Steel scrap from Saudia Dairy & Foodstuff Company (SADAFCO) manufacturing,B,45000,True,2025-07-20T00:39:20.647130
+,Saudia Dairy & Foodstuff Company (SADAFCO),Aluminum Waste,waste,50,tons,Aluminum waste from Saudia Dairy & Foodstuff Company (SADAFCO) operations,A,75000,True,2025-07-20T00:39:20.647130
+,Saudia Dairy & Foodstuff Company (SADAFCO),AI Listing 1 for Saudia Dairy & Foodstuff Company (SADAFCO),ai_generated,100,tons,AI-generated material listing 1 for Saudia Dairy & Foodstuff Company (SADAFCO),A,5000,True,2025-07-20T00:39:20.647130
+,Saudia Dairy & Foodstuff Company (SADAFCO),AI Listing 2 for Saudia Dairy & Foodstuff Company (SADAFCO),ai_generated,50,tons,AI-generated material listing 2 for Saudia Dairy & Foodstuff Company (SADAFCO),B,2500,True,2025-07-20T00:39:20.647130
+,Saudia Dairy & Foodstuff Company (SADAFCO),Generic Material - Saudia Dairy & Foodstuff Company (SADAFCO),unknown,100,tons,Generic material from Saudia Dairy & Foodstuff Company (SADAFCO),C,2000,True,2025-07-20T00:39:20.647130
+,National Agricultural Development Company (NADEC),Steel Scrap,waste,150,tons,Steel scrap from National Agricultural Development Company (NADEC) manufacturing,B,45000,True,2025-07-20T00:39:20.660182
+,National Agricultural Development Company (NADEC),Aluminum Waste,waste,50,tons,Aluminum waste from National Agricultural Development Company (NADEC) operations,A,75000,True,2025-07-20T00:39:20.660182
+,National Agricultural Development Company (NADEC),AI Listing 1 for National Agricultural Development Company (NADEC),ai_generated,100,tons,AI-generated material listing 1 for National Agricultural Development Company (NADEC),A,5000,True,2025-07-20T00:39:20.660182
+,National Agricultural Development Company (NADEC),AI Listing 2 for National Agricultural Development Company (NADEC),ai_generated,50,tons,AI-generated material listing 2 for National Agricultural Development Company (NADEC),B,2500,True,2025-07-20T00:39:20.660182
+,National Agricultural Development Company (NADEC),Generic Material - National Agricultural Development Company (NADEC),unknown,100,tons,Generic material from National Agricultural Development Company (NADEC),C,2000,True,2025-07-20T00:39:20.660182
+,Borouge PLC,Steel Scrap,waste,150,tons,Steel scrap from Borouge PLC manufacturing,B,45000,True,2025-07-20T00:39:20.675537
+,Borouge PLC,Aluminum Waste,waste,50,tons,Aluminum waste from Borouge PLC operations,A,75000,True,2025-07-20T00:39:20.675537
+,Borouge PLC,AI Listing 1 for Borouge PLC,ai_generated,100,tons,AI-generated material listing 1 for Borouge PLC,A,5000,True,2025-07-20T00:39:20.675537
+,Borouge PLC,AI Listing 2 for Borouge PLC,ai_generated,50,tons,AI-generated material listing 2 for Borouge PLC,B,2500,True,2025-07-20T00:39:20.675537
+,Borouge PLC,Generic Material - Borouge PLC,unknown,100,tons,Generic material from Borouge PLC,C,2000,True,2025-07-20T00:39:20.675537
+,SABIC,Steel Scrap,waste,150,tons,Steel scrap from SABIC manufacturing,B,45000,True,2025-07-20T00:39:20.689082
+,SABIC,Aluminum Waste,waste,50,tons,Aluminum waste from SABIC operations,A,75000,True,2025-07-20T00:39:20.689082
+,SABIC,AI Listing 1 for SABIC,ai_generated,100,tons,AI-generated material listing 1 for SABIC,A,5000,True,2025-07-20T00:39:20.689082
+,SABIC,AI Listing 2 for SABIC,ai_generated,50,tons,AI-generated material listing 2 for SABIC,B,2500,True,2025-07-20T00:39:20.689082
+,SABIC,Generic Material - SABIC,unknown,100,tons,Generic material from SABIC,C,2000,True,2025-07-20T00:39:20.689082
+,ADNOC,Steel Scrap,waste,150,tons,Steel scrap from ADNOC manufacturing,B,45000,True,2025-07-20T00:39:20.700914
+,ADNOC,Aluminum Waste,waste,50,tons,Aluminum waste from ADNOC operations,A,75000,True,2025-07-20T00:39:20.700914
+,ADNOC,AI Listing 1 for ADNOC,ai_generated,100,tons,AI-generated material listing 1 for ADNOC,A,5000,True,2025-07-20T00:39:20.700914
+,ADNOC,AI Listing 2 for ADNOC,ai_generated,50,tons,AI-generated material listing 2 for ADNOC,B,2500,True,2025-07-20T00:39:20.700914
+,ADNOC,Generic Material - ADNOC,unknown,100,tons,Generic material from ADNOC,C,2000,True,2025-07-20T00:39:20.700914
+,ADNOC Distribution,General Waste,waste,100,tons,General waste from ADNOC Distribution operations,C,20000,True,2025-07-20T00:39:20.712059
+,ADNOC Distribution,AI Listing 1 for ADNOC Distribution,ai_generated,100,tons,AI-generated material listing 1 for ADNOC Distribution,A,5000,True,2025-07-20T00:39:20.712059
+,ADNOC Distribution,AI Listing 2 for ADNOC Distribution,ai_generated,50,tons,AI-generated material listing 2 for ADNOC Distribution,B,2500,True,2025-07-20T00:39:20.712059
+,ADNOC Distribution,Generic Material - ADNOC Distribution,unknown,100,tons,Generic material from ADNOC Distribution,C,2000,True,2025-07-20T00:39:20.712059
+,Oman Cement Company (OCC),Steel Scrap,waste,150,tons,Steel scrap from Oman Cement Company (OCC) manufacturing,B,45000,True,2025-07-20T00:39:20.741672
+,Oman Cement Company (OCC),Aluminum Waste,waste,50,tons,Aluminum waste from Oman Cement Company (OCC) operations,A,75000,True,2025-07-20T00:39:20.741672
+,Oman Cement Company (OCC),AI Listing 1 for Oman Cement Company (OCC),ai_generated,100,tons,AI-generated material listing 1 for Oman Cement Company (OCC),A,5000,True,2025-07-20T00:39:20.741672
+,Oman Cement Company (OCC),AI Listing 2 for Oman Cement Company (OCC),ai_generated,50,tons,AI-generated material listing 2 for Oman Cement Company (OCC),B,2500,True,2025-07-20T00:39:20.741672
+,Oman Cement Company (OCC),Generic Material - Oman Cement Company (OCC),unknown,100,tons,Generic material from Oman Cement Company (OCC),C,2000,True,2025-07-20T00:39:20.741672
+,NIMR Automotive,General Waste,waste,100,tons,General waste from NIMR Automotive operations,C,20000,True,2025-07-20T00:39:20.774316
+,NIMR Automotive,AI Listing 1 for NIMR Automotive,ai_generated,100,tons,AI-generated material listing 1 for NIMR Automotive,A,5000,True,2025-07-20T00:39:20.774316
+,NIMR Automotive,AI Listing 2 for NIMR Automotive,ai_generated,50,tons,AI-generated material listing 2 for NIMR Automotive,B,2500,True,2025-07-20T00:39:20.774316
+,NIMR Automotive,Generic Material - NIMR Automotive,unknown,100,tons,Generic material from NIMR Automotive,C,2000,True,2025-07-20T00:39:20.774316
+,Agthia Group,General Waste,waste,100,tons,General waste from Agthia Group operations,C,20000,True,2025-07-20T00:39:20.787855
+,Agthia Group,AI Listing 1 for Agthia Group,ai_generated,100,tons,AI-generated material listing 1 for Agthia Group,A,5000,True,2025-07-20T00:39:20.787855
+,Agthia Group,AI Listing 2 for Agthia Group,ai_generated,50,tons,AI-generated material listing 2 for Agthia Group,B,2500,True,2025-07-20T00:39:20.787855
+,Agthia Group,Generic Material - Agthia Group,unknown,100,tons,Generic material from Agthia Group,C,2000,True,2025-07-20T00:39:20.787855
+,National Food Products Company (NFPC),General Waste,waste,100,tons,General waste from National Food Products Company (NFPC) operations,C,20000,True,2025-07-20T00:39:20.801447
+,National Food Products Company (NFPC),AI Listing 1 for National Food Products Company (NFPC),ai_generated,100,tons,AI-generated material listing 1 for National Food Products Company (NFPC),A,5000,True,2025-07-20T00:39:20.801447
+,National Food Products Company (NFPC),AI Listing 2 for National Food Products Company (NFPC),ai_generated,50,tons,AI-generated material listing 2 for National Food Products Company (NFPC),B,2500,True,2025-07-20T00:39:20.801447
+,National Food Products Company (NFPC),Generic Material - National Food Products Company (NFPC),unknown,100,tons,Generic material from National Food Products Company (NFPC),C,2000,True,2025-07-20T00:39:20.801447
+,Telectron,General Waste,waste,100,tons,General waste from Telectron operations,C,20000,True,2025-07-20T00:39:20.818801
+,Telectron,AI Listing 1 for Telectron,ai_generated,100,tons,AI-generated material listing 1 for Telectron,A,5000,True,2025-07-20T00:39:20.818801
+,Telectron,AI Listing 2 for Telectron,ai_generated,50,tons,AI-generated material listing 2 for Telectron,B,2500,True,2025-07-20T00:39:20.818801
+,Telectron,Generic Material - Telectron,unknown,100,tons,Generic material from Telectron,C,2000,True,2025-07-20T00:39:20.818801
+,Aluminium Bahrain (Alba),Steel Scrap,waste,150,tons,Steel scrap from Aluminium Bahrain (Alba) manufacturing,B,45000,True,2025-07-20T00:39:20.833906
+,Aluminium Bahrain (Alba),Aluminum Waste,waste,50,tons,Aluminum waste from Aluminium Bahrain (Alba) operations,A,75000,True,2025-07-20T00:39:20.833906
+,Aluminium Bahrain (Alba),AI Listing 1 for Aluminium Bahrain (Alba),ai_generated,100,tons,AI-generated material listing 1 for Aluminium Bahrain (Alba),A,5000,True,2025-07-20T00:39:20.833906
+,Aluminium Bahrain (Alba),AI Listing 2 for Aluminium Bahrain (Alba),ai_generated,50,tons,AI-generated material listing 2 for Aluminium Bahrain (Alba),B,2500,True,2025-07-20T00:39:20.833906
+,Aluminium Bahrain (Alba),Generic Material - Aluminium Bahrain (Alba),unknown,100,tons,Generic material from Aluminium Bahrain (Alba),C,2000,True,2025-07-20T00:39:20.833906
+,Bahrain Petroleum Company (Bapco),General Waste,waste,100,tons,General waste from Bahrain Petroleum Company (Bapco) operations,C,20000,True,2025-07-20T00:39:20.854759
+,Bahrain Petroleum Company (Bapco),AI Listing 1 for Bahrain Petroleum Company (Bapco),ai_generated,100,tons,AI-generated material listing 1 for Bahrain Petroleum Company (Bapco),A,5000,True,2025-07-20T00:39:20.854759
+,Bahrain Petroleum Company (Bapco),AI Listing 2 for Bahrain Petroleum Company (Bapco),ai_generated,50,tons,AI-generated material listing 2 for Bahrain Petroleum Company (Bapco),B,2500,True,2025-07-20T00:39:20.854759
+,Bahrain Petroleum Company (Bapco),Generic Material - Bahrain Petroleum Company (Bapco),unknown,100,tons,Generic material from Bahrain Petroleum Company (Bapco),C,2000,True,2025-07-20T00:39:20.854759
+,Banagas,General Waste,waste,100,tons,General waste from Banagas operations,C,20000,True,2025-07-20T00:39:20.871366
+,Banagas,AI Listing 1 for Banagas,ai_generated,100,tons,AI-generated material listing 1 for Banagas,A,5000,True,2025-07-20T00:39:20.871366
+,Banagas,AI Listing 2 for Banagas,ai_generated,50,tons,AI-generated material listing 2 for Banagas,B,2500,True,2025-07-20T00:39:20.871366
+,Banagas,Generic Material - Banagas,unknown,100,tons,Generic material from Banagas,C,2000,True,2025-07-20T00:39:20.871366
+,Qatar Industrial Manufacturing Company (QIMC),Steel Scrap,waste,150,tons,Steel scrap from Qatar Industrial Manufacturing Company (QIMC) manufacturing,B,45000,True,2025-07-20T00:39:20.886934
+,Qatar Industrial Manufacturing Company (QIMC),Aluminum Waste,waste,50,tons,Aluminum waste from Qatar Industrial Manufacturing Company (QIMC) operations,A,75000,True,2025-07-20T00:39:20.886934
+,Qatar Industrial Manufacturing Company (QIMC),AI Listing 1 for Qatar Industrial Manufacturing Company (QIMC),ai_generated,100,tons,AI-generated material listing 1 for Qatar Industrial Manufacturing Company (QIMC),A,5000,True,2025-07-20T00:39:20.886934
+,Qatar Industrial Manufacturing Company (QIMC),AI Listing 2 for Qatar Industrial Manufacturing Company (QIMC),ai_generated,50,tons,AI-generated material listing 2 for Qatar Industrial Manufacturing Company (QIMC),B,2500,True,2025-07-20T00:39:20.886934
+,Qatar Industrial Manufacturing Company (QIMC),Generic Material - Qatar Industrial Manufacturing Company (QIMC),unknown,100,tons,Generic material from Qatar Industrial Manufacturing Company (QIMC),C,2000,True,2025-07-20T00:39:20.886934
+,Qatar Paving Stones Company,General Waste,waste,100,tons,General waste from Qatar Paving Stones Company operations,C,20000,True,2025-07-20T00:39:20.903406
+,Qatar Paving Stones Company,AI Listing 1 for Qatar Paving Stones Company,ai_generated,100,tons,AI-generated material listing 1 for Qatar Paving Stones Company,A,5000,True,2025-07-20T00:39:20.903406
+,Qatar Paving Stones Company,AI Listing 2 for Qatar Paving Stones Company,ai_generated,50,tons,AI-generated material listing 2 for Qatar Paving Stones Company,B,2500,True,2025-07-20T00:39:20.903406
+,Qatar Paving Stones Company,Generic Material - Qatar Paving Stones Company,unknown,100,tons,Generic material from Qatar Paving Stones Company,C,2000,True,2025-07-20T00:39:20.903406
+,Qatar Acids Company,Chemical Waste,waste,50,tons,Chemical waste from Qatar Acids Company operations,C,25000,True,2025-07-20T00:39:20.921018
+,Qatar Acids Company,AI Listing 1 for Qatar Acids Company,ai_generated,100,tons,AI-generated material listing 1 for Qatar Acids Company,A,5000,True,2025-07-20T00:39:20.921018
+,Qatar Acids Company,AI Listing 2 for Qatar Acids Company,ai_generated,50,tons,AI-generated material listing 2 for Qatar Acids Company,B,2500,True,2025-07-20T00:39:20.921018
+,Qatar Acids Company,Generic Material - Qatar Acids Company,unknown,100,tons,Generic material from Qatar Acids Company,C,2000,True,2025-07-20T00:39:20.921018
+,Qatar Plastic Products Company (QPPC),Steel Scrap,waste,150,tons,Steel scrap from Qatar Plastic Products Company (QPPC) manufacturing,B,45000,True,2025-07-20T00:39:20.955677
+,Qatar Plastic Products Company (QPPC),Aluminum Waste,waste,50,tons,Aluminum waste from Qatar Plastic Products Company (QPPC) operations,A,75000,True,2025-07-20T00:39:20.955677
+,Qatar Plastic Products Company (QPPC),AI Listing 1 for Qatar Plastic Products Company (QPPC),ai_generated,100,tons,AI-generated material listing 1 for Qatar Plastic Products Company (QPPC),A,5000,True,2025-07-20T00:39:20.955677
+,Qatar Plastic Products Company (QPPC),AI Listing 2 for Qatar Plastic Products Company (QPPC),ai_generated,50,tons,AI-generated material listing 2 for Qatar Plastic Products Company (QPPC),B,2500,True,2025-07-20T00:39:20.955677
+,Qatar Plastic Products Company (QPPC),Generic Material - Qatar Plastic Products Company (QPPC),unknown,100,tons,Generic material from Qatar Plastic Products Company (QPPC),C,2000,True,2025-07-20T00:39:20.955677
+,National Food Company (NAFCO),General Waste,waste,100,tons,General waste from National Food Company (NAFCO) operations,C,20000,True,2025-07-20T00:39:20.980284
+,National Food Company (NAFCO),AI Listing 1 for National Food Company (NAFCO),ai_generated,100,tons,AI-generated material listing 1 for National Food Company (NAFCO),A,5000,True,2025-07-20T00:39:20.980284
+,National Food Company (NAFCO),AI Listing 2 for National Food Company (NAFCO),ai_generated,50,tons,AI-generated material listing 2 for National Food Company (NAFCO),B,2500,True,2025-07-20T00:39:20.980284
+,National Food Company (NAFCO),Generic Material - National Food Company (NAFCO),unknown,100,tons,Generic material from National Food Company (NAFCO),C,2000,True,2025-07-20T00:39:20.980284
+,Kuwait National Petroleum Company (KNPC),Steel Scrap,waste,150,tons,Steel scrap from Kuwait National Petroleum Company (KNPC) manufacturing,B,45000,True,2025-07-20T00:39:20.987295
+,Kuwait National Petroleum Company (KNPC),Aluminum Waste,waste,50,tons,Aluminum waste from Kuwait National Petroleum Company (KNPC) operations,A,75000,True,2025-07-20T00:39:20.987295
+,Kuwait National Petroleum Company (KNPC),AI Listing 1 for Kuwait National Petroleum Company (KNPC),ai_generated,100,tons,AI-generated material listing 1 for Kuwait National Petroleum Company (KNPC),A,5000,True,2025-07-20T00:39:20.987295
+,Kuwait National Petroleum Company (KNPC),AI Listing 2 for Kuwait National Petroleum Company (KNPC),ai_generated,50,tons,AI-generated material listing 2 for Kuwait National Petroleum Company (KNPC),B,2500,True,2025-07-20T00:39:20.987295
+,Kuwait National Petroleum Company (KNPC),Generic Material - Kuwait National Petroleum Company (KNPC),unknown,100,tons,Generic material from Kuwait National Petroleum Company (KNPC),C,2000,True,2025-07-20T00:39:20.987295
+,Kuwait Oxygen And Acetylene Company,Chemical Waste,waste,50,tons,Chemical waste from Kuwait Oxygen And Acetylene Company operations,C,25000,True,2025-07-20T00:39:21.029026
+,Kuwait Oxygen And Acetylene Company,AI Listing 1 for Kuwait Oxygen And Acetylene Company,ai_generated,100,tons,AI-generated material listing 1 for Kuwait Oxygen And Acetylene Company,A,5000,True,2025-07-20T00:39:21.029026
+,Kuwait Oxygen And Acetylene Company,AI Listing 2 for Kuwait Oxygen And Acetylene Company,ai_generated,50,tons,AI-generated material listing 2 for Kuwait Oxygen And Acetylene Company,B,2500,True,2025-07-20T00:39:21.030024
+,Kuwait Oxygen And Acetylene Company,Generic Material - Kuwait Oxygen And Acetylene Company,unknown,100,tons,Generic material from Kuwait Oxygen And Acetylene Company,C,2000,True,2025-07-20T00:39:21.030024
+,AL SAHEL CONTRACTING COMPANY LLC,General Waste,waste,100,tons,General waste from AL SAHEL CONTRACTING COMPANY LLC operations,C,20000,True,2025-07-20T00:39:21.049123
+,AL SAHEL CONTRACTING COMPANY LLC,AI Listing 1 for AL SAHEL CONTRACTING COMPANY LLC,ai_generated,100,tons,AI-generated material listing 1 for AL SAHEL CONTRACTING COMPANY LLC,A,5000,True,2025-07-20T00:39:21.049123
+,AL SAHEL CONTRACTING COMPANY LLC,AI Listing 2 for AL SAHEL CONTRACTING COMPANY LLC,ai_generated,50,tons,AI-generated material listing 2 for AL SAHEL CONTRACTING COMPANY LLC,B,2500,True,2025-07-20T00:39:21.049123
+,AL SAHEL CONTRACTING COMPANY LLC,Generic Material - AL SAHEL CONTRACTING COMPANY LLC,unknown,100,tons,Generic material from AL SAHEL CONTRACTING COMPANY LLC,C,2000,True,2025-07-20T00:39:21.049123
+,Medical Trade Hub,Steel Scrap,waste,150,tons,Steel scrap from Medical Trade Hub manufacturing,B,45000,True,2025-07-20T00:39:21.080249
+,Medical Trade Hub,Aluminum Waste,waste,50,tons,Aluminum waste from Medical Trade Hub operations,A,75000,True,2025-07-20T00:39:21.080249
+,Medical Trade Hub,AI Listing 1 for Medical Trade Hub,ai_generated,100,tons,AI-generated material listing 1 for Medical Trade Hub,A,5000,True,2025-07-20T00:39:21.080249
+,Medical Trade Hub,AI Listing 2 for Medical Trade Hub,ai_generated,50,tons,AI-generated material listing 2 for Medical Trade Hub,B,2500,True,2025-07-20T00:39:21.080249
+,Medical Trade Hub,Generic Material - Medical Trade Hub,unknown,100,tons,Generic material from Medical Trade Hub,C,2000,True,2025-07-20T00:39:21.080249
+,Sabinplastic,Steel Scrap,waste,150,tons,Steel scrap from Sabinplastic manufacturing,B,45000,True,2025-07-20T00:39:21.095804
+,Sabinplastic,Aluminum Waste,waste,50,tons,Aluminum waste from Sabinplastic operations,A,75000,True,2025-07-20T00:39:21.095804
+,Sabinplastic,AI Listing 1 for Sabinplastic,ai_generated,100,tons,AI-generated material listing 1 for Sabinplastic,A,5000,True,2025-07-20T00:39:21.095804
+,Sabinplastic,AI Listing 2 for Sabinplastic,ai_generated,50,tons,AI-generated material listing 2 for Sabinplastic,B,2500,True,2025-07-20T00:39:21.095804
+,Sabinplastic,Generic Material - Sabinplastic,unknown,100,tons,Generic material from Sabinplastic,C,2000,True,2025-07-20T00:39:21.095804
+,Arcade Star Construction LLC,General Waste,waste,100,tons,General waste from Arcade Star Construction LLC operations,C,20000,True,2025-07-20T00:39:21.111087
+,Arcade Star Construction LLC,AI Listing 1 for Arcade Star Construction LLC,ai_generated,100,tons,AI-generated material listing 1 for Arcade Star Construction LLC,A,5000,True,2025-07-20T00:39:21.111087
+,Arcade Star Construction LLC,AI Listing 2 for Arcade Star Construction LLC,ai_generated,50,tons,AI-generated material listing 2 for Arcade Star Construction LLC,B,2500,True,2025-07-20T00:39:21.111087
+,Arcade Star Construction LLC,Generic Material - Arcade Star Construction LLC,unknown,100,tons,Generic material from Arcade Star Construction LLC,C,2000,True,2025-07-20T00:39:21.111087
+,Amazon Lubricants and Grease LLC,Chemical Waste,waste,50,tons,Chemical waste from Amazon Lubricants and Grease LLC operations,C,25000,True,2025-07-20T00:39:21.120085
+,Amazon Lubricants and Grease LLC,AI Listing 1 for Amazon Lubricants and Grease LLC,ai_generated,100,tons,AI-generated material listing 1 for Amazon Lubricants and Grease LLC,A,5000,True,2025-07-20T00:39:21.120085
+,Amazon Lubricants and Grease LLC,AI Listing 2 for Amazon Lubricants and Grease LLC,ai_generated,50,tons,AI-generated material listing 2 for Amazon Lubricants and Grease LLC,B,2500,True,2025-07-20T00:39:21.120085
+,Amazon Lubricants and Grease LLC,Generic Material - Amazon Lubricants and Grease LLC,unknown,100,tons,Generic material from Amazon Lubricants and Grease LLC,C,2000,True,2025-07-20T00:39:21.120085
+,Ducab Aluminium Company LLC,Steel Scrap,waste,150,tons,Steel scrap from Ducab Aluminium Company LLC manufacturing,B,45000,True,2025-07-20T00:39:21.128197
+,Ducab Aluminium Company LLC,Aluminum Waste,waste,50,tons,Aluminum waste from Ducab Aluminium Company LLC operations,A,75000,True,2025-07-20T00:39:21.128197
+,Ducab Aluminium Company LLC,AI Listing 1 for Ducab Aluminium Company LLC,ai_generated,100,tons,AI-generated material listing 1 for Ducab Aluminium Company LLC,A,5000,True,2025-07-20T00:39:21.128197
+,Ducab Aluminium Company LLC,AI Listing 2 for Ducab Aluminium Company LLC,ai_generated,50,tons,AI-generated material listing 2 for Ducab Aluminium Company LLC,B,2500,True,2025-07-20T00:39:21.128197
+,Ducab Aluminium Company LLC,Generic Material - Ducab Aluminium Company LLC,unknown,100,tons,Generic material from Ducab Aluminium Company LLC,C,2000,True,2025-07-20T00:39:21.128197
+,Al Mithaq International Aluminium & Enterprises LLC,General Waste,waste,100,tons,General waste from Al Mithaq International Aluminium & Enterprises LLC operations,C,20000,True,2025-07-20T00:39:21.139849
+,Al Mithaq International Aluminium & Enterprises LLC,AI Listing 1 for Al Mithaq International Aluminium & Enterprises LLC,ai_generated,100,tons,AI-generated material listing 1 for Al Mithaq International Aluminium & Enterprises LLC,A,5000,True,2025-07-20T00:39:21.139849
+,Al Mithaq International Aluminium & Enterprises LLC,AI Listing 2 for Al Mithaq International Aluminium & Enterprises LLC,ai_generated,50,tons,AI-generated material listing 2 for Al Mithaq International Aluminium & Enterprises LLC,B,2500,True,2025-07-20T00:39:21.139849
+,Al Mithaq International Aluminium & Enterprises LLC,Generic Material - Al Mithaq International Aluminium & Enterprises LLC,unknown,100,tons,Generic material from Al Mithaq International Aluminium & Enterprises LLC,C,2000,True,2025-07-20T00:39:21.139849
+,Global Chemical Company L.L.C. (GCC),Steel Scrap,waste,150,tons,Steel scrap from Global Chemical Company L.L.C. (GCC) manufacturing,B,45000,True,2025-07-20T00:39:21.146862
+,Global Chemical Company L.L.C. (GCC),Aluminum Waste,waste,50,tons,Aluminum waste from Global Chemical Company L.L.C. (GCC) operations,A,75000,True,2025-07-20T00:39:21.146862
+,Global Chemical Company L.L.C. (GCC),AI Listing 1 for Global Chemical Company L.L.C. (GCC),ai_generated,100,tons,AI-generated material listing 1 for Global Chemical Company L.L.C. (GCC),A,5000,True,2025-07-20T00:39:21.146862
+,Global Chemical Company L.L.C. (GCC),AI Listing 2 for Global Chemical Company L.L.C. (GCC),ai_generated,50,tons,AI-generated material listing 2 for Global Chemical Company L.L.C. (GCC),B,2500,True,2025-07-20T00:39:21.146862
+,Global Chemical Company L.L.C. (GCC),Generic Material - Global Chemical Company L.L.C. (GCC),unknown,100,tons,Generic material from Global Chemical Company L.L.C. (GCC),C,2000,True,2025-07-20T00:39:21.146862
+,Al Wajbah Dairy and Juice Factory,General Waste,waste,100,tons,General waste from Al Wajbah Dairy and Juice Factory operations,C,20000,True,2025-07-20T00:39:21.154386
+,Al Wajbah Dairy and Juice Factory,AI Listing 1 for Al Wajbah Dairy and Juice Factory,ai_generated,100,tons,AI-generated material listing 1 for Al Wajbah Dairy and Juice Factory,A,5000,True,2025-07-20T00:39:21.154386
+,Al Wajbah Dairy and Juice Factory,AI Listing 2 for Al Wajbah Dairy and Juice Factory,ai_generated,50,tons,AI-generated material listing 2 for Al Wajbah Dairy and Juice Factory,B,2500,True,2025-07-20T00:39:21.154386
+,Al Wajbah Dairy and Juice Factory,Generic Material - Al Wajbah Dairy and Juice Factory,unknown,100,tons,Generic material from Al Wajbah Dairy and Juice Factory,C,2000,True,2025-07-20T00:39:21.154386
+,Qatar Flour Mills Co.,General Waste,waste,100,tons,General waste from Qatar Flour Mills Co. operations,C,20000,True,2025-07-20T00:39:21.163933
+,Qatar Flour Mills Co.,AI Listing 1 for Qatar Flour Mills Co.,ai_generated,100,tons,AI-generated material listing 1 for Qatar Flour Mills Co.,A,5000,True,2025-07-20T00:39:21.163933
+,Qatar Flour Mills Co.,AI Listing 2 for Qatar Flour Mills Co.,ai_generated,50,tons,AI-generated material listing 2 for Qatar Flour Mills Co.,B,2500,True,2025-07-20T00:39:21.163933
+,Qatar Flour Mills Co.,Generic Material - Qatar Flour Mills Co.,unknown,100,tons,Generic material from Qatar Flour Mills Co.,C,2000,True,2025-07-20T00:39:21.163933
+,Qatar Meat Production Company,General Waste,waste,100,tons,General waste from Qatar Meat Production Company operations,C,20000,True,2025-07-20T00:39:21.172482
+,Qatar Meat Production Company,AI Listing 1 for Qatar Meat Production Company,ai_generated,100,tons,AI-generated material listing 1 for Qatar Meat Production Company,A,5000,True,2025-07-20T00:39:21.172482
+,Qatar Meat Production Company,AI Listing 2 for Qatar Meat Production Company,ai_generated,50,tons,AI-generated material listing 2 for Qatar Meat Production Company,B,2500,True,2025-07-20T00:39:21.172482
+,Qatar Meat Production Company,Generic Material - Qatar Meat Production Company,unknown,100,tons,Generic material from Qatar Meat Production Company,C,2000,True,2025-07-20T00:39:21.172482
+,Refrigeration Industries and Storage Co. (RISCO),Steel Scrap,waste,150,tons,Steel scrap from Refrigeration Industries and Storage Co. (RISCO) manufacturing,B,45000,True,2025-07-20T00:39:21.185034
+,Refrigeration Industries and Storage Co. (RISCO),Aluminum Waste,waste,50,tons,Aluminum waste from Refrigeration Industries and Storage Co. (RISCO) operations,A,75000,True,2025-07-20T00:39:21.185034
+,Refrigeration Industries and Storage Co. (RISCO),AI Listing 1 for Refrigeration Industries and Storage Co. (RISCO),ai_generated,100,tons,AI-generated material listing 1 for Refrigeration Industries and Storage Co. (RISCO),A,5000,True,2025-07-20T00:39:21.185034
+,Refrigeration Industries and Storage Co. (RISCO),AI Listing 2 for Refrigeration Industries and Storage Co. (RISCO),ai_generated,50,tons,AI-generated material listing 2 for Refrigeration Industries and Storage Co. (RISCO),B,2500,True,2025-07-20T00:39:21.185034
+,Refrigeration Industries and Storage Co. (RISCO),Generic Material - Refrigeration Industries and Storage Co. (RISCO),unknown,100,tons,Generic material from Refrigeration Industries and Storage Co. (RISCO),C,2000,True,2025-07-20T00:39:21.185034
+,Kuwait Steel - United Steel Industrial,Steel Scrap,waste,150,tons,Steel scrap from Kuwait Steel - United Steel Industrial manufacturing,B,45000,True,2025-07-20T00:39:21.210185
+,Kuwait Steel - United Steel Industrial,Aluminum Waste,waste,50,tons,Aluminum waste from Kuwait Steel - United Steel Industrial operations,A,75000,True,2025-07-20T00:39:21.210185
+,Kuwait Steel - United Steel Industrial,AI Listing 1 for Kuwait Steel - United Steel Industrial,ai_generated,100,tons,AI-generated material listing 1 for Kuwait Steel - United Steel Industrial,A,5000,True,2025-07-20T00:39:21.210185
+,Kuwait Steel - United Steel Industrial,AI Listing 2 for Kuwait Steel - United Steel Industrial,ai_generated,50,tons,AI-generated material listing 2 for Kuwait Steel - United Steel Industrial,B,2500,True,2025-07-20T00:39:21.210185
+,Kuwait Steel - United Steel Industrial,Generic Material - Kuwait Steel - United Steel Industrial,unknown,100,tons,Generic material from Kuwait Steel - United Steel Industrial,C,2000,True,2025-07-20T00:39:21.210185
+,Al Sanea Chemical Products,Chemical Waste,waste,50,tons,Chemical waste from Al Sanea Chemical Products operations,C,25000,True,2025-07-20T00:39:21.230285
+,Al Sanea Chemical Products,AI Listing 1 for Al Sanea Chemical Products,ai_generated,100,tons,AI-generated material listing 1 for Al Sanea Chemical Products,A,5000,True,2025-07-20T00:39:21.230285
+,Al Sanea Chemical Products,AI Listing 2 for Al Sanea Chemical Products,ai_generated,50,tons,AI-generated material listing 2 for Al Sanea Chemical Products,B,2500,True,2025-07-20T00:39:21.230285
+,Al Sanea Chemical Products,Generic Material - Al Sanea Chemical Products,unknown,100,tons,Generic material from Al Sanea Chemical Products,C,2000,True,2025-07-20T00:39:21.230285
+,Rockwood Machinery,Steel Scrap,waste,150,tons,Steel scrap from Rockwood Machinery manufacturing,B,45000,True,2025-07-20T00:39:21.237301
+,Rockwood Machinery,Aluminum Waste,waste,50,tons,Aluminum waste from Rockwood Machinery operations,A,75000,True,2025-07-20T00:39:21.237301
+,Rockwood Machinery,AI Listing 1 for Rockwood Machinery,ai_generated,100,tons,AI-generated material listing 1 for Rockwood Machinery,A,5000,True,2025-07-20T00:39:21.237301
+,Rockwood Machinery,AI Listing 2 for Rockwood Machinery,ai_generated,50,tons,AI-generated material listing 2 for Rockwood Machinery,B,2500,True,2025-07-20T00:39:21.237301
+,Rockwood Machinery,Generic Material - Rockwood Machinery,unknown,100,tons,Generic material from Rockwood Machinery,C,2000,True,2025-07-20T00:39:21.237301
+,Hydra Scientific & Chemicals Trading LLC,Chemical Waste,waste,50,tons,Chemical waste from Hydra Scientific & Chemicals Trading LLC operations,C,25000,True,2025-07-20T00:39:21.248545
+,Hydra Scientific & Chemicals Trading LLC,AI Listing 1 for Hydra Scientific & Chemicals Trading LLC,ai_generated,100,tons,AI-generated material listing 1 for Hydra Scientific & Chemicals Trading LLC,A,5000,True,2025-07-20T00:39:21.248545
+,Hydra Scientific & Chemicals Trading LLC,AI Listing 2 for Hydra Scientific & Chemicals Trading LLC,ai_generated,50,tons,AI-generated material listing 2 for Hydra Scientific & Chemicals Trading LLC,B,2500,True,2025-07-20T00:39:21.248545
+,Hydra Scientific & Chemicals Trading LLC,Generic Material - Hydra Scientific & Chemicals Trading LLC,unknown,100,tons,Generic material from Hydra Scientific & Chemicals Trading LLC,C,2000,True,2025-07-20T00:39:21.248545
+,Budget Uniform,General Waste,waste,100,tons,General waste from Budget Uniform operations,C,20000,True,2025-07-20T00:39:21.258079
+,Budget Uniform,AI Listing 1 for Budget Uniform,ai_generated,100,tons,AI-generated material listing 1 for Budget Uniform,A,5000,True,2025-07-20T00:39:21.258079
+,Budget Uniform,AI Listing 2 for Budget Uniform,ai_generated,50,tons,AI-generated material listing 2 for Budget Uniform,B,2500,True,2025-07-20T00:39:21.258079
+,Budget Uniform,Generic Material - Budget Uniform,unknown,100,tons,Generic material from Budget Uniform,C,2000,True,2025-07-20T00:39:21.258079
+,C3D,Steel Scrap,waste,150,tons,Steel scrap from C3D manufacturing,B,45000,True,2025-07-20T00:39:21.266606
+,C3D,Aluminum Waste,waste,50,tons,Aluminum waste from C3D operations,A,75000,True,2025-07-20T00:39:21.266606
+,C3D,AI Listing 1 for C3D,ai_generated,100,tons,AI-generated material listing 1 for C3D,A,5000,True,2025-07-20T00:39:21.266606
+,C3D,AI Listing 2 for C3D,ai_generated,50,tons,AI-generated material listing 2 for C3D,B,2500,True,2025-07-20T00:39:21.266606
+,C3D,Generic Material - C3D,unknown,100,tons,Generic material from C3D,C,2000,True,2025-07-20T00:39:21.266606
+,Mist of Miami,Steel Scrap,waste,150,tons,Steel scrap from Mist of Miami manufacturing,B,45000,True,2025-07-20T00:39:21.276127
+,Mist of Miami,Aluminum Waste,waste,50,tons,Aluminum waste from Mist of Miami operations,A,75000,True,2025-07-20T00:39:21.276127
+,Mist of Miami,AI Listing 1 for Mist of Miami,ai_generated,100,tons,AI-generated material listing 1 for Mist of Miami,A,5000,True,2025-07-20T00:39:21.276127
+,Mist of Miami,AI Listing 2 for Mist of Miami,ai_generated,50,tons,AI-generated material listing 2 for Mist of Miami,B,2500,True,2025-07-20T00:39:21.276127
+,Mist of Miami,Generic Material - Mist of Miami,unknown,100,tons,Generic material from Mist of Miami,C,2000,True,2025-07-20T00:39:21.276127
+,Qasioon Industries FZE,Steel Scrap,waste,150,tons,Steel scrap from Qasioon Industries FZE manufacturing,B,45000,True,2025-07-20T00:39:21.286657
+,Qasioon Industries FZE,Aluminum Waste,waste,50,tons,Aluminum waste from Qasioon Industries FZE operations,A,75000,True,2025-07-20T00:39:21.286657
+,Qasioon Industries FZE,AI Listing 1 for Qasioon Industries FZE,ai_generated,100,tons,AI-generated material listing 1 for Qasioon Industries FZE,A,5000,True,2025-07-20T00:39:21.286657
+,Qasioon Industries FZE,AI Listing 2 for Qasioon Industries FZE,ai_generated,50,tons,AI-generated material listing 2 for Qasioon Industries FZE,B,2500,True,2025-07-20T00:39:21.286657
+,Qasioon Industries FZE,Generic Material - Qasioon Industries FZE,unknown,100,tons,Generic material from Qasioon Industries FZE,C,2000,True,2025-07-20T00:39:21.286657
+,Al Basira Aluminum & Glass Room Contracting LLC,General Waste,waste,100,tons,General waste from Al Basira Aluminum & Glass Room Contracting LLC operations,C,20000,True,2025-07-20T00:39:21.296192
+,Al Basira Aluminum & Glass Room Contracting LLC,AI Listing 1 for Al Basira Aluminum & Glass Room Contracting LLC,ai_generated,100,tons,AI-generated material listing 1 for Al Basira Aluminum & Glass Room Contracting LLC,A,5000,True,2025-07-20T00:39:21.296192
+,Al Basira Aluminum & Glass Room Contracting LLC,AI Listing 2 for Al Basira Aluminum & Glass Room Contracting LLC,ai_generated,50,tons,AI-generated material listing 2 for Al Basira Aluminum & Glass Room Contracting LLC,B,2500,True,2025-07-20T00:39:21.296192
+,Al Basira Aluminum & Glass Room Contracting LLC,Generic Material - Al Basira Aluminum & Glass Room Contracting LLC,unknown,100,tons,Generic material from Al Basira Aluminum & Glass Room Contracting LLC,C,2000,True,2025-07-20T00:39:21.296192
+,SBR Batteries,Steel Scrap,waste,150,tons,Steel scrap from SBR Batteries manufacturing,B,45000,True,2025-07-20T00:39:21.302219
+,SBR Batteries,Aluminum Waste,waste,50,tons,Aluminum waste from SBR Batteries operations,A,75000,True,2025-07-20T00:39:21.302219
+,SBR Batteries,AI Listing 1 for SBR Batteries,ai_generated,100,tons,AI-generated material listing 1 for SBR Batteries,A,5000,True,2025-07-20T00:39:21.302219
+,SBR Batteries,AI Listing 2 for SBR Batteries,ai_generated,50,tons,AI-generated material listing 2 for SBR Batteries,B,2500,True,2025-07-20T00:39:21.302219
+,SBR Batteries,Generic Material - SBR Batteries,unknown,100,tons,Generic material from SBR Batteries,C,2000,True,2025-07-20T00:39:21.302219
+,HD Smart Glass,Steel Scrap,waste,150,tons,Steel scrap from HD Smart Glass manufacturing,B,45000,True,2025-07-20T00:39:21.314750
+,HD Smart Glass,Aluminum Waste,waste,50,tons,Aluminum waste from HD Smart Glass operations,A,75000,True,2025-07-20T00:39:21.314750
+,HD Smart Glass,AI Listing 1 for HD Smart Glass,ai_generated,100,tons,AI-generated material listing 1 for HD Smart Glass,A,5000,True,2025-07-20T00:39:21.314750
+,HD Smart Glass,AI Listing 2 for HD Smart Glass,ai_generated,50,tons,AI-generated material listing 2 for HD Smart Glass,B,2500,True,2025-07-20T00:39:21.314750
+,HD Smart Glass,Generic Material - HD Smart Glass,unknown,100,tons,Generic material from HD Smart Glass,C,2000,True,2025-07-20T00:39:21.314750
+,Al Ghurair Foods,General Waste,waste,100,tons,General waste from Al Ghurair Foods operations,C,20000,True,2025-07-20T00:39:21.327282
+,Al Ghurair Foods,AI Listing 1 for Al Ghurair Foods,ai_generated,100,tons,AI-generated material listing 1 for Al Ghurair Foods,A,5000,True,2025-07-20T00:39:21.327282
+,Al Ghurair Foods,AI Listing 2 for Al Ghurair Foods,ai_generated,50,tons,AI-generated material listing 2 for Al Ghurair Foods,B,2500,True,2025-07-20T00:39:21.327282
+,Al Ghurair Foods,Generic Material - Al Ghurair Foods,unknown,100,tons,Generic material from Al Ghurair Foods,C,2000,True,2025-07-20T00:39:21.327282
+,Al Ain Dairy,General Waste,waste,100,tons,General waste from Al Ain Dairy operations,C,20000,True,2025-07-20T00:39:21.334360
+,Al Ain Dairy,AI Listing 1 for Al Ain Dairy,ai_generated,100,tons,AI-generated material listing 1 for Al Ain Dairy,A,5000,True,2025-07-20T00:39:21.335358
+,Al Ain Dairy,AI Listing 2 for Al Ain Dairy,ai_generated,50,tons,AI-generated material listing 2 for Al Ain Dairy,B,2500,True,2025-07-20T00:39:21.335358
+,Al Ain Dairy,Generic Material - Al Ain Dairy,unknown,100,tons,Generic material from Al Ain Dairy,C,2000,True,2025-07-20T00:39:21.335358
+,Advanced Electronics Company,General Waste,waste,100,tons,General waste from Advanced Electronics Company operations,C,20000,True,2025-07-20T00:39:21.341888
+,Advanced Electronics Company,AI Listing 1 for Advanced Electronics Company,ai_generated,100,tons,AI-generated material listing 1 for Advanced Electronics Company,A,5000,True,2025-07-20T00:39:21.341888
+,Advanced Electronics Company,AI Listing 2 for Advanced Electronics Company,ai_generated,50,tons,AI-generated material listing 2 for Advanced Electronics Company,B,2500,True,2025-07-20T00:39:21.341888
+,Advanced Electronics Company,Generic Material - Advanced Electronics Company,unknown,100,tons,Generic material from Advanced Electronics Company,C,2000,True,2025-07-20T00:39:21.341888
+,Almarai,General Waste,waste,100,tons,General waste from Almarai operations,C,20000,True,2025-07-20T00:39:21.351004
+,Almarai,AI Listing 1 for Almarai,ai_generated,100,tons,AI-generated material listing 1 for Almarai,A,5000,True,2025-07-20T00:39:21.351004
+,Almarai,AI Listing 2 for Almarai,ai_generated,50,tons,AI-generated material listing 2 for Almarai,B,2500,True,2025-07-20T00:39:21.351004
+,Almarai,Generic Material - Almarai,unknown,100,tons,Generic material from Almarai,C,2000,True,2025-07-20T00:39:21.351004
