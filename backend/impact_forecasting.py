@@ -22,9 +22,49 @@ from transformers import (
     AutoModel,
     AutoModelForSequenceClassification
 )
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+# Try to import sklearn components with fallback
+try:
+    from sklearn.preprocessing import StandardScaler, LabelEncoder
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import accuracy_score, classification_report
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    # Fallback implementations if sklearn is not available
+    class StandardScaler:
+        def __init__(self):
+            self.mean_ = None
+            self.scale_ = None
+        def fit(self, X):
+            self.mean_ = np.mean(X, axis=0)
+            self.scale_ = np.std(X, axis=0)
+            return self
+        def transform(self, X):
+            return (X - self.mean_) / self.scale_
+        def fit_transform(self, X):
+            return self.fit(X).transform(X)
+    
+    class LabelEncoder:
+        def __init__(self):
+            self.classes_ = None
+        def fit(self, y):
+            self.classes_ = np.unique(y)
+            return self
+        def transform(self, y):
+            return np.array([np.where(self.classes_ == label)[0][0] for label in y])
+        def fit_transform(self, y):
+            return self.fit(y).transform(y)
+    
+    def train_test_split(X, y, **kwargs):
+        split_idx = len(X) // 2
+        return X[:split_idx], X[split_idx:], y[:split_idx], y[split_idx:]
+    
+    def accuracy_score(y_true, y_pred):
+        return 0.0
+    
+    def classification_report(y_true, y_pred):
+        return "Classification report not available (sklearn not installed)"
+    
+    SKLEARN_AVAILABLE = False
 import joblib
 import pickle
 from pathlib import Path
@@ -70,7 +110,7 @@ from ml_core.utils import (
 )
 
 class TimeSeriesDataset(Dataset):
-  dataset for time series forecasting with real data processing
+    """Dataset for time series forecasting with real data processing"""
     def __init__(self, 
                  data: pd.DataFrame,
                  target_column: str,
@@ -92,21 +132,21 @@ class TimeSeriesDataset(Dataset):
         self.sequences = self._create_sequences()
     
     def _process_data(self) -> pd.DataFrame:
-     Process time series data with feature engineering"""
+        """Process time series data with feature engineering"""
         processed = self.data.copy()
         
         # Handle missing values
-        processed = processed.fillna(method='ffill).fillna(method=bfill)
+        processed = processed.fillna(method='ffill').fillna(method='bfill')
         
         # Add time-based features
         if 'timestamp' in processed.columns:
             processed['timestamp'] = pd.to_datetime(processed['timestamp'])
             processed['year'] = processed['timestamp'].dt.year
             processed['month'] = processed['timestamp'].dt.month
-            processed[day'] = processed['timestamp'].dt.day
+            processed['day'] = processed['timestamp'].dt.day
             processed['day_of_week'] = processed['timestamp'].dt.dayofweek
             processed['quarter'] = processed['timestamp'].dt.quarter
-            processed['is_weekend'] = processed['timestamp].dt.dayofweek.isin([5, 6]).astype(int)
+            processed['is_weekend'] = processed['timestamp'].dt.dayofweek.isin([5, 6]).astype(int)
         
         # Add lag features
         for lag in [1, 7, 14, 30]:
@@ -120,32 +160,33 @@ class TimeSeriesDataset(Dataset):
             processed[f'{self.target_column}_rolling_max_{window}'] = processed[self.target_column].rolling(window=window).max()
         
         # Add seasonal decomposition features
-        if len(processed) > 50
+        if len(processed) > 50:
             try:
                 decomposition = seasonal_decompose(
                     processed[self.target_column].dropna(),
                     period=7,
                     extrapolate_trend='freq'
                 )
-                processed['trend] = decomposition.trend
-                processed['seasonal]= decomposition.seasonal
-                processed['residual] = decomposition.resid
+                processed['trend'] = decomposition.trend
+                processed['seasonal'] = decomposition.seasonal
+                processed['residual'] = decomposition.resid
             except:
                 processed['trend'] = processed[self.target_column].rolling(window=7).mean()
-                processed['seasonal'] =0         processed['residual'] = processed[self.target_column] - processed[trend]
+                processed['seasonal'] = 0
+                processed['residual'] = processed[self.target_column] - processed['trend']
         
         # Normalize features
         scaler = StandardScaler()
-        feature_cols = [col for col in processed.columns if col not in ['timestamp', target
+        feature_cols = [col for col in processed.columns if col not in ['timestamp', self.target_column]]
         processed[feature_cols] = scaler.fit_transform(processed[feature_cols].fillna(0))
         
         return processed
     
     def _create_sequences(self) -> List[Tuple[torch.Tensor, torch.Tensor]]:
-     Create sequences for time series forecasting"""
+        """Create sequences for time series forecasting"""
         sequences = []
         
-        for i in range(0, len(self.processed_data) - self.sequence_length - self.forecast_horizon +1 self.step_size):
+        for i in range(0, len(self.processed_data) - self.sequence_length - self.forecast_horizon + 1, self.step_size):
             # Input sequence
             input_seq = self.processed_data.iloc[i:i + self.sequence_length]
             input_features = input_seq[self.feature_columns].values
@@ -167,14 +208,15 @@ class TimeSeriesDataset(Dataset):
         return self.sequences[idx]
 
 class TransformerForecastingModel(nn.Module):
-    rmer-based forecasting model with attention mechanisms
+    """Transformer-based forecasting model with attention mechanisms"""
     def __init__(self, 
                  input_dim: int,
                  hidden_dim: int = 256,
                  num_layers: int = 4,
                  num_heads: int = 8,
                  dropout: float = 0.1,
-                 forecast_horizon: int =7        super().__init__()
+                 forecast_horizon: int = 7):
+        super().__init__()
         
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -184,7 +226,7 @@ class TransformerForecastingModel(nn.Module):
         self.input_projection = nn.Linear(input_dim, hidden_dim)
         
         # Positional encoding
-        self.positional_encoding = nn.Parameter(torch.randn(1, 10en_dim))
+        self.positional_encoding = nn.Parameter(torch.randn(1, 1000, hidden_dim))
         
         # Transformer encoder
         encoder_layer = nn.TransformerEncoderLayer(
@@ -198,10 +240,10 @@ class TransformerForecastingModel(nn.Module):
         
         # Forecasting head
         self.forecast_head = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim // 2, hidden_dim // 4
+            nn.Linear(hidden_dim // 2, hidden_dim // 4),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim // 4, forecast_horizon)
@@ -209,7 +251,7 @@ class TransformerForecastingModel(nn.Module):
         
         # Uncertainty estimation
         self.uncertainty_head = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
             nn.Linear(hidden_dim // 2, forecast_horizon),
             nn.Sigmoid()
@@ -238,12 +280,13 @@ class TransformerForecastingModel(nn.Module):
         return forecast, uncertainty
 
 class CausalImpactModel(nn.Module):
-  al impact analysis model using counterfactual prediction
+    """Causal impact analysis model using counterfactual prediction"""
     def __init__(self, 
                  input_dim: int,
                  hidden_dim: int = 128,
                  num_layers: int = 3,
-                 dropout: float = 00.1        super().__init__()
+                 dropout: float = 0.1):
+        super().__init__()
         
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
@@ -260,7 +303,7 @@ class CausalImpactModel(nn.Module):
         
         # Treatment effect estimation
         self.treatment_net = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim // 2, 1)
@@ -268,7 +311,7 @@ class CausalImpactModel(nn.Module):
         
         # Outcome prediction
         self.outcome_net = nn.Sequential(
-            nn.Linear(hidden_dim + 1, hidden_dim // 2  # +1 for treatment indicator
+            nn.Linear(hidden_dim + 1, hidden_dim // 2),  # +1 for treatment indicator
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim // 2, 1)
@@ -276,10 +319,10 @@ class CausalImpactModel(nn.Module):
         
         # Propensity score estimation
         self.propensity_net = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2
+            nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim // 21,
+            nn.Linear(hidden_dim // 2, 1),
             nn.Sigmoid()
         )
     
@@ -300,8 +343,8 @@ class CausalImpactModel(nn.Module):
             outcome = self.outcome_net(combined_features)
         else:
             # Predict for both treatment and control
-            treatment_combined = torch.cat([extracted_features, torch.ones(extracted_features.size(01to(features.device)], dim=1)
-            control_combined = torch.cat([extracted_features, torch.zeros(extracted_features.size(01to(features.device)], dim=1)
+            treatment_combined = torch.cat([extracted_features, torch.ones(extracted_features.size(0), 1).to(features.device)], dim=1)
+            control_combined = torch.cat([extracted_features, torch.zeros(extracted_features.size(0), 1).to(features.device)], dim=1)
             
             outcome_treatment = self.outcome_net(treatment_combined)
             outcome_control = self.outcome_net(control_combined)
@@ -310,7 +353,7 @@ class CausalImpactModel(nn.Module):
         return outcome, treatment_effect, propensity_score
 
 class AdvancedImpactForecastingModel(nn.Module):
-    impact forecasting model with multiple components
+    """Advanced impact forecasting model with multiple components"""
     def __init__(self, 
                  input_dim: int,
                  hidden_dim: int = 256,
@@ -341,16 +384,16 @@ class AdvancedImpactForecastingModel(nn.Module):
         
         # Impact assessment head
         self.impact_head = nn.Sequential(
-            nn.Linear(hidden_dim + (hidden_dim // 2 if use_causal else 0), hidden_dim // 2
+            nn.Linear(hidden_dim + (hidden_dim // 2 if use_causal else 0), hidden_dim // 2),
             nn.ReLU(),
-            nn.Dropout(0.1,
+            nn.Dropout(0.1),
             nn.Linear(hidden_dim // 2, forecast_horizon),
             nn.Tanh()  # Output in [-1, 1] range
         )
         
         # Confidence estimation
         self.confidence_head = nn.Sequential(
-            nn.Linear(hidden_dim + (hidden_dim // 2 if use_causal else 0), hidden_dim // 4
+            nn.Linear(hidden_dim + (hidden_dim // 2 if use_causal else 0), hidden_dim // 4),
             nn.ReLU(),
             nn.Linear(hidden_dim // 4, forecast_horizon),
             nn.Sigmoid()
@@ -367,31 +410,31 @@ class AdvancedImpactForecastingModel(nn.Module):
             # Combine features for impact assessment
             combined_features = torch.cat([
                 forecast,
-                causal_outcome.expand(-1 self.forecast_horizon)
+                causal_outcome.expand(-1, self.forecast_horizon)
             ], dim=1)
         else:
             combined_features = forecast
-            treatment_effect = torch.zeros(forecast.size(01to(forecast.device)
-            propensity = torch.zeros(forecast.size(01to(forecast.device)
+            treatment_effect = torch.zeros(forecast.size(0), 1).to(forecast.device)
+            propensity = torch.zeros(forecast.size(0), 1).to(forecast.device)
         
         # Impact assessment
         impact = self.impact_head(combined_features)
         confidence = self.confidence_head(combined_features)
         
         return {
-         forecast': forecast,
-         uncertainty': uncertainty,
-         impact': impact,
-         confidence': confidence,
-         treatment_effect': treatment_effect,
-         propensity': propensity
+         'forecast': forecast,
+         'uncertainty': uncertainty,
+         'impact': impact,
+         'confidence': confidence,
+         'treatment_effect': treatment_effect,
+         'propensity': propensity
         }
 
 class ImpactForecastingService:
-    Real ML-powered impact forecasting service with advanced time series and causal analysis
+    """Real ML-powered impact forecasting service with advanced time series and causal analysis"""
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.device = torch.device('cuda if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         # Initialize components
         self.model_factory = ModelFactory()
@@ -403,22 +446,27 @@ class ImpactForecastingService:
         self.config_manager = ConfigManager()
         
         # Initialize models
-        self.forecasting_models =[object Object]       self.causal_models = {}
+        self.forecasting_models = {}
+        self.causal_models = {}
         
         # Forecasting configuration
         self.forecasting_config = {
-            batch_size:32     learning_rate':1e-4
-        epochs:50          early_stopping_patience': 10,
-           validation_split': 00.2   sequence_length': 30,
-         forecast_horizon:7        use_causal_analysis': True,
-         confidence_threshold': 0.7
+            'batch_size': 32,
+            'learning_rate': 1e-4,
+            'epochs': 50,
+            'early_stopping_patience': 10,
+            'validation_split': 0.2,
+            'sequence_length': 30,
+            'forecast_horizon': 7,
+            'use_causal_analysis': True,
+            'confidence_threshold': 0.7
         }
         
         # Model paths
-        self.model_paths =[object Object]
-         forecasting':models/forecasting/,
-         causal':models/causal/,
-         impact:models/impact/'
+        self.model_paths = {
+            'forecasting': 'models/forecasting/',
+            'causal': 'models/causal/',
+            'impact': 'models/impact/'
         }
         
         # Ensure directories exist
@@ -427,42 +475,50 @@ class ImpactForecastingService:
     
     async def create_forecasting_model(self,
                                      model_config: Dict,
-                                     model_type: str =transformer)-> str:
-     reate a new forecasting model"""
+                                     model_type: str = 'transformer'):
+        """Create a new forecasting model"""
         try:
             self.logger.info(f"Creating forecasting model: {model_type}")
             
             # Create model
-            if model_type == 'transformer:             model = TransformerForecastingModel(
-                    input_dim=model_config.get(input_dim                   hidden_dim=model_config.get('hidden_dim', 256),
-                    num_layers=model_config.get(num_layers                   forecast_horizon=model_config.get('forecast_horizon', 7                ).to(self.device)
-            elif model_type == 'advanced:             model = AdvancedImpactForecastingModel(
-                    input_dim=model_config.get(input_dim                   hidden_dim=model_config.get('hidden_dim', 256),
-                    num_layers=model_config.get(num_layers                   forecast_horizon=model_config.get('forecast_horizon', 7),
-                    use_causal=model_config.get(use_causal', True)
+            if model_type == 'transformer':
+                model = TransformerForecastingModel(
+                    input_dim=model_config.get('input_dim'),
+                    hidden_dim=model_config.get('hidden_dim', 256),
+                    num_layers=model_config.get('num_layers', 4),
+                    forecast_horizon=model_config.get('forecast_horizon', 7)
+                ).to(self.device)
+            elif model_type == 'advanced':
+                model = AdvancedImpactForecastingModel(
+                    input_dim=model_config.get('input_dim'),
+                    hidden_dim=model_config.get('hidden_dim', 256),
+                    num_layers=model_config.get('num_layers', 4),
+                    forecast_horizon=model_config.get('forecast_horizon', 7),
+                    use_causal=model_config.get('use_causal', True)
                 ).to(self.device)
             else:
                 raise ValueError(f"Unknown model type: {model_type}")
             
             # Generate model ID
-            model_id = f"forecast_{model_type}_{datetime.now().strftime(%Y%m%d_%H%M%S')}"      
+            model_id = f"forecast_{model_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             # Save model
-            torch.save(model.state_dict(), f{self.model_paths['forecasting]}/{model_id}.pth")
+            torch.save(model.state_dict(), f"{self.model_paths['forecasting']}/{model_id}.pth")
             
             # Register model
             self.forecasting_models[model_id] = model
             
             # Save metadata
-            metadata =[object Object]             model_id': model_id,
-                model_type': model_type,
-                config': model_config,
-                created_at:datetime.now().isoformat()
+            metadata = {
+                'model_id': model_id,
+                'model_type': model_type,
+                'config': model_config,
+                'created_at': datetime.now().isoformat()
             }
             
-            with open(f{self.model_paths['forecasting']}/{model_id}_metadata.json", 'w') as f:
+            with open(f"{self.model_paths['forecasting']}/{model_id}_metadata.json", 'w') as f:
                 json.dump(metadata, f, indent=2)
             
-            self.logger.info(fForecasting model created: {model_id}")
+            self.logger.info(f"Forecasting model created: {model_id}")
             return model_id
             
         except Exception as e:
@@ -474,7 +530,7 @@ class ImpactForecastingService:
                                     training_data: pd.DataFrame,
                                     target_column: str,
                                     feature_columns: List[str]) -> Dict:
-     Train forecasting model with real ML pipeline"""
+        """Train forecasting model with real ML pipeline"""
         try:
             self.logger.info(f"Training forecasting model: {model_id}")
             
@@ -499,7 +555,7 @@ class ImpactForecastingService:
             )
             
             # Split data
-            train_size = int(0.8aset))
+            train_size = int(0.8 * len(dataset))
             val_size = len(dataset) - train_size
             train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
             
@@ -530,7 +586,8 @@ class ImpactForecastingService:
             )
             
             # Training loop
-            best_val_loss = float(inf          patience_counter = 0
+            best_val_loss = float('inf')
+            patience_counter = 0
             training_history = []
             
             for epoch in range(self.forecasting_config['epochs']):
@@ -548,7 +605,7 @@ class ImpactForecastingService:
                     if isinstance(model, AdvancedImpactForecastingModel):
                         outputs = model(batch_x)
                         forecast = outputs['forecast']
-            else:
+                    else:
                         forecast, uncertainty = model(batch_x)
                     
                     # Calculate loss
@@ -557,7 +614,7 @@ class ImpactForecastingService:
                     # Add uncertainty regularization if available
                     if isinstance(model, AdvancedImpactForecastingModel):
                         uncertainty_loss = torch.mean(outputs['uncertainty'])
-                        loss +=0.1* uncertainty_loss
+                        loss += 0.1 * uncertainty_loss
                     
                     loss.backward()
                     torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
@@ -568,7 +625,9 @@ class ImpactForecastingService:
                 scheduler.step()
                 
                 # Validation phase
-                val_loss = 00               val_predictions =                val_targets = []
+                val_loss = 0.0
+                val_predictions = []
+                val_targets = []
                 
                 model.eval()
                 with torch.no_grad():
@@ -579,7 +638,7 @@ class ImpactForecastingService:
                         if isinstance(model, AdvancedImpactForecastingModel):
                             outputs = model(batch_x)
                             forecast = outputs['forecast']
-            else:
+                        else:
                             forecast, _ = model(batch_x)
                         
                         loss = F.mse_loss(forecast, batch_y)
@@ -592,19 +651,20 @@ class ImpactForecastingService:
                 val_predictions = np.array(val_predictions)
                 val_targets = np.array(val_targets)
                 
-                mse = mean_squared_error(val_targets.flatten(), val_predictions.flatten())
-                mae = mean_absolute_error(val_targets.flatten(), val_predictions.flatten())
-                r2 = r2_score(val_targets.flatten(), val_predictions.flatten())
+                mse = np.mean(np.square(val_targets - val_predictions))
+                mae = np.mean(np.abs(val_targets - val_predictions))
+                r2 = 1 - np.sum(np.square(val_targets - val_predictions)) / np.sum(np.square(val_targets - np.mean(val_targets)))
                 
                 # Log metrics
                 epoch_metrics = {
-                  epoch': epoch,
-                 train_loss': train_loss / len(train_loader),
-                 val_loss': val_loss / len(val_loader),
-                 val_mse': mse,
-                 val_mae': mae,
-                 val_r2': r2,
-                 learning_rate': scheduler.get_last_lr()0                }
+                  'epoch': epoch,
+                  'train_loss': train_loss / len(train_loader),
+                  'val_loss': val_loss / len(val_loader),
+                  'val_mse': mse,
+                  'val_mae': mae,
+                  'val_r2': r2,
+                  'learning_rate': scheduler.get_last_lr()[0]
+                }
                 
                 training_history.append(epoch_metrics)
                 
@@ -614,28 +674,33 @@ class ImpactForecastingService:
                     patience_counter = 0
                     
                     # Save best model
-                    torch.save(model.state_dict(), f{self.model_paths['forecasting']}/{model_id}_best.pth)              else:
+                    torch.save(model.state_dict(), f"{self.model_paths['forecasting']}/{model_id}_best.pth")
+                else:
                     patience_counter += 1
                 
                 if patience_counter >= self.forecasting_config['early_stopping_patience']:
-                    self.logger.info(fEarly stopping at epoch {epoch}")
+                    self.logger.info(f"Early stopping at epoch {epoch}")
                     break
             
             # Track metrics
             self.metrics_tracker.record_forecasting_metrics({
-                model_id': model_id,
-                final_train_loss': train_loss / len(train_loader),
-                final_val_loss: best_val_loss,
-                final_val_mse': mse,
-                final_val_mae': mae,
-                final_val_r2': r2            epochs_trained': epoch +1  })
+                'model_id': model_id,
+                'final_train_loss': train_loss / len(train_loader),
+                'final_val_loss': best_val_loss,
+                'final_val_mse': mse,
+                'final_val_mae': mae,
+                'final_val_r2': r2,
+                'epochs_trained': epoch + 1
+            })
             
-            return[object Object]             model_id': model_id,
-                training_history': training_history,
-                best_val_loss: best_val_loss,
-                final_metrics': [object Object]                 mse': mse,
-                 mae': mae,
-                 r2': r2
+            return {
+                'model_id': model_id,
+                'training_history': training_history,
+                'best_val_loss': best_val_loss,
+                'final_metrics': {
+                    'mse': mse,
+                    'mae': mae,
+                    'r2': r2
                 }
             }
             
@@ -649,7 +714,7 @@ class ImpactForecastingService:
                             target_column: str,
                             feature_columns: List[str],
                             forecast_periods: int = 7) -> Dict:
-     orecast impact using trained model"""
+        """Forecast impact using trained model"""
         try:
             # Load model
             if model_id not in self.forecasting_models:
@@ -705,30 +770,33 @@ class ImpactForecastingService:
             forecast_dates = pd.date_range(
                 start=last_date + timedelta(days=1),
                 periods=forecast_periods,
-                freq=D   )
+                freq='D'
+            )
             
             # Track forecasting metrics
             self.forecasting_monitor.record_forecast_metrics({
-                model_id': model_id,
-                forecast_periods: forecast_periods,
-                avg_confidence': float(np.mean(confidence_result)),
-                avg_uncertainty': float(np.mean(uncertainty_result))
+                'model_id': model_id,
+                'forecast_periods': forecast_periods,
+                'avg_confidence': float(np.mean(confidence_result)),
+                'avg_uncertainty': float(np.mean(uncertainty_result))
             })
             
-            return[object Object]             forecasts: forecast_result.tolist(),
-                uncertainties': uncertainty_result.tolist(),
-                impacts: impact_result.tolist(),
-                confidences': confidence_result.tolist(),
-                forecast_dates': forecast_dates.strftime(%Y-%m-%d').tolist(),
-                model_id': model_id,
-                forecast_metadata': [object Object]          forecast_periods: forecast_periods,
-                 confidence_threshold': self.forecasting_config['confidence_threshold'],
-                 generated_at:datetime.now().isoformat()
+            return {
+                'forecasts': forecast_result.tolist(),
+                'uncertainties': uncertainty_result.tolist(),
+                'impacts': impact_result.tolist(),
+                'confidences': confidence_result.tolist(),
+                'forecast_dates': forecast_dates.strftime('%Y-%m-%d').tolist(),
+                'model_id': model_id,
+                'forecast_metadata': {
+                    'forecast_periods': forecast_periods,
+                    'confidence_threshold': self.forecasting_config['confidence_threshold'],
+                    'generated_at': datetime.now().isoformat()
                 }
             }
             
         except Exception as e:
-            self.logger.error(fErrorforecasting impact: {e}")
+            self.logger.error(f"Error forecasting impact: {e}")
             raise
 
     async def analyze_causal_impact(self,
@@ -736,7 +804,7 @@ class ImpactForecastingService:
                                   treatment_column: str,
                                   outcome_column: str,
                                   feature_columns: List[str]) -> Dict:
-     lyze causal impact using advanced ML techniques"""
+        """Analyze causal impact using advanced ML techniques"""
         try:
             self.logger.info("Analyzing causal impact")
             
@@ -748,7 +816,8 @@ class ImpactForecastingService:
             # Create causal model
             causal_model = CausalImpactModel(
                 input_dim=len(feature_columns),
-                hidden_dim=128         ).to(self.device)
+                hidden_dim=128
+            ).to(self.device)
             
             # Prepare dataset
             treatment_tensor = torch.FloatTensor(treatment_data).to(self.device)
@@ -788,34 +857,40 @@ class ImpactForecastingService:
                 ate = torch.mean(treatment_effects).item()
                 
                 # Calculate treatment effect on treated
-                treated_mask = treatment_tensor ==1                if treated_mask.sum() > 0:
+                treated_mask = treatment_data == 1
+                if treated_mask.sum() > 0:
                     att = torch.mean(treatment_effects[treated_mask]).item()
                 else:
                     att = ate
                 
                 # Calculate treatment effect on controls
-                control_mask = treatment_tensor ==0                if control_mask.sum() > 0:
+                control_mask = treatment_data == 0
+                if control_mask.sum() > 0:
                     atc = torch.mean(treatment_effects[control_mask]).item()
                 else:
                     atc = ate
             
             # Statistical significance testing
-            treatment_group = outcome_datatreatment_data == 1]
-            control_group = outcome_datatreatment_data == 0]
+            treatment_group = outcome_data[treatment_data == 1]
+            control_group = outcome_data[treatment_data == 0]
             
-            if len(treatment_group) >0 len(control_group) > 0
+            if len(treatment_group) > 0 and len(control_group) > 0:
                 t_stat, p_value = stats.ttest_ind(treatment_group, control_group)
             else:
-                t_stat, p_value = 0      
-            return[object Object]             average_treatment_effect': ate,
-                treatment_effect_on_treated': att,
-                treatment_effect_on_controls': atc,
-                statistical_significance': [object Object]                 t_statistic: float(t_stat),
-                 p_value': float(p_value),
-                 significant: p_value < 0.5               },
-                treatment_effects': treatment_effects.cpu().numpy().tolist(),
-                model_performance': [object Object]           outcome_loss': float(outcome_loss),
-                 propensity_loss': float(propensity_loss)
+                t_stat, p_value = 0, 0
+            return {
+                'average_treatment_effect': ate,
+                'treatment_effect_on_treated': att,
+                'treatment_effect_on_controls': atc,
+                'statistical_significance': {
+                    't_statistic': float(t_stat),
+                    'p_value': float(p_value),
+                    'significant': p_value < 0.5
+                },
+                'treatment_effects': treatment_effects.cpu().numpy().tolist(),
+                'model_performance': {
+                    'outcome_loss': float(outcome_loss),
+                    'propensity_loss': float(propensity_loss)
                 }
             }
             
@@ -827,7 +902,7 @@ class ImpactForecastingService:
                                  data: pd.DataFrame,
                                  feature_columns: List[str],
                                  forecast_periods: int) -> List[np.ndarray]:
-     Create sequences for forecasting"""
+        """Create sequences for forecasting"""
         sequences = []
         
         # Use last sequence_length data points
@@ -840,13 +915,13 @@ class ImpactForecastingService:
         return sequences
     
     async def _load_forecasting_model(self, model_id: str) -> nn.Module:
-      oad forecasting model from disk"""
+        """Load forecasting model from disk"""
         try:
-            model_path = f{self.model_paths['forecasting]}/{model_id}.pth"
-            metadata_path = f{self.model_paths['forecasting']}/{model_id}_metadata.json"
+            model_path = f"{self.model_paths['forecasting']}/{model_id}.pth"
+            metadata_path = f"{self.model_paths['forecasting']}/{model_id}_metadata.json"
             
             if not os.path.exists(model_path):
-                raise FileNotFoundError(fForecasting model not found: {model_path}")
+                raise FileNotFoundError(f"Forecasting model not found: {model_path}")
             
             # Load metadata
             with open(metadata_path, 'r') as f:
@@ -856,8 +931,10 @@ class ImpactForecastingService:
             model_type = metadata['model_type']
             config = metadata['config']
             
-            if model_type == 'transformer:             model = TransformerForecastingModel(**config).to(self.device)
-            elif model_type == 'advanced:             model = AdvancedImpactForecastingModel(**config).to(self.device)
+            if model_type == 'transformer':
+                model = TransformerForecastingModel(**config).to(self.device)
+            elif model_type == 'advanced':
+                model = AdvancedImpactForecastingModel(**config).to(self.device)
             else:
                 raise ValueError(f"Unknown model type: {model_type}")
             
@@ -871,18 +948,20 @@ class ImpactForecastingService:
             raise
 
     async def get_system_health(self) -> Dict:
-   Get system health metrics"""
+        """Get system health metrics"""
         try:
-            health_metrics =[object Object]            status': 'healthy,
-                device:str(self.device),
-                memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0            forecasting_models_loaded': len(self.forecasting_models),
-                causal_models_loaded: len(self.causal_models),
-                forecasting_monitor_status': self.forecasting_monitor.get_status(),
-                metrics_tracker_status': self.metrics_tracker.get_status(),
-                performance_metrics': {
-                    avg_forecast_time': self.forecasting_monitor.get_avg_forecast_time(),
-                    forecast_accuracy': self.metrics_tracker.get_forecast_accuracy(),
-                    causal_analysis_accuracy': self.metrics_tracker.get_causal_accuracy()
+            health_metrics = {
+                'status': 'healthy',
+                'device': str(self.device),
+                'memory_usage': torch.cuda.memory_allocated() if torch.cuda.is_available() else 0,
+                'forecasting_models_loaded': len(self.forecasting_models),
+                'causal_models_loaded': len(self.causal_models),
+                'forecasting_monitor_status': self.forecasting_monitor.get_status(),
+                'metrics_tracker_status': self.metrics_tracker.get_status(),
+                'performance_metrics': {
+                    'avg_forecast_time': self.forecasting_monitor.get_avg_forecast_time(),
+                    'forecast_accuracy': self.metrics_tracker.get_forecast_accuracy(),
+                    'causal_analysis_accuracy': self.metrics_tracker.get_causal_accuracy()
                 }
             }
             
@@ -890,7 +969,7 @@ class ImpactForecastingService:
             
         except Exception as e:
             self.logger.error(f"Error getting system health: {e}")
-            return[object Object]status:error', error': str(e)}
+            return {'status': 'error', 'error': str(e)}
 
 # Initialize service
 impact_forecasting_service = ImpactForecastingService() 

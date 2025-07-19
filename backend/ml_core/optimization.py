@@ -45,3 +45,23 @@ class ProductionOptimizer(BaseOptimizer):
         self.search_space = search_space
     def optimize(self, *args, **kwargs):
         raise NotImplementedError('ProductionOptimizer.optimize must be implemented by subclasses.') 
+
+# --- STUB: ArchitectureSearch ---
+class ArchitectureSearch:
+    def __init__(self, *args, **kwargs):
+        pass
+    def search(self, *args, **kwargs):
+        raise NotImplementedError('ArchitectureSearch.search must be implemented by subclasses.')
+
+# --- STUB: MonitoringOptimizer ---
+class MonitoringOptimizer:
+    def __init__(self, *args, **kwargs):
+        pass
+    def optimize(self, *args, **kwargs):
+        raise NotImplementedError('MonitoringOptimizer.optimize must be implemented by subclasses.') 
+
+class FeedbackOptimizer:
+    def __init__(self, *args, **kwargs):
+        pass
+    def optimize(self, *args, **kwargs):
+        return {} 

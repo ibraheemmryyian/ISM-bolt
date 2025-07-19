@@ -30,6 +30,9 @@ from collections import defaultdict, deque
 import psutil
 import requests
 import os
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Configure logging
 logging.basicConfig(
@@ -135,6 +138,10 @@ class SystemHealthMonitor:
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP
                     )
                 """)
+                # Log the columns for debugging
+                cur = conn.execute("PRAGMA table_info(health_metrics);")
+                columns = [row[1] for row in cur.fetchall()]
+                logger.info(f"health_metrics columns at startup: {columns}")
                 
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS health_alerts (
@@ -275,34 +282,29 @@ class SystemHealthMonitor:
             with sqlite3.connect(self.db_path) as conn:
                 # Store system metrics
                 conn.execute("""
-                    INSERT INTO health_metrics (timestamp, metric_name, metric_value)
+                    INSERT INTO health_metrics (timestamp, metric_name, value)
                     VALUES (?, ?, ?)
                 """, (metrics.timestamp.isoformat(), 'cpu_usage', metrics.cpu_usage))
-                
                 conn.execute("""
-                    INSERT INTO health_metrics (timestamp, metric_name, metric_value)
+                    INSERT INTO health_metrics (timestamp, metric_name, value)
                     VALUES (?, ?, ?)
                 """, (metrics.timestamp.isoformat(), 'memory_usage', metrics.memory_usage))
-                
                 conn.execute("""
-                    INSERT INTO health_metrics (timestamp, metric_name, metric_value)
+                    INSERT INTO health_metrics (timestamp, metric_name, value)
                     VALUES (?, ?, ?)
                 """, (metrics.timestamp.isoformat(), 'disk_usage', metrics.disk_usage))
-                
                 # Store API checks
                 for metric_name, value in api_checks.items():
                     conn.execute("""
-                        INSERT INTO health_metrics (timestamp, metric_name, metric_value)
+                        INSERT INTO health_metrics (timestamp, metric_name, value)
                         VALUES (?, ?, ?)
                     """, (metrics.timestamp.isoformat(), metric_name, value))
-                
                 # Store service checks
                 for metric_name, value in service_checks.items():
                     conn.execute("""
-                        INSERT INTO health_metrics (timestamp, metric_name, metric_value)
+                        INSERT INTO health_metrics (timestamp, metric_name, value)
                         VALUES (?, ?, ?)
                     """, (metrics.timestamp.isoformat(), metric_name, value))
-                    
         except Exception as e:
             logger.error(f"Error storing metrics: {e}")
     
@@ -491,6 +493,55 @@ class SystemHealthMonitor:
             except Exception as e:
                 logger.error(f"Error in monitoring loop: {e}")
                 time.sleep(self.check_interval)
+
+def run_startup_self_test():
+    import importlib
+    import sqlite3
+    logger.info("=== STARTUP SELF-TEST ===")
+    # Check critical imports
+    critical_imports = [
+        'numpy', 'pandas', 'torch', 'transformers', 'sklearn', 'flask', 'requests'
+    ]
+    for module in critical_imports:
+        try:
+            importlib.import_module(module)
+            logger.info(f"[SELF-TEST] Import OK: {module}")
+        except ImportError as e:
+            logger.error(f"[SELF-TEST] Import FAIL: {module} - {e}")
+    # Check health_metrics schema
+    try:
+        with sqlite3.connect('system_health.db') as conn:
+            cur = conn.execute("PRAGMA table_info(health_metrics);")
+            columns = [row[1] for row in cur.fetchall()]
+            logger.info(f"[SELF-TEST] health_metrics columns: {columns}")
+    except Exception as e:
+        logger.error(f"[SELF-TEST] DB schema check failed: {e}")
+    logger.info("=== END SELF-TEST ===")
+
+# Run self-test at startup
+run_startup_self_test()
+
+import requests
+
+def check_service_health():
+    endpoints = [
+        ('AI Gateway', 'http://localhost:8000/health'),
+        ('GNN Inference', 'http://localhost:8001/health'),
+        ('AI Pricing', 'http://localhost:8002/health'),
+        ('Logistics', 'http://localhost:8003/health'),
+        # Add more as needed
+    ]
+    logger.info("=== SERVICE HEALTH CHECK ===")
+    for name, url in endpoints:
+        try:
+            resp = requests.get(url, timeout=3)
+            logger.info(f"[HEALTH] {name}: {resp.status_code} {resp.text.strip()}")
+        except Exception as e:
+            logger.error(f"[HEALTH] {name}: ERROR - {e}")
+    logger.info("=== END SERVICE HEALTH CHECK ===")
+
+# Optionally call this at startup or on demand
+# check_service_health()
 
 # Test function
 async def test_health_monitor():

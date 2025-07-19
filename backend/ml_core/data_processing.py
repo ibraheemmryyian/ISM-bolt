@@ -74,3 +74,25 @@ def preprocess_text(texts):
 class FeatureExtractor:
     def __init__(self, *args, **kwargs):
         pass 
+
+# --- STUB: DataAugmentation ---
+class DataAugmentation:
+    def __init__(self, *args, **kwargs):
+        pass
+    def augment_text(self, *args, **kwargs):
+        raise NotImplementedError('DataAugmentation.augment_text must be implemented by subclasses.') 
+
+class FeedbackProcessor:
+    def __init__(self, *args, **kwargs):
+        pass
+    def process(self, *args, **kwargs):
+        return {} 
+
+# --- STUB: PromptDataProcessor ---
+class PromptDataProcessor:
+    """Stub for advanced prompt data processing. Replace with real implementation as needed."""
+    def __init__(self, *args, **kwargs):
+        pass
+    def process(self, prompts, *args, **kwargs):
+        # Placeholder: implement advanced prompt cleaning, tokenization, etc.
+        return prompts 

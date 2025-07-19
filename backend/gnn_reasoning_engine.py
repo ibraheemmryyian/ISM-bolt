@@ -1,6 +1,11 @@
 import torch
 from torch_geometric.data import Data
-from .ml_core.models import BaseGCN, BaseGAT
+# Fix relative import error
+try:
+    from .ml_core.models import BaseGCN, BaseGAT
+except ImportError:
+    # Use absolute import
+    from ml_core.models import BaseGCN, BaseGAT
 from .ml_core.training import train_gnn
 from .ml_core.inference import predict_gnn
 from .ml_core.monitoring import log_metrics, save_checkpoint

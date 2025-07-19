@@ -25,10 +25,6 @@ import scipy.optimize as scipy_opt
 from scipy.stats import uniform, loguniform, randint
 import hyperopt
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
-import ray
-from ray import tune
-from ray.tune.schedulers import ASHAScheduler, HyperBandScheduler
-from ray.tune.search.optuna import OptunaSearch
 import mlflow
 import wandb
 from sklearn.model_selection import cross_val_score, StratifiedKFold
@@ -770,8 +766,7 @@ class AdvancedHyperparameterOptimizer:
                                    constraints: Dict = None) -> Dict:
         """Tune optimization"""
         # Initialize Ray
-        if not ray.is_initialized():
-            ray.init()
+        # Remove: if not ray.is_initialized(): ray.init()
         
         def ray_objective(config):
             # Evaluate objective

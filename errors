@@ -1,0 +1,53 @@
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\torchvision\io\image.py:13: UserWarning: Failed to load image Python extension: '[WinError 127] The specified procedure could not be found'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+
+C:\Users\amrey\Desktop\SymbioFlows>
+
+
+WARNING:root:Kubernetes not available: Invalid kube-config file. No configuration found.
+2025/07/19 02:22:26 INFO mlflow.store.db.utils: Creating initial MLflow database tables...
+2025/07/19 02:22:26 INFO mlflow.store.db.utils: Updating database tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [ai_production_orchestrator] High resource usage: CPU 0.0%, Memory 86.8%
+WARNI [root] stable_baselines3 is not installed or not available. Feedback orchestrator features will be limited.
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\start_production_ai_system.py", line 31, in <module>
+    from ai_monitoring_dashboard import AIMonitoringDashboard
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_monitoring_dashboard.py", line 918, in <module>
+    data_validator = AdvancedDataValidator(logger=logger)
+                                                  ^^^^^^
+NameError: name 'logger' is not defined
+
+C:\Users\amrey\Desktop\SymbioFlows>
+
+
+
+
+2025-07-19 02:22:23,972 - model_persistence_manager - INFO - Loaded registry with 1 models
+2025-07-19 02:22:23,974 - model_persistence_manager - INFO - Model Persistence Manager initialized at model_storage
+2025-07-19 02:22:23,978 - model_persistence_manager - INFO - Loaded registry with 1 models
+2025-07-19 02:22:23,978 - model_persistence_manager - INFO - Model Persistence Manager initialized at model_storage
+2025-07-19 02:22:23,979 - root - WARNING - Kubernetes not available: Invalid kube-config file. No configuration found.
+2025/07/19 02:22:26 INFO mlflow.store.db.utils: Creating initial MLflow database tables...
+2025/07/19 02:22:26 INFO mlflow.store.db.utils: Updating database tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [ai_production_orchestrator] High resource usage: CPU 100.0%, Memory 86.8%
+WARNI [root] stable_baselines3 is not installed or not available. Feedback orchestrator features will be limited.
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\start_production_ai_system_fixed.py", line 134, in <module>
+    from ai_monitoring_dashboard import AIMonitoringDashboard
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_monitoring_dashboard.py", line 918, in <module>
+    data_validator = AdvancedDataValidator(logger=logger)
+                                                  ^^^^^^
+NameError: name 'logger' is not defined
+
+C:\Users\amrey\Desktop\SymbioFlows>
+
+
+

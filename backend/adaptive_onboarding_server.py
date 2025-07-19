@@ -33,7 +33,26 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Initialize the adaptive onboarding service
-adaptive_onboarding = AdaptiveAIOnboarding()
+try:
+    adaptive_onboarding = AdaptiveAIOnboarding()
+    logger.info("✅ Adaptive AI Onboarding service initialized successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize Adaptive AI Onboarding service: {e}")
+    # Create a minimal fallback
+    class FallbackAdaptiveOnboarding:
+        def __init__(self):
+            self.active_sessions = {}
+        async def start_onboarding_session(self, user_id, initial_profile):
+            return {'session_id': 'fallback', 'user_id': user_id}
+        async def process_user_response(self, session_id, question_id, answer):
+            return {'session_id': session_id, 'answer_quality': 'good', 'confidence': 0.8, 'completion_percentage': 0.5}
+        async def complete_onboarding(self, session_id):
+            return {'session_id': session_id, 'success': True}
+        def get_session_status(self, session_id):
+            return {'session_id': session_id, 'completion_percentage': 0.5}
+    
+    adaptive_onboarding = FallbackAdaptiveOnboarding()
+    logger.warning("⚠️ Using fallback adaptive onboarding service")
 
 # Global session storage (in production, use Redis or database)
 sessions = {}

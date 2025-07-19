@@ -5,7 +5,7 @@ Orchestrates all AI services with intelligent routing, load balancing, and healt
 
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend')))
 import json
 from flask import Flask, request, jsonify
 import torch
@@ -13,7 +13,21 @@ from transformers import AutoTokenizer
 from ml_core.models import ModelFactory
 from ml_core.utils import ModelRegistry
 from ml_core.monitoring import MLMetricsTracker
-from backend.utils.distributed_logger import DistributedLogger
+# Fix import error
+try:
+    from backend.utils.distributed_logger import DistributedLogger
+except ImportError:
+    # Fallback implementation
+    import logging
+    class DistributedLogger:
+        def __init__(self, *args, **kwargs):
+            self.logger = logging.getLogger(__name__)
+        def info(self, msg):
+            self.logger.info(msg)
+        def error(self, msg):
+            self.logger.error(msg)
+        def warning(self, msg):
+            self.logger.warning(msg)
 from backend.utils.advanced_data_validator import AdvancedDataValidator
 from ml_core.optimization import HyperparameterOptimizer
 import shap

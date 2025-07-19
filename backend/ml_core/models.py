@@ -155,3 +155,58 @@ class PromptGenerationModel(nn.Module):
         # Add extensible initialization here
     def forward(self, *args, **kwargs):
         raise NotImplementedError('PromptGenerationModel.forward must be implemented by subclasses.') 
+
+# --- STUB: PromptOptimizationModel ---
+class PromptOptimizationModel(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+        # Add extensible initialization here
+    def forward(self, *args, **kwargs):
+        raise NotImplementedError('PromptOptimizationModel.forward must be implemented by subclasses.') 
+
+class ContextUnderstandingModel:
+    def __init__(self, *args, **kwargs):
+        pass 
+
+# Add missing MaterialsClassificationModel
+class MaterialsClassificationModel:
+    """Materials classification model for dynamic materials integration"""
+    def __init__(self, num_classes=100, embedding_dim=768, hidden_dim=512):
+        self.num_classes = num_classes
+        self.embedding_dim = embedding_dim
+        self.hidden_dim = hidden_dim
+        self.model = None
+        
+    def build_model(self):
+        """Build the classification model"""
+        import torch
+        import torch.nn as nn
+        
+        class MaterialsClassifier(nn.Module):
+            def __init__(self, num_classes, embedding_dim, hidden_dim):
+                super().__init__()
+                self.embedding = nn.Linear(embedding_dim, hidden_dim)
+                self.dropout = nn.Dropout(0.3)
+                self.classifier = nn.Linear(hidden_dim, num_classes)
+                self.activation = nn.ReLU()
+                
+            def forward(self, x):
+                x = self.embedding(x)
+                x = self.activation(x)
+                x = self.dropout(x)
+                x = self.classifier(x)
+                return x
+        
+        self.model = MaterialsClassifier(self.num_classes, self.embedding_dim, self.hidden_dim)
+        return self.model
+    
+    def predict(self, features):
+        """Make predictions"""
+        if self.model is None:
+            self.build_model()
+        
+        import torch
+        with torch.no_grad():
+            outputs = self.model(torch.tensor(features, dtype=torch.float32))
+            predictions = torch.softmax(outputs, dim=-1)
+            return predictions.numpy() 

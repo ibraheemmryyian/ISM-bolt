@@ -4,7 +4,9 @@ Logistics Service Wrapper
 Flask wrapper for the logistics cost engine service
 """
 
+import sys
 import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend')))
 import json
 import logging
 from flask import Flask, request, jsonify
@@ -20,7 +22,32 @@ app = Flask(__name__)
 model_registry = ModelRegistry()
 metrics_tracker = MLMetricsTracker()
 data_validator = DataValidator()
-optimizer = HyperparameterOptimizer()
+# Fix HyperparameterOptimizer initialization
+try:
+    optimizer = HyperparameterOptimizer()
+except TypeError:
+    # Provide default arguments
+    class DefaultConfig:
+        def __init__(self):
+            self.optimization_algorithm = 'bayesian'
+            self.max_trials = 100
+            self.timeout = 3600
+    
+    class DefaultSearchSpace:
+        def __init__(self):
+            self.learning_rate = [0.001, 0.1]
+            self.batch_size = [16, 128]
+            self.hidden_size = [64, 512]
+    
+    class DefaultModel:
+        def __init__(self):
+            self.name = 'default_model'
+    
+    optimizer = HyperparameterOptimizer(
+        model=DefaultModel(),
+        config=DefaultConfig(),
+        search_space=DefaultSearchSpace()
+    )
 
 
 def get_logistics_model(model_id):

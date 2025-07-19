@@ -12,6 +12,11 @@ from pathlib import Path
 from datetime import datetime
 import signal
 import argparse
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+warnings.filterwarnings("ignore", message=".*deprecated.*")
 
 # Add backend to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))

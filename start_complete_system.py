@@ -18,9 +18,7 @@ SERVICES = [
     {'name': 'GNN Inference', 'cmd': ['python', 'ai_service_flask/gnn_inference_service.py'], 'health_url': 'http://localhost:8001/health'},
     {'name': 'AI Pricing', 'cmd': ['python', 'ai_service_flask/ai_pricing_service_wrapper.py'], 'health_url': 'http://localhost:8002/health'},
     {'name': 'Logistics', 'cmd': ['python', 'ai_service_flask/logistics_service_wrapper.py'], 'health_url': 'http://localhost:8003/health'},
-    {'name': 'Monitoring Dashboard', 'cmd': ['python', 'backend/ai_monitoring_dashboard.py'], 'health_url': None},
     {'name': 'Feedback Orchestrator', 'cmd': ['python', 'backend/ai_feedback_orchestrator.py'], 'health_url': None},
-    {'name': 'Production Orchestrator', 'cmd': ['python', 'backend/ai_production_orchestrator.py'], 'health_url': None},
     {'name': 'Service Integration', 'cmd': ['python', 'backend/ai_service_integration.py'], 'health_url': None},
 ]
 

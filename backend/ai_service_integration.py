@@ -41,6 +41,9 @@ import threading
 import queue
 import time
 from collections import deque
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # ML Core imports
 from ml_core.models import (
@@ -153,9 +156,8 @@ class ServiceDiscovery:
             else:
                 # Use local registry
                 return [service for service in self.services.values() 
-                       if service.service_type == service_type and service.status == ServiceStatus.HEALTHY]
-                
-            except Exception as e:
+                        if service.service_type == service_type and service.status == ServiceStatus.HEALTHY]
+        except Exception as e:
             logging.error(f"Error discovering services: {e}")
             return []
     
@@ -301,17 +303,14 @@ class LoadBalancer:
                     request_context.get('urgency', 1)
                 ]
                 service_features.append(features)
-            
             # Get ML predictions
             features_tensor = torch.FloatTensor(service_features)
             with torch.no_grad():
                 scores = self.routing_model(features_tensor).squeeze()
-            
             # Select service with highest score
             best_service_idx = torch.argmax(scores).item()
             return services[best_service_idx]
-            
-            except Exception as e:
+        except Exception as e:
             logging.error(f"ML routing error: {e}")
             return self._round_robin(services)
     
@@ -528,7 +527,7 @@ class ServiceMesh:
         # For now, simulate a service call
         await asyncio.sleep(0.1)  # Simulate network delay
         
-            return {
+        return {
             'service_id': service_id,
             'method': method,
             'result': 'success',
@@ -730,7 +729,7 @@ class AIServiceIntegration:
     
     async def _handle_health_check(self, body: Dict, headers: Dict) -> Dict:
         """Handle health check request"""
-            return {
+        return {
             'status': 'healthy',
             'timestamp': datetime.now().isoformat(),
             'services': len(self.service_discovery.services)
@@ -818,7 +817,7 @@ class AIServiceIntegration:
                                               timeout=self.integration_config['timeout']) as response:
                             if response.status == 200:
                                 return await response.json()
-            else:
+                            else:
                                 raise Exception(f"Service returned status {response.status}")
                                 
                 except Exception as e:

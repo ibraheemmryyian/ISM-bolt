@@ -23,10 +23,18 @@ import torch.optim as optim
 from torch.distributions import Categorical, Normal
 import gym
 from gym import spaces
-import stable_baselines3
-from stable_baselines3 import PPO, SAC, TD3
-from stable_baselines3.common.buffers import ReplayBuffer
-from stable_baselines3.callbacks import BaseCallback
+# import stable_baselines3  # Removed - using CustomReplayBuffer
+# from stable_baselines3 import PPO, SAC, TD3  # Removed - not used
+# from stable_baselines3.common.buffers import ReplayBuffer  # Removed - using CustomReplayBuffer
+try:
+    # from stable_baselines3.common.callbacks import BaseCallback  # Removed - not used
+    BaseCallback = None
+    import logging
+    logging.warning('stable_baselines3 is not installed or not available. Feedback orchestrator features will be limited.')
+except ImportError:
+    BaseCallback = None
+    import logging
+    logging.warning('stable_baselines3 is not installed or not available. Feedback orchestrator features will be limited.')
 import joblib
 import pickle
 from pathlib import Path
@@ -35,6 +43,12 @@ import seaborn as sns
 from collections import deque
 import warnings
 warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore", message="`torch.utils._pytree._register_pytree_node` is deprecated")
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
+warnings.filterwarnings("ignore", message=".*deprecated.*")
 
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Dict, Any
@@ -267,31 +281,25 @@ class FeedbackEnvironment(gym.Env):
                  action_dim: int = 5,
                  max_steps: int = 10):
         super().__init__()
-        
+        import numpy as np
+        import gym
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.max_steps = max_steps
-        
-        # Define action and observation spaces
-        self.action_space = spaces.Box(
-            low=-1, high=1, shape=(action_dim,), dtype=np.float32
-        )
-        self.observation_space = spaces.Box(
-            low=-1, high=1, shape=(state_dim,), dtype=np.float32
-        )
-        
+        # Use only [0, 1] bounds for stable-baselines3 compatibility
+        self.observation_space = gym.spaces.Box(low=0, high=1, shape=(state_dim,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(low=0, high=1, shape=(action_dim,), dtype=np.float32)
         # Environment state
         self.current_step = 0
         self.current_state = None
         self.feedback_history = []
-        
         # Initialize state
         self.reset()
     
     def reset(self):
         """Reset environment to initial state"""
         self.current_step = 0
-        self.current_state = np.random.uniform(-1,1, self.state_dim)
+        self.current_state = np.random.uniform(0,1, self.state_dim).astype(np.float32)
         self.feedback_history = []
         
         return self.current_state
@@ -351,11 +359,11 @@ class FeedbackActorCritic(nn.Module):
                  hidden_dim: int = 128,
                  learning_rate: float = 3e-4):
         super().__init__()
-        
+        import numpy as np
+        import gym
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.hidden_dim = hidden_dim
-        
         # Actor network (policy)
         self.actor = nn.Sequential(
             nn.Linear(state_dim, hidden_dim),
@@ -363,9 +371,8 @@ class FeedbackActorCritic(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, action_dim),
-            nn.Tanh()  # Output in -1,1
+            nn.Sigmoid()  # Output in [0,1]
         )
-        
         # Critic network (value function)
         self.critic = nn.Sequential(
             nn.Linear(state_dim + action_dim, hidden_dim),
@@ -374,16 +381,101 @@ class FeedbackActorCritic(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, 1)
         )
-        
         # Optimizers
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=learning_rate)
         self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=learning_rate)
-        
-        # Experience replay buffer
-        self.replay_buffer = ReplayBuffer(
+        # Custom experience replay buffer (no stable-baselines3 dependency)
+        self.replay_buffer = CustomReplayBuffer(
             buffer_size=10000,
-            observation_space=gym.spaces.Box(-1, 1, shape=(state_dim,)),
-            action_space=gym.spaces.Box(-1, 1, shape=(action_dim,))
+            state_dim=state_dim,
+            action_dim=action_dim
+        )
+        # NOTE: Ensure all state data passed to the buffer is a 1D float32 array in [0, 1]
+
+class CustomReplayBuffer:
+    """Custom replay buffer that doesn't depend on stable-baselines3 observation spaces"""
+    def __init__(self, buffer_size: int, state_dim: int, action_dim: int):
+        self.buffer_size = buffer_size
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.position = 0
+        self.size = 0
+        
+        # Initialize buffers
+        self.states = np.zeros((buffer_size, state_dim), dtype=np.float32)
+        self.actions = np.zeros((buffer_size, action_dim), dtype=np.float32)
+        self.rewards = np.zeros(buffer_size, dtype=np.float32)
+        self.next_states = np.zeros((buffer_size, state_dim), dtype=np.float32)
+        self.dones = np.zeros(buffer_size, dtype=np.bool_)
+    
+    def add(self, obs, next_obs, action, reward, done):
+        """Add experience to buffer"""
+        self.states[self.position] = obs
+        self.actions[self.position] = action
+        self.rewards[self.position] = reward
+        self.next_states[self.position] = next_obs
+        self.dones[self.position] = done
+        
+        self.position = (self.position + 1) % self.buffer_size
+        self.size = min(self.size + 1, self.buffer_size)
+    
+    def sample(self, batch_size: int):
+        """Sample a batch of experiences"""
+        if self.size < batch_size:
+            batch_size = self.size
+        
+        indices = np.random.randint(0, self.size, size=batch_size)
+        
+        return Batch(
+            observations=self.states[indices],
+            actions=self.actions[indices],
+            rewards=self.rewards[indices],
+            next_observations=self.next_states[indices],
+            dones=self.dones[indices]
+        )
+    
+    def __len__(self):
+        return self.size
+
+class Batch:
+    """Simple batch class to mimic stable-baselines3 batch interface"""
+    def __init__(self, observations, actions, rewards, next_observations, dones):
+        self.observations = observations
+        self.actions = actions
+        self.rewards = rewards
+        self.next_observations = next_observations
+        self.dones = dones
+
+    def add_to_buffer(self, state, next_state, action, reward, done):
+        """Add experience to buffer with robust validation"""
+        import numpy as np
+        # Ensure all inputs are numpy arrays with correct shape and dtype
+        if not isinstance(state, np.ndarray):
+            state = np.array(state, dtype=np.float32)
+        if not isinstance(next_state, np.ndarray):
+            next_state = np.array(next_state, dtype=np.float32)
+        if not isinstance(action, np.ndarray):
+            action = np.array(action, dtype=np.float32)
+        
+        # Ensure correct shapes
+        if state.ndim == 1:
+            state = state.reshape(1, -1)
+        if next_state.ndim == 1:
+            next_state = next_state.reshape(1, -1)
+        if action.ndim == 1:
+            action = action.reshape(1, -1)
+        
+        # Clip to [0, 1] range for stability
+        state = np.clip(state, 0, 1).astype(np.float32)
+        next_state = np.clip(next_state, 0, 1).astype(np.float32)
+        action = np.clip(action, 0, 1).astype(np.float32)
+        
+        self.replay_buffer.add(
+            obs=state.flatten(),
+            next_obs=next_state.flatten(),
+            action=action.flatten(),
+            reward=float(reward),
+            done=bool(done)
         )
     
     def forward(self, state: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -404,13 +496,14 @@ class FeedbackActorCritic(nn.Module):
             # Add exploration noise
             if np.random.random() < exploration:
                 noise = torch.randn_like(action) * 0.1
-                action = torch.clamp(action + noise, -1, 1)
+                action = torch.clamp(action + noise, 0, 1)  # Clip to [0, 1]
             return action
     
     def update(self, batch_size: int = 64) -> Dict[str, float]:
         """Update actor and critic networks"""
         if len(self.replay_buffer) < batch_size:
             return {}
+        
         # Sample batch
         batch = self.replay_buffer.sample(batch_size)
         states = batch.observations
@@ -418,12 +511,14 @@ class FeedbackActorCritic(nn.Module):
         rewards = batch.rewards
         next_states = batch.next_observations
         dones = batch.dones
+        
         # Convert to tensors
         states = torch.FloatTensor(states)
         actions = torch.FloatTensor(actions)
         rewards = torch.FloatTensor(rewards)
         next_states = torch.FloatTensor(next_states)
         dones = torch.FloatTensor(dones)
+        
         # Update critic
         self.critic_optimizer.zero_grad()
         current_q = self.critic(torch.cat([states, actions], dim=1))
@@ -433,12 +528,14 @@ class FeedbackActorCritic(nn.Module):
         critic_loss = F.mse_loss(current_q, target_q.detach())
         critic_loss.backward()
         self.critic_optimizer.step()
+        
         # Update actor
         self.actor_optimizer.zero_grad()
         new_actions, _ = self.forward(states)
         actor_loss = -self.critic(torch.cat([states, new_actions], dim=1)).mean()
         actor_loss.backward()
         self.actor_optimizer.step()
+        
         return {
             'actor_loss': actor_loss.item(),
             'critic_loss': critic_loss.item()
@@ -820,9 +917,9 @@ class AIFeedbackOrchestrator:
             next_state, reward, done, info = self.feedback_environment.step(action.cpu().numpy())
             
             # Store experience in replay buffer
-            self.rl_agent.replay_buffer.add(
-                obs=state,
-                next_obs=next_state,
+            self.rl_agent.add_to_buffer(
+                state=state,
+                next_state=next_state,
                 action=action.cpu().numpy(),
                 reward=reward,
                 done=done

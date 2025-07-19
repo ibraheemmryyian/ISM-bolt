@@ -27,9 +27,6 @@ import prometheus_client
 from prometheus_client import Counter, Histogram, Gauge
 import mlflow
 import wandb
-import ray
-from ray import serve
-from ray.serve import deployment
 import redis
 import psutil
 import GPUtil
@@ -40,6 +37,10 @@ import subprocess
 import signal
 import threading
 import queue
+import time
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # ML Core imports
 from ml_core.models import (
@@ -534,9 +535,10 @@ class KubernetesDeploymentManager:
 
 class AIProductionOrchestrator:
     """Real ML production orchestrator with advanced deployment and monitoring"""
-    def __init__(self):
+    def __init__(self, config=None):
         self.logger = logging.getLogger(__name__)
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.config = config
         
         # Initialize components
         self.model_registry = ModelRegistry()
@@ -574,6 +576,11 @@ class AIProductionOrchestrator:
         # Start health monitoring
         self._start_health_monitoring()
     
+    async def start(self):
+        self.logger.info('AIProductionOrchestrator start() called (stub).')
+    async def stop(self):
+        self.logger.info('AIProductionOrchestrator stop() called (stub).')
+    
     def _setup_monitoring(self):
         """Production monitoring"""
         try:
@@ -585,10 +592,6 @@ class AIProductionOrchestrator:
             # Initialize MLflow
             mlflow.set_tracking_uri("sqlite:///mlflow.db")
             mlflow.set_experiment("production_orchestrator")
-            
-            # Initialize Ray Serve
-            if not ray.is_initialized():
-                ray.init()
             
             self.logger.info("Production monitoring setup completed")
             
@@ -1035,6 +1038,18 @@ class AIProductionOrchestrator:
         except Exception as e:
             self.logger.error(f"Error getting system health: {e}")
             return {'status': 'error', 'error': str(e)}
+
+@dataclass
+class ProductionConfig:
+    feedback_enabled: bool = False
+    fusion_enabled: bool = False
+    optimization_enabled: bool = False
+    retraining_enabled: bool = False
+    monitoring_enabled: bool = False
+    auto_deploy: bool = False
+    health_check_interval: int = 60
+    backup_interval: int = 3600
+    log_level: str = 'INFO'
 
 # Initialize service
 ai_production_orchestrator = AIProductionOrchestrator() 

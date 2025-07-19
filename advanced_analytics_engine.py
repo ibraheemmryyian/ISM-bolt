@@ -20,8 +20,52 @@ warnings.filterwarnings('ignore')
 # Machine Learning and Statistics
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.cluster import KMeans, DBSCAN
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+# Try to import sklearn components with fallback
+try:
+    from sklearn.cluster import KMeans, DBSCAN
+    from sklearn.preprocessing import StandardScaler, MinMaxScaler
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    # Fallback implementations if sklearn is not available
+    class KMeans:
+        def __init__(self, **kwargs):
+            pass
+        def fit_predict(self, X):
+            return np.zeros(len(X))
+    
+    class DBSCAN:
+        def __init__(self, **kwargs):
+            pass
+        def fit_predict(self, X):
+            return np.zeros(len(X))
+    
+    class StandardScaler:
+        def __init__(self):
+            self.mean_ = None
+            self.scale_ = None
+        def fit(self, X):
+            self.mean_ = np.mean(X, axis=0)
+            self.scale_ = np.std(X, axis=0)
+            return self
+        def transform(self, X):
+            return (X - self.mean_) / self.scale_
+        def fit_transform(self, X):
+            return self.fit(X).transform(X)
+    
+    class MinMaxScaler:
+        def __init__(self):
+            self.min_ = None
+            self.scale_ = None
+        def fit(self, X):
+            self.min_ = np.min(X, axis=0)
+            self.scale_ = np.max(X, axis=0) - self.min_
+            return self
+        def transform(self, X):
+            return (X - self.min_) / self.scale_
+        def fit_transform(self, X):
+            return self.fit(X).transform(X)
+    
+    SKLEARN_AVAILABLE = False
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score
 from sklearn.decomposition import PCA

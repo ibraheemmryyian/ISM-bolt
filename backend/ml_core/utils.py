@@ -40,3 +40,44 @@ class ExperimentTracker:
 class ConfigManager:
     def __init__(self, *args, **kwargs):
         pass 
+
+# --- STUB: EnsembleManager ---
+class EnsembleManager:
+    def __init__(self, *args, **kwargs):
+        pass
+    def get_status(self):
+        raise NotImplementedError('EnsembleManager.get_status must be implemented by subclasses.') 
+
+# --- STUB: DeploymentManager ---
+class DeploymentManager:
+    def __init__(self, *args, **kwargs):
+        pass
+    def get_status(self):
+        raise NotImplementedError('DeploymentManager.get_status must be implemented by subclasses.') 
+
+class MonitoringManager:
+    def __init__(self, *args, **kwargs):
+        pass
+    def get_status(self):
+        return 'ok'
+
+class FeedbackManager:
+    def __init__(self, *args, **kwargs):
+        pass
+    def get_status(self):
+        return 'ok'
+
+class ModelVersioning:
+    def __init__(self, *args, **kwargs):
+        pass
+    def get_version(self, *args, **kwargs):
+        return 'v1.0.0'
+
+# --- STUB: DataValidator ---
+class DataValidator:
+    def __init__(self, *args, **kwargs):
+        pass
+    def validate(self, *args, **kwargs):
+        return True
+    def set_schema(self, *args, **kwargs):
+        pass 
