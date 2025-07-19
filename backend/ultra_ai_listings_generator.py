@@ -266,4 +266,5 @@ class Explain(Resource):
             return {'error': str(e)}, 500
 
 if __name__ == "__main__":
-    asyncio.run(test_ultra_ai_listings_generator()) 
+    print("🚀 Starting Ultra AI Listings Generator on port 5012...")
+    app.run(host='0.0.0.0', port=5012, debug=False) 

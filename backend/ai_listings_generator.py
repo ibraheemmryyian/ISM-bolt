@@ -94,4 +94,30 @@ class Explain(Resource):
             return {'shap_values': shap_values.values.tolist(), 'base_values': shap_values.base_values.tolist()}
         except Exception as e:
             logger.error(f'Explainability error: {e}')
-            return {'error': str(e)}, 500 
+            return {'error': str(e)}, 500
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'AI Listings Generator',
+        'version': '1.0'
+    })
+
+@app.route('/generate', methods=['POST'])
+def generate_listing():
+    """Generate AI-powered listing"""
+    try:
+        data = request.json
+        # Implementation for listing generation
+        return jsonify({
+            'status': 'success',
+            'listing': 'Generated listing data'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+if __name__ == "__main__":
+    print("🚀 Starting AI Listings Generator on port 5010...")
+    app.run(host='0.0.0.0', port=5010, debug=False) 

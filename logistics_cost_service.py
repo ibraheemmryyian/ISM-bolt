@@ -298,6 +298,6 @@ def get_real_time_rates():
             "error": str(e)
         }), 500
 
-if __name__ == '__main__':
-    logger.info("Starting Logistics Cost Service on port 5006")
+if __name__ == "__main__":
+    print("🚀 Starting Logistics Cost Service on port 5006...")
     app.run(host='0.0.0.0', port=5006, debug=True) 

@@ -542,17 +542,57 @@ def analyze_portfolio_financials(companies: List[Dict[str, Any]],
     engine = FinancialAnalysisEngine()
     return engine.calculate_portfolio_financials(companies, partnerships)
 
+# Add Flask app for microservice
+from flask import Flask, request, jsonify
+app = Flask(__name__)
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'Financial Analysis Engine',
+        'version': '1.0'
+    })
+
+@app.route('/analyze_material', methods=['POST'])
+def analyze_material_endpoint():
+    """Analyze material financials"""
+    try:
+        data = request.json
+        material = data.get('material', {})
+        distance_km = data.get('distance_km', 50)
+        result = analyze_material_financials(material, distance_km)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/analyze_partnership', methods=['POST'])
+def analyze_partnership_endpoint():
+    """Analyze partnership financials"""
+    try:
+        data = request.json
+        company_a = data.get('company_a', {})
+        company_b = data.get('company_b', {})
+        materials_exchange = data.get('materials_exchange', [])
+        distance_km = data.get('distance_km', 50)
+        result = analyze_partnership_financials(company_a, company_b, materials_exchange, distance_km)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/analyze_portfolio', methods=['POST'])
+def analyze_portfolio_endpoint():
+    """Analyze portfolio financials"""
+    try:
+        data = request.json
+        companies = data.get('companies', [])
+        partnerships = data.get('partnerships', [])
+        result = analyze_portfolio_financials(companies, partnerships)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == "__main__":
-    # Example usage
-    engine = FinancialAnalysisEngine()
-    
-    # Example material
-    material = {
-        'material_name': 'Metal Scrap',
-        'quantity': 1000,
-        'unit': 'kg',
-        'type': 'waste'
-    }
-    
-    analysis = engine.calculate_material_financials(material, 50)
-    print(json.dumps(analysis, indent=2)) 
+    print("🚀 Starting Financial Analysis Engine on port 5017...")
+    app.run(host='0.0.0.0', port=5017, debug=False) 

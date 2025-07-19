@@ -1097,3 +1097,7 @@ regulatory_compliance_engine = AdvancedRegulatoryComplianceEngine()
 
 # Export for compatibility
 RegulatoryComplianceEngine = AdvancedRegulatoryComplianceEngine 
+
+if __name__ == "__main__":
+    print("🚀 Starting Regulatory Compliance Service on port 5013...")
+    app.run(host='0.0.0.0', port=5013, debug=False) 

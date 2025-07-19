@@ -860,3 +860,7 @@ class Explain(Resource):
 # Global instance
 proactive_opportunity_engine = AdvancedProactiveOpportunityEngine() 
 ProactiveOpportunityEngine = AdvancedProactiveOpportunityEngine 
+
+if __name__ == "__main__":
+    print("🚀 Starting Proactive Opportunity Engine on port 5014...")
+    app.run(host='0.0.0.0', port=5014, debug=False) 

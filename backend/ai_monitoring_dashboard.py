@@ -1020,3 +1020,7 @@ class Explain(Resource):
         except Exception as e:
             logger.error(f'Explainability error: {e}')
             return {'error': str(e)}, 500 
+
+if __name__ == "__main__":
+    print("🚀 Starting AI Monitoring Dashboard on port 5011...")
+    app.run(host='0.0.0.0', port=5011, debug=False) 

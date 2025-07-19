@@ -90,3 +90,8 @@ def update_trust_score(request: TrustUpdateRequest):
 
 # TODO: Add endpoint to update trust/confidence scores from feedback event bus
 # TODO: Add advanced arbitration policies, audit logging, and integration with admin dashboard 
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Starting Value Function Arbiter on port 5016...")
+    uvicorn.run(app, host="0.0.0.0", port=5016) 

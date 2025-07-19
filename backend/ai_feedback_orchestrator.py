@@ -1250,3 +1250,7 @@ class FeedbackEventConsumer:
 
 # Initialize service
 ai_feedback_orchestrator = AIFeedbackOrchestrator() 
+
+if __name__ == "__main__":
+    print("🚀 Starting AI Feedback Orchestrator on port 5015...")
+    app.run(host='0.0.0.0', port=5015, debug=False) 
