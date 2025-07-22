@@ -1,4 +1,5 @@
-@echo off
+ .
+ @echo off
 echo ========================================
 echo 🚀 SymbioFlows One-Click Startup
 echo ========================================

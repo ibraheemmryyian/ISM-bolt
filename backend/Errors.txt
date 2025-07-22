@@ -1,0 +1,407 @@
+2025-07-19 22:54:21,308 - ERROR - ❌ Redis connection failed: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+🚀 Starting Complete System Integration on port 5024...
+ * Serving Flask app 'complete_system_integration'
+ * Debug mode: off
+2025-07-19 22:54:23,326 - INFO - WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5024
+ * Running on http://192.168.100.5:5024
+2025-07-19 22:54:23,326 - INFO - Press CTRL+C to quit
+
+
+
+
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\workflow_orchestrator.py", line 538, in <module>
+    workflow_orchestrator = WorkflowOrchestrator()
+                            ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\workflow_orchestrator.py", line 369, in __init__
+    self.service_comm = RealServiceCommunication("workflow-orchestrator")
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\real_service_communication.py", line 170, in __init__
+    self.http_client = HTTPClient(service_id)
+                       ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\real_service_communication.py", line 98, in __init__
+    'request_duration': Histogram('http_request_duration_seconds', 'HTTP request duration', ['service', 'method']),
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\prometheus_client\metrics.py", line 558, in __init__
+    super().__init__(
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\prometheus_client\metrics.py", line 143, in __init__
+    registry.register(self)
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\prometheus_client\registry.py", line 43, in register
+    raise ValueError(
+ValueError: Duplicated timeseries in CollectorRegistry: {'http_request_duration_seconds_bucket', 'http_request_duration_seconds_created', 'http_request_duration_seconds_count', 'http_request_duration_seconds', 'http_request_duration_seconds_sum'}
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\revolutionary_ai_matching.py", line 3, in <module>
+    from .ml_core.models import BaseNN
+ImportError: attempted relative import with no known parent package
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\torchvision\io\image.py:13: UserWarning: Failed to load image Python extension: '[WinError 127] The specified procedure could not be found'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\deepseek_r1_semantic_service.py", line 9, in <module>
+    from .ml_core.monitoring import log_metrics, save_checkpoint
+ImportError: attempted relative import with no known parent package
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\impact_forecasting.py", line 93, in <module>
+    from ml_core.data_processing import (
+ImportError: cannot import name 'TimeSeriesProcessor' from 'ml_core.data_processing' (C:\Users\amrey\Desktop\SymbioFlows\backend\ml_core\data_processing.py)
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\torchvision\io\image.py:13: UserWarning: Failed to load image Python extension: '[WinError 127] The specified procedure could not be found'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\advanced_ai_prompts_service.py", line 1067, in <module>
+    advanced_ai_prompts_service = AdvancedAIPromptsService()
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\advanced_ai_prompts_service.py", line 398, in __init__
+    self.trainer = ModelTrainer(None, None, None)  # TODO: Replace None with actual model, config, loss_fn
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ml_core\training.py", line 44, in __init__
+    raise ValueError('ModelTrainer requires model, config, and loss_fn arguments.')
+ValueError: ModelTrainer requires model, config, and loss_fn arguments.
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\hyperopt\atpe.py:19: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+2025/07/19 22:55:08 INFO mlflow.store.db.utils: Creating initial MLflow database tables...
+2025/07/19 22:55:08 INFO mlflow.store.db.utils: Updating database tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\sdk\internal\internal_api.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version  # type: ignore
+2025/07/19 22:55:02 INFO mlflow.store.db.utils: Creating initial MLflow database tables...
+2025/07/19 22:55:02 INFO mlflow.store.db.utils: Updating database tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_service_integration.py", line 63, in <module>
+    from ml_core.optimization import (
+ImportError: cannot import name 'ServiceOptimizer' from 'ml_core.optimization' (C:\Users\amrey\Desktop\SymbioFlows\backend\ml_core\optimization.py)
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+
+
+
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\sdk\internal\internal_api.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version  # type: ignore
+WARNING:root:Kubernetes not available: Invalid kube-config file. No configuration found.
+2025/07/19 22:55:09 INFO mlflow.store.db.utils: Creating initial MLflow database tables...
+2025/07/19 22:55:09 INFO mlflow.store.db.utils: Updating database tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\dynamic_materials_integration_service.py", line 81, in <module>
+    from ml_core.models import (
+ImportError: cannot import name 'PropertyPredictionModel' from 'ml_core.models' (C:\Users\amrey\Desktop\SymbioFlows\backend\ml_core\models.py)
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\gnn_reasoning_engine.py", line 4, in <module>
+    from ml_core.training import train_gnn
+ImportError: cannot import name 'train_gnn' from 'ml_core.training' (C:\Users\amrey\Desktop\SymbioFlows\backend\ml_core\training.py)
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+
+
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\proactive_opportunity_engine.py", line 89, in <module>
+    from .ml_core.training import train_supervised
+ImportError: attempted relative import with no known parent package
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+
+
+
+
+
+WARNING:root:stable_baselines3 is not installed or not available. Feedback orchestrator features will be limited.
+🚀 Starting AI Feedback Orchestrator on port 5015...
+ * Serving Flask app 'ai_feedback_orchestrator'
+ * Debug mode: off
+INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5015
+ * Running on http://192.168.100.5:5015
+INFO:werkzeug:Press CTRL+C to quit
+
+
+
+INFO:__main__:Logistics Cost Service initialized successfully
+🚀 Starting Logistics Cost Service on port 5006...
+ * Serving Flask app 'logistics_cost_service'
+ * Debug mode: on
+INFO:werkzeug:WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5006
+ * Running on http://192.168.100.5:5006
+INFO:werkzeug:Press CTRL+C to quit
+INFO:werkzeug: * Restarting with stat
+INFO:__main__:Logistics Cost Service initialized successfully
+🚀 Starting Logistics Cost Service on port 5006...
+WARNING:werkzeug: * Debugger is active!
+INFO:werkzeug: * Debugger PIN: 591-194-216
+INFO:werkzeug:127.0.0.1 - - [19/Jul/2025 22:55:01] "GET /health HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [19/Jul/2025 22:55:01] "GET /health HTTP/1.1" 200 -
+
+ * Serving Flask app 'gnn_inference_service'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8001
+ * Running on http://192.168.100.5:8001
+Press CTRL+C to quit
+127.0.0.1 - - [19/Jul/2025 22:54:48] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:54:51] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:54:54] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:54:57] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:00] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:04] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:07] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:10] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:13] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:16] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:19] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:22] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:25] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:28] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:31] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:34] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:37] "GET /health HTTP/1.1" 500 -
+127.0.0.1 - - [19/Jul/2025 22:55:56] "POST /analyze HTTP/1.1" 404 -
+127.0.0.1 - - [19/Jul/2025 22:56:02] "GET /health HTTP/1.1" 500 -
+
+
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_matchmaking_service.py", line 235, in <module>
+    logger.info("Starting AI Matchmaking Service...")
+    ^^^^^^^^^^^
+AttributeError: 'DistributedLogger' object has no attribute 'info'
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+
+
+
+2025-07-19 22:54:47,691 - model_persistence_manager - INFO - No existing registry found, starting fresh
+2025-07-19 22:54:47,761 - model_persistence_manager - INFO - Model Persistence Manager initialized at model_storage
+2025-07-19 22:54:47,764 - model_persistence_manager - INFO - No existing registry found, starting fresh
+2025-07-19 22:54:47,765 - model_persistence_manager - INFO - Model Persistence Manager initialized at model_storage
+2025-07-19 22:54:47,766 - root - WARNING - Kubernetes not available: Invalid kube-config file. No configuration found.
+2025/07/19 22:54:56 INFO mlflow.store.db.utils: Creating initial MLflow database tables...
+2025/07/19 22:54:56 INFO mlflow.store.db.utils: Updating database tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [ai_production_orchestrator] High resource usage: CPU 100.0%, Memory 86.4%
+WARNI [root] stable_baselines3 is not installed or not available. Feedback orchestrator features will be limited.
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\start_production_ai_system_fixed.py", line 102, in <module>
+    from ai_feedback_orchestrator import AIFeedbackOrchestrator
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_feedback_orchestrator.py", line 1253, in <module>
+    ai_feedback_orchestrator = AIFeedbackOrchestrator()
+                               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_feedback_orchestrator.py", line 780, in __init__
+    self.model_registry = ModelRegistry()
+                          ^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ml_core\utils.py", line 31, in __init__
+    self.model_error_counter = Counter('model_registry_errors_total', 'Total model registry errors', ['operation'])
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\prometheus_client\metrics.py", line 143, in __init__
+    registry.register(self)
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\prometheus_client\registry.py", line 43, in register
+    raise ValueError(
+ValueError: Duplicated timeseries in CollectorRegistry: {'model_registry_errors_created', 'model_registry_errors', 'model_registry_errors_total'}
+
+C:\Users\amrey\Desktop\SymbioFlows\backend>
+
+2025-07-19 22:53:25,054 - __main__ - WARNING - Configuration file not found, using defaults
+2025-07-19 22:53:25,055 - __main__ - INFO - STARTING ENHANCED MATERIALS SYSTEM
+2025-07-19 22:53:25,055 - __main__ - INFO - ============================================================
+2025-07-19 22:53:25,057 - __main__ - INFO - Maximum Potential Utilization Mode
+2025-07-19 22:53:25,057 - __main__ - INFO - ============================================================
+2025-07-19 22:53:25,058 - __main__ - INFO - VALIDATING ENVIRONMENT
+2025-07-19 22:53:25,058 - __main__ - INFO - ----------------------------------------
+2025-07-19 22:53:25,059 - __main__ - INFO - [OK] Python 3.11.9
+2025-07-19 22:53:33,421 - __main__ - INFO - [OK] torch
+2025-07-19 22:53:37,936 - __main__ - INFO - [OK] transformers
+2025-07-19 22:53:38,591 - __main__ - INFO - [OK] flask
+2025-07-19 22:53:38,614 - __main__ - INFO - [OK] requests
+2025-07-19 22:53:38,637 - __main__ - INFO - [OK] numpy
+2025-07-19 22:53:38,712 - __main__ - INFO - [OK] scipy
+2025-07-19 22:53:38,734 - __main__ - WARNING - [WARN] scikit-learn not found - some features may be limited
+2025-07-19 22:53:38,737 - __main__ - INFO - [OK] NEXT_GEN_MATERIALS_API_KEY: Configured
+2025-07-19 22:53:38,741 - __main__ - INFO - [OK] DEEPSEEK_API_KEY: Configured
+2025-07-19 22:53:38,742 - __main__ - INFO - [OK] MATERIALSBERT_ENABLED: Configured
+2025-07-19 22:53:38,745 - __main__ - WARNING - [WARN] MATERIALSBERT_ENDPOINT: Not configured
+2025-07-19 22:53:39,436 - __main__ - INFO - [OK] Docker: Available
+2025-07-19 22:53:39,437 - __main__ - INFO - STARTING MATERIALSBERT SERVICE
+2025-07-19 22:53:39,438 - __main__ - INFO - ----------------------------------------
+2025-07-19 22:55:38,678 - __main__ - ERROR - [ERROR] Failed to start MaterialsBERT service
+2025-07-19 22:55:38,682 - __main__ - INFO - STARTING ENHANCED MATERIALS SERVICE
+2025-07-19 22:55:38,683 - __main__ - INFO - ----------------------------------------
+2025-07-19 22:55:42,802 - __main__ - INFO - [OK] Enhanced materials service initialized
+2025-07-19 22:55:42,810 - __main__ - INFO -    [INFO] Next Gen API: Available
+2025-07-19 22:55:42,812 - __main__ - INFO -    [INFO] MaterialsBERT: Available
+2025-07-19 22:55:42,812 - __main__ - INFO - STARTING AI PROMPTS SERVICE
+2025-07-19 22:55:42,813 - __main__ - INFO - ----------------------------------------
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\torchvision\io\image.py:13: UserWarning: Failed to load image Python extension: '[WinError 127] The specified procedure could not be found'If you don't plan on using image functionality from `torchvision.io`, you can ignore this warning. Otherwise, there might be something wrong with your environment. Did you have `libjpeg` or `libpng` installed before building `torchvision` from source?
+  warn(
+2025-07-19 22:55:54,586 - model_persistence_manager - INFO - No existing registry found, starting fresh
+2025-07-19 22:55:54,587 - model_persistence_manager - INFO - Model Persistence Manager initialized at model_storage
+2025-07-19 22:55:54,588 - model_persistence_manager - INFO - No existing registry found, starting fresh
+2025-07-19 22:55:54,588 - model_persistence_manager - INFO - Model Persistence Manager initialized at model_storage
+2025-07-19 22:55:54,589 - __main__ - ERROR - [ERROR] Error starting AI prompts service: ModelTrainer requires model, config, and loss_fn arguments.
+2025-07-19 22:55:54,589 - __main__ - INFO - INITIALIZING MONITORING
+2025-07-19 22:55:54,589 - __main__ - INFO - ----------------------------------------
+2025-07-19 22:55:54,591 - __main__ - INFO - [OK] Monitoring initialized
+2025-07-19 22:55:54,591 - __main__ - INFO - RUNNING SYSTEM TESTS
+2025-07-19 22:55:54,591 - __main__ - INFO - ----------------------------------------
+2025-07-19 22:55:54,591 - __main__ - INFO - Test 1: MaterialsBERT Analysis
+2025-07-19 22:55:56,636 - __main__ - WARNING -    [WARN] Status: 404
+2025-07-19 22:55:56,639 - __main__ - INFO - Test 2: Enhanced Materials Service
+2025-07-19 22:56:00,704 - __main__ - INFO -    [OK] Next Gen Score: N/A
+2025-07-19 22:56:00,704 - __main__ - INFO -    [OK] AI Enhanced: No
+2025-07-19 22:56:00,705 - __main__ - INFO - Test 3: AI Prompts Service
+2025-07-19 22:56:00,705 - __main__ - WARNING -    [WARN] Service not available
+2025-07-19 22:56:00,705 - __main__ - INFO - STARTING PERFORMANCE OPTIMIZATION
+2025-07-19 22:56:00,705 - __main__ - INFO - ----------------------------------------
+2025-07-19 22:56:00,706 - __main__ - INFO - [OK] Performance optimization started
+2025-07-19 22:56:00,707 - __main__ - INFO - SYSTEM STATUS
+2025-07-19 22:56:00,707 - __main__ - INFO - ============================================================
+2025-07-19 22:56:00,707 - __main__ - INFO - Services:
+2025-07-19 22:56:00,707 - __main__ - INFO -    [OK] enhanced_materials: Running
+2025-07-19 22:56:00,707 - __main__ - INFO - API Status:
+2025-07-19 22:56:02,746 - __main__ - WARNING -    [WARN] MaterialsBERT API: Unhealthy
+2025-07-19 22:56:02,746 - __main__ - INFO - Configuration:
+2025-07-19 22:56:02,746 - __main__ - INFO -    [INFO] MaterialsBERT: Enabled
+2025-07-19 22:56:02,747 - __main__ - INFO -    [INFO] Next Gen API: Configured
+2025-07-19 22:56:02,747 - __main__ - INFO -    [INFO] DeepSeek API: Configured
+2025-07-19 22:56:02,748 - __main__ - INFO - Performance:
+2025-07-19 22:56:03,761 - __main__ - INFO -    [INFO] CPU Usage: 23.7%
+2025-07-19 22:56:03,762 - __main__ - INFO -    [INFO] Memory Usage: 70.3%
+2025-07-19 22:56:03,762 - __main__ - INFO - System is ready for maximum potential utilization!
+2025-07-19 22:56:03,763 - __main__ - INFO - ============================================================
+2025-07-19 22:56:03,763 - __main__ - INFO - STARTING INTERACTIVE MODE
+2025-07-19 22:56:03,764 - __main__ - INFO - ----------------------------------------
+2025-07-19 22:56:03,764 - __main__ - INFO - Type 'help' for available commands
+2025-07-19 22:56:03,764 - __main__ - INFO - Type 'exit' to stop the system
+
+Command:
+
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\sdk\internal\internal_api.py:8: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  from pkg_resources import parse_version  # type: ignore
+C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\pkg_resources\__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('mpl_toolkits')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(pkg)
+C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\pkg_resources\__init__.py:3146: DeprecationWarning: Deprecated call to `pkg_resources.declare_namespace('google')`.
+Implementing implicit namespace packages (as specified in PEP 420) is preferred to `pkg_resources.declare_namespace`. See https://setuptools.pypa.io/en/latest/references/keywords.html#keyword-namespace-packages
+  declare_namespace(pkg)
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\proto\wandb_telemetry_pb2.py:16: DeprecationWarning: Call to deprecated create function FileDescriptor(). Note: Create unlinked descriptors is going to go away. Please use get/find descriptors from generated code or query the descriptor_pool.
+  DESCRIPTOR = _descriptor.FileDescriptor(
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\proto\wandb_telemetry_pb2.py:34: DeprecationWarning: Call to deprecated create function FieldDescriptor(). Note: Create unlinked descriptors is going to go away. Please use get/find descriptors from generated code or query the descriptor_pool.
+  _descriptor.FieldDescriptor(
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\proto\wandb_telemetry_pb2.py:27: DeprecationWarning: Call to deprecated create function Descriptor(). Note: Create unlinked descriptors is going to go away. Please use get/find descriptors from generated code or query the descriptor_pool.
+  _TELEMETRYRECORD = _descriptor.Descriptor(
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\proto\wandb_internal_pb2.py:18: DeprecationWarning: Call to deprecated create function FileDescriptor(). Note: Create unlinked descriptors is going to go away. Please use get/find descriptors from generated code or query the descriptor_pool.
+  DESCRIPTOR = _descriptor.FileDescriptor(
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\proto\wandb_internal_pb2.py:35: DeprecationWarning: Call to deprecated create function EnumValueDescriptor(). Note: Create unlinked descriptors is going to go away. Please use get/find descriptors from generated code or query the descriptor_pool.
+  _descriptor.EnumValueDescriptor(
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\proto\wandb_internal_pb2.py:29: DeprecationWarning: Call to deprecated create function EnumDescriptor(). Note: Create unlinked descriptors is going to go away. Please use get/find descriptors from generated code or query the descriptor_pool.
+  _ERRORINFO_ERRORCODE = _descriptor.EnumDescriptor(
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\proto\wandb_internal_pb2.py:217: DeprecationWarning: Call to deprecated create function FieldDescriptor(). Note: Create unlinked descriptors is going to go away. Please use get/find descriptors from generated code or query the descriptor_pool.
+  _descriptor.FieldDescriptor(
+C:\Users\amrey\AppData\Roaming\Python\Python311\site-packages\wandb\proto\wandb_internal_pb2.py:375: DeprecationWarning: Call to deprecated create function OneofDescriptor(). Note: Create unlinked descriptors is going to go away. Please use get/find descriptors from generated code or query the descriptor_pool.
+  _descriptor.OneofDescriptor(
+2025-07-19 22:54:38,259 INFO Starting Revolutionary Meta-Learning Orchestrator...
+ * Serving Flask app 'meta_learning_orchestrator'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8010
+ * Running on http://192.168.100.5:8010
+Press CTRL+C to quit
+
+
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_pricing_service.py", line 6, in <module>
+    from flask import Flask, request, jsonify
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\__init__.py", line 1, in <module>
+    from . import json as json
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\flask\json\__init__.py", line 3, in <module>
+    import json as _json
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\json\__init__.py", line 106, in <module>
+    from .decoder import JSONDecoder, JSONDecodeError
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\json\decoder.py", line 3, in <module>
+    import re
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\re\__init__.py", line 124, in <module>
+    import enum
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 936, in exec_module
+  File "<frozen importlib._bootstrap_external>", line 1069, in get_code
+  File "<frozen importlib._bootstrap_external>", line 729, in _compile_bytecode
+
+
+WARNING:root:Kubernetes not available: Invalid kube-config file. No configuration found.
+2025/07/19 22:54:38 INFO mlflow.store.db.utils: Creating initial MLflow database tables...
+2025/07/19 22:54:38 INFO mlflow.store.db.utils: Updating database tables
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+WARNI [ai_production_orchestrator] High resource usage: CPU 100.0%, Memory 94.1%
+WARNI [root] stable_baselines3 is not installed or not available. Feedback orchestrator features will be limited.
+Traceback (most recent call last):
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\start_production_ai_system.py", line 27, in <module>
+    from ai_feedback_orchestrator import AIFeedbackOrchestrator
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_feedback_orchestrator.py", line 1253, in <module>
+    ai_feedback_orchestrator = AIFeedbackOrchestrator()
+                               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ai_feedback_orchestrator.py", line 780, in __init__
+    self.model_registry = ModelRegistry()
+                          ^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\Desktop\SymbioFlows\backend\ml_core\utils.py", line 31, in __init__
+    self.model_error_counter = Counter('model_registry_errors_total', 'Total model registry errors', ['operation'])
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\prometheus_client\metrics.py", line 143, in __init__
+    registry.register(self)
+  File "C:\Users\amrey\AppData\Local\Programs\Python\Python311\Lib\site-packages\prometheus_client\registry.py", line 43, in register
+    raise ValueError(
+ValueError: Duplicated timeseries in CollectorRegistry: {'model_registry_errors', 'model_registry_errors_total', 'model_registry_errors_created'}
+
+
+
+
+
