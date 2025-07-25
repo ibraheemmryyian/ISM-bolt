@@ -20,9 +20,6 @@ import {
   CheckCircle,
   Sparkles,
   Loader2,
-  RefreshCw,
-  Truck,
-  Workflow,
   Package,
   Store,
   Brain
