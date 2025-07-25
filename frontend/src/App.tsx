@@ -20,6 +20,9 @@ import { ReviewAIListings } from './components/ReviewAIListings';
 import { AdaptiveAIOnboarding } from './components/AdaptiveAIOnboarding';
 
 import ErrorBoundary from './components/ErrorBoundary';
+import { AnimatePresence } from 'framer-motion';
+import AnimatedPage from './components/AnimatedPage';
+import { useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { NotificationProvider } from './lib/notificationContext';
@@ -182,6 +185,8 @@ function App() {
   const [showMaterialForm, setShowMaterialForm] = useState<'waste' | 'requirement' | null>(null);
   // Remove showOnboarding and legacy onboarding modal
 
+  const location = useLocation();
+
   useEffect(() => {
     // Check if user has seen the landing page
     const hasSeenLanding = localStorage.getItem('symbioflows-landing-seen');
@@ -225,18 +230,21 @@ function App() {
     <ErrorBoundary>
       <NotificationProvider>
         <div className="App">
-          <Routes>
+          <AnimatePresence mode="wait" initial={false}>
+            <Routes location={location} key={location.pathname}>
             <Route path="/" element={
-              <LandingPage 
-                onGetStarted={() => setShowAuthModal(true)}
-                onMarketplace={() => window.location.href = '/marketplace'}
-                session={session}
-                handleSignOut={handleSignOut}
-              />
+              <AnimatedPage>
+                <LandingPage 
+                  onGetStarted={() => setShowAuthModal(true)}
+                  onMarketplace={() => window.location.href = '/marketplace'}
+                  session={session}
+                  handleSignOut={handleSignOut}
+                />
+              </AnimatedPage>
             } />
             <Route path="/dashboard" element={
               session ? (
-                <PersonalPortfolio />
+                <AnimatedPage><PersonalPortfolio /></AnimatedPage>
               ) : (
                 <Navigate to="/" replace />
               )
@@ -251,7 +259,7 @@ function App() {
             } /> */}
             <Route path="/marketplace" element={
               session ? (
-                <Marketplace onSignOut={handleSignOut} />
+                <AnimatedPage><Marketplace onSignOut={handleSignOut} /></AnimatedPage>
               ) : (
                 <Navigate to="/" replace />
               )
