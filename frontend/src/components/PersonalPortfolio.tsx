@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import AuthenticatedLayout from './AuthenticatedLayout';
 import { 
@@ -20,9 +18,6 @@ import {
   CheckCircle,
   Sparkles,
   Loader2,
-  RefreshCw,
-  Truck,
-  Workflow,
   Package,
   Store,
   Brain
@@ -30,8 +25,6 @@ import {
 import { supabase } from '../lib/supabase';
 import { activityService } from '../lib/activityService';
 import { LogisticsIntegration } from './LogisticsIntegration';
-import { AIServicesIntegration } from './AIServicesIntegration';
-import { OrchestrationDashboard } from './OrchestrationDashboard';
 
 interface CompanyProfile {
   id?: string;
@@ -81,6 +74,33 @@ interface RecentActivity {
   category: 'match' | 'savings' | 'partnership' | 'sustainability';
 }
 
+interface MaterialListing {
+  id: string;
+  material_name: string;
+  type: 'waste' | 'resource' | 'product';
+  quantity: number;
+  unit: string;
+  description: string;
+  category: string;
+  match_score: number;
+  role: 'buyer' | 'seller' | 'both' | 'neutral';
+  sustainability_score: number;
+  price_per_unit: number;
+  total_value: number;
+}
+
+interface Match {
+  id: string;
+  material_id: string;
+  partner_company: string;
+  partner_material: string;
+  match_score: number;
+  potential_savings: number;
+  carbon_reduction: number;
+  status: 'pending' | 'accepted' | 'completed' | 'rejected';
+  created_at: string;
+}
+
 interface PortfolioData {
   company: CompanyProfile;
   achievements: Achievements;
@@ -93,36 +113,20 @@ interface PortfolioData {
     average_savings: number;
     your_savings: number;
   };
-  materialListings: {
-    id: string;
-    material_name: string;
-    type: 'waste' | 'resource';
-    quantity: number;
-    unit: string;
-    description: string;
-    category: string;
-    match_score: number;
-  }[];
+  materialListings: MaterialListing[];
+  matches: Match[];
 }
-
-const POLL_INTERVAL = 10000; // 10 seconds for real-time updates
 
 const PersonalPortfolio: React.FC = () => {
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
-  const [activeIntegrationTab, setActiveIntegrationTab] = useState<'logistics' | 'ai' | 'orchestration'>('logistics');
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    let poller: NodeJS.Timeout;
-    const fetchAndPoll = async () => {
-      await loadPortfolioData();
-      poller = setInterval(loadPortfolioData, POLL_INTERVAL);
-    };
-    fetchAndPoll();
-    return () => clearInterval(poller);
+    loadPortfolioData();
+    // Removed polling interval to prevent page reloading
   }, []);
 
   const loadPortfolioData = async () => {
@@ -135,20 +139,24 @@ const PersonalPortfolio: React.FC = () => {
         throw new Error('Authentication required');
       }
       setUser(user);
+
       // Fetch real company data from database
       const { data: company, error: companyError } = await supabase
         .from('companies')
         .select('*')
         .eq('id', user.id)
         .single();
+
       if (companyError) {
         setPortfolioData(null);
         setError('Failed to load company data');
         setLoading(false);
         return;
       }
+
       // Fetch real user activities
       const activities = await activityService.getUserActivities(user.id, 10);
+
       // Fetch AI insights if available
       const { data: aiInsights, error: aiInsightsError } = await supabase
         .from('ai_insights')
@@ -156,10 +164,26 @@ const PersonalPortfolio: React.FC = () => {
         .eq('company_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1);
+
+      // Fetch material listings from AI onboarding
+      const { data: materialListings, error: listingsError } = await supabase
+        .from('material_listings')
+        .select('*')
+        .eq('company_id', user.id)
+        .order('created_at', { ascending: false });
+
+      // Fetch matches
+      const { data: matches, error: matchesError } = await supabase
+        .from('matches')
+        .select('*')
+        .or(`company_id.eq.${user.id},partner_company_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
       // Approval state
       const approvalStatus = aiInsights && aiInsights[0]?.approval_status;
-      // Create portfolio data from real database information
       const aiMeta = aiInsights && aiInsights[0]?.metadata ? aiInsights[0].metadata : {};
+
+      // Create portfolio data from real database information
       const portfolio: PortfolioData = {
         company: {
           id: company.id,
@@ -198,23 +222,7 @@ const PersonalPortfolio: React.FC = () => {
           time_to_implement: index === 0 ? '1-2 weeks' : index === 1 ? '1-2 months' : '3-6 months',
           priority: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
           ai_reasoning: `Based on your ${company.industry} industry and ${company.location} location`
-        })) || [
-          {
-            id: 'rec-1',
-            category: 'onboarding',
-            title: 'Complete AI Onboarding',
-            description: 'Finish the AI onboarding process to get personalized recommendations.',
-            potential_impact: {
-              savings: 15000,
-              carbon_reduction: 25,
-              efficiency_gain: 20
-            },
-            implementation_difficulty: 'easy',
-            time_to_implement: '1-2 weeks',
-            priority: 'high',
-            ai_reasoning: 'Onboarding not completed'
-          }
-        ],
+        })) || [],
         recent_activity: activities.map((activity: any) => ({
           id: activity.id,
           date: new Date(activity.created_at).toLocaleDateString(),
@@ -235,8 +243,33 @@ const PersonalPortfolio: React.FC = () => {
           average_savings: 25000,
           your_savings: parseInt(aiMeta.estimated_savings?.replace(/[^0-9]/g, '') || '0')
         },
-        materialListings: [] // TODO: fetch and display real listings
+        materialListings: materialListings?.map((listing: any) => ({
+          id: listing.id,
+          material_name: listing.material_name,
+          type: listing.type || 'resource',
+          quantity: listing.quantity || 0,
+          unit: listing.unit || 'units',
+          description: listing.description || '',
+          category: listing.category || '',
+          match_score: listing.match_score || 0,
+          role: listing.role || 'neutral',
+          sustainability_score: listing.sustainability_score || 0,
+          price_per_unit: listing.price_per_unit || 0,
+          total_value: listing.total_value || 0
+        })) || [],
+        matches: matches?.map((match: any) => ({
+          id: match.id,
+          material_id: match.material_id,
+          partner_company: match.partner_company_name || 'Unknown',
+          partner_material: match.partner_material_name || 'Unknown',
+          match_score: match.match_score || 0,
+          potential_savings: match.potential_savings || 0,
+          carbon_reduction: match.carbon_reduction || 0,
+          status: match.status || 'pending',
+          created_at: match.created_at
+        })) || []
       };
+
       setPortfolioData(portfolio);
       setError(null);
     } catch (err: any) {
@@ -249,19 +282,19 @@ const PersonalPortfolio: React.FC = () => {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'text-red-600 bg-red-50';
-      case 'medium': return 'text-orange-600 bg-orange-50';
-      case 'low': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'high': return 'text-red-400 bg-red-900/20 border-red-700';
+      case 'medium': return 'text-orange-400 bg-orange-900/20 border-orange-700';
+      case 'low': return 'text-green-400 bg-green-900/20 border-green-700';
+      default: return 'text-gray-400 bg-gray-900/20 border-gray-700';
     }
   };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'text-green-600 bg-green-50';
-      case 'medium': return 'text-yellow-600 bg-yellow-50';
-      case 'hard': return 'text-red-600 bg-red-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'easy': return 'text-green-400 bg-green-900/20 border-green-700';
+      case 'medium': return 'text-yellow-400 bg-yellow-900/20 border-yellow-700';
+      case 'hard': return 'text-red-400 bg-red-900/20 border-red-700';
+      default: return 'text-gray-400 bg-gray-900/20 border-gray-700';
     }
   };
 
@@ -277,69 +310,63 @@ const PersonalPortfolio: React.FC = () => {
 
   const getActivityColor = (category: string) => {
     switch (category) {
-      case 'match': return 'text-blue-600 bg-blue-50';
-      case 'savings': return 'text-green-600 bg-green-50';
-      case 'partnership': return 'text-purple-600 bg-purple-50';
-      case 'sustainability': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
+      case 'match': return 'text-blue-400 bg-blue-900/20 border-blue-700';
+      case 'savings': return 'text-green-400 bg-green-900/20 border-green-700';
+      case 'partnership': return 'text-purple-400 bg-purple-900/20 border-purple-700';
+      case 'sustainability': return 'text-green-400 bg-green-900/20 border-green-700';
+      default: return 'text-gray-400 bg-gray-900/20 border-gray-700';
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'buyer': return 'text-blue-400 bg-blue-900/20 border-blue-700';
+      case 'seller': return 'text-green-400 bg-green-900/20 border-green-700';
+      case 'both': return 'text-purple-400 bg-purple-900/20 border-purple-700';
+      default: return 'text-gray-400 bg-gray-900/20 border-gray-700';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'text-yellow-400 bg-yellow-900/20 border-yellow-700';
+      case 'accepted': return 'text-green-400 bg-green-900/20 border-green-700';
+      case 'completed': return 'text-blue-400 bg-blue-900/20 border-blue-700';
+      case 'rejected': return 'text-red-400 bg-red-900/20 border-red-700';
+      default: return 'text-gray-400 bg-gray-900/20 border-gray-700';
     }
   };
 
   // Only show sensitive info if user is authenticated and authorized
   if (!user) {
-    return <div className="p-8 text-center text-red-600">Authentication required. Please log in.</div>;
+    return <div className="p-8 text-center text-red-400">Authentication required. Please log in.</div>;
   }
 
   if (loading) {
-    return <div className="p-8 text-center"><Loader2 className="animate-spin inline-block mr-2" /> Loading your portfolio...</div>;
+    return <div className="p-8 text-center text-gray-300"><Loader2 className="animate-spin inline-block mr-2" /> Loading your portfolio...</div>;
   }
 
   if (error) {
-    return <div className="p-8 text-center text-red-600">{error}</div>;
+    return <div className="p-8 text-center text-red-400">{error}</div>;
   }
 
   if (!portfolioData) {
-    return <div className="p-8 text-center text-gray-500">No portfolio data available.</div>;
+    return <div className="p-8 text-center text-gray-400">No portfolio data available.</div>;
   }
 
-  // Always render the full dashboard layout, with empty/zeroed fields and placeholders if onboarding is not complete
   const isEmpty = !portfolioData?.company?.onboarding_completed;
-  const company = portfolioData?.company || {
-    name: '--',
-    industry: '--',
-    location: '--',
-    employee_count: 0,
-    size_category: '--',
-    industry_position: '--',
-    sustainability_rating: '--',
-    growth_potential: '--',
-    joined_date: '--',
-    onboarding_completed: false
-  };
-  const achievements = portfolioData?.achievements || {
-    total_savings: 0,
-    carbon_reduced: 0,
-    partnerships_formed: 0,
-    waste_diverted: 0,
-    matches_completed: 0,
-    sustainability_score: 0,
-    efficiency_improvement: 0
-  };
-  const recommendations = isEmpty ? [] : (portfolioData?.recommendations || []);
-  const recent_activity = isEmpty ? [] : (portfolioData?.recent_activity || []);
-  const next_milestones = isEmpty ? [] : (portfolioData?.next_milestones || []);
-  const industry_comparison = portfolioData?.industry_comparison || {
-    rank: '--',
-    total_companies: '--',
-    average_savings: '--',
-    your_savings: '--'
-  };
-  const materialListings = isEmpty ? [] : (portfolioData?.materialListings || []);
+  const company = portfolioData?.company;
+  const achievements = portfolioData?.achievements;
+  const recommendations = portfolioData?.recommendations || [];
+  const recent_activity = portfolioData?.recent_activity || [];
+  const next_milestones = portfolioData?.next_milestones || [];
+  const materialListings = portfolioData?.materialListings || [];
+  const matches = portfolioData?.matches || [];
 
   return (
     <AuthenticatedLayout>
       <div className="space-y-8 bg-slate-900 min-h-screen py-8">
-        {/* Subtle Onboarding Banner if not complete */}
+        {/* Onboarding Banner if not complete */}
         {isEmpty && (
           <div className="bg-emerald-900/80 border-l-4 border-emerald-500 p-4 rounded flex items-center justify-between mb-4">
             <div>
@@ -353,247 +380,226 @@ const PersonalPortfolio: React.FC = () => {
         )}
 
         {/* Platform logistics/communication message */}
-        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 text-white mb-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 text-gray-300 mb-4">
           <p className="text-sm">
-            <strong>SymbioFlows handles all logistics and communication.</strong> You will not see detailed information about your match. Once both parties accept, we manage shipping, payment, and notifications. No direct negotiation or contact is required.
+            <strong className="text-white">SymbioFlows handles all logistics and communication.</strong> You will not see detailed information about your match. Once both parties accept, we manage shipping, payment, and notifications. No direct negotiation or contact is required.
           </p>
         </div>
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-slate-800 border-slate-700 text-white">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <DollarSign className="w-8 h-8 text-green-400" />
-                <div>
-                  <p className="text-sm text-gray-300">Total Savings</p>
-                  <p className="text-2xl font-bold">{isEmpty ? '--' : `$${achievements.total_savings?.toLocaleString?.() || 0}`}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-800 border-slate-700 text-white">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Leaf className="w-8 h-8 text-green-400" />
-                <div>
-                  <p className="text-sm text-gray-300">Carbon Reduced</p>
-                  <p className="text-2xl font-bold">{isEmpty ? '--' : `${achievements.carbon_reduced || 0} tons`}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-800 border-slate-700 text-white">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Users className="w-8 h-8 text-blue-400" />
-                <div>
-                  <p className="text-sm text-gray-300">Partnerships</p>
-                  <p className="text-2xl font-bold">{isEmpty ? '--' : achievements.partnerships_formed || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-800 border-slate-700 text-white">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Award className="w-8 h-8 text-purple-400" />
-                <div>
-                  <p className="text-sm text-gray-300">Sustainability Score</p>
-                  <p className="text-2xl font-bold">{isEmpty ? '--' : `${achievements.sustainability_score || 0}%`}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Match Details Card (Buyer/Seller) */}
-        <Card className="bg-slate-800 border-slate-700 text-white">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <DollarSign className="w-5 h-5 text-emerald-400" />
-              <span>Match Details</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Example: Show for Buyer (if user is buyer, otherwise show seller view) */}
-            {/* In a real app, you would check user role; here we show both for demo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Buyer View */}
-              <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  <span>Buyer View</span>
-                  <Badge className="bg-emerald-900 text-emerald-300 border-emerald-700">You save 20% vs. virgin material</Badge>
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Material</span>
-                    <span className="text-white">Recycled Material #{1}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Total Cost (incl. shipping)</span>
-                    <span className="text-emerald-400 font-bold">$8,000</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Virgin Material Price</span>
-                    <span className="text-gray-400 line-through">$10,000</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Platform Fee</span>
-                    <span className="text-gray-400">$400</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Shipping</span>
-                    <span className="text-gray-400">$600</span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Badge className="bg-blue-900 text-blue-300 border-blue-700">SymbioFlows handles all logistics and communication</Badge>
-                </div>
-              </div>
-              {/* Seller View */}
-              <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  <span>Seller View</span>
-                  <Badge className="bg-emerald-900 text-emerald-300 border-emerald-700">Platform handles everything</Badge>
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Material</span>
-                    <span className="text-white">Recycled Material #{1}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Net Revenue</span>
-                    <span className="text-emerald-400 font-bold">$7,600</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">Platform Fee</span>
-                    <span className="text-gray-400">$400</span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Badge className="bg-blue-900 text-blue-300 border-blue-700">SymbioFlows manages payment, shipping, and notifications</Badge>
-                </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow p-4 text-gray-300">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="w-8 h-8 text-green-400" />
+              <div>
+                <p className="text-sm text-gray-400">Total Savings</p>
+                <p className="text-2xl font-bold text-white">{isEmpty ? '--' : `$${achievements.total_savings?.toLocaleString?.() || 0}`}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow p-4 text-gray-300">
+            <div className="flex items-center space-x-2">
+              <Leaf className="w-8 h-8 text-green-400" />
+              <div>
+                <p className="text-sm text-gray-400">Carbon Reduced</p>
+                <p className="text-2xl font-bold text-white">{isEmpty ? '--' : `${achievements.carbon_reduced || 0} tons`}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow p-4 text-gray-300">
+            <div className="flex items-center space-x-2">
+              <Users className="w-8 h-8 text-blue-400" />
+              <div>
+                <p className="text-sm text-gray-400">Partnerships</p>
+                <p className="text-2xl font-bold text-white">{isEmpty ? '--' : achievements.partnerships_formed || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow p-4 text-gray-300">
+            <div className="flex items-center space-x-2">
+              <Award className="w-8 h-8 text-purple-400" />
+              <div>
+                <p className="text-sm text-gray-400">Sustainability Score</p>
+                <p className="text-2xl font-bold text-white">{isEmpty ? '--' : `${achievements.sustainability_score || 0}%`}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Active Matches */}
+        {matches.length > 0 && (
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300">
+            <div className="mb-2 font-semibold text-lg p-6 pb-2">
+              <h3 className="text-xl font-bold mb-1 text-white flex items-center space-x-2">
+                <Target className="w-5 h-5 text-emerald-400" />
+                <span>Active Matches</span>
+              </h3>
+            </div>
+            <div className="text-gray-300 p-6 pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {matches.map((match) => (
+                  <div key={match.id} className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-white">Match #{match.id}</h3>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(match.status)}`}>
+                        {match.status}
+                      </span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Partner</span>
+                        <span className="text-white">{match.partner_company}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Material</span>
+                        <span className="text-white">{match.partner_material}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Match Score</span>
+                        <span className="text-emerald-400 font-bold">{match.match_score}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Potential Savings</span>
+                        <span className="text-green-400 font-bold">${match.potential_savings?.toLocaleString() || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Carbon Reduction</span>
+                        <span className="text-green-400">{match.carbon_reduction || 0} tons</span>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-900/20 text-blue-400 border border-blue-700">
+                        SymbioFlows handles all logistics and communication
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* AI-Generated Materials */}
-        <Card className="bg-slate-800 border-slate-700 text-white">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300">
+          <div className="mb-2 font-semibold text-lg p-6 pb-2">
+            <h3 className="text-xl font-bold mb-1 text-white flex items-center space-x-2">
               <Package className="w-5 h-5" />
               <span>Your AI-Generated Materials</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEmpty ? (
+            </h3>
+          </div>
+          <div className="text-gray-300 p-6 pt-2">
+            {materialListings.length === 0 ? (
               <div className="text-center text-gray-400 py-8">
                 <p>No materials yet. Complete onboarding to unlock AI-generated materials.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {materialListings.map((material, index) => (
-                  <div key={index} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-700 transition-colors">
+                {materialListings.map((material) => (
+                  <div key={material.id} className="border border-slate-700 rounded-lg p-4 hover:bg-slate-700 transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-white">Material #{index + 1}</h4>
-                      <Badge className="bg-emerald-900 text-emerald-300 border-emerald-700">
-                        Matched Partner
-                      </Badge>
+                      <h4 className="font-semibold text-white">{material.material_name}</h4>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getRoleColor(material.role)}`}>
+                        {material.role}
+                      </span>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <p className="text-gray-300">
-                        <span className="font-medium">Quantity:</span> {material.quantity} {material.unit}
+                      <p className="text-gray-400">
+                        <span className="font-medium text-gray-300">Quantity:</span> {material.quantity} {material.unit}
                       </p>
-                      <p className="text-gray-300">
-                        <span className="font-medium">Description:</span> {material.description}
+                      <p className="text-gray-400">
+                        <span className="font-medium text-gray-300">Description:</span> {material.description}
                       </p>
                       {material.category && (
-                        <p className="text-gray-300">
-                          <span className="font-medium">Category:</span> {material.category}
+                        <p className="text-gray-400">
+                          <span className="font-medium text-gray-300">Category:</span> {material.category}
                         </p>
                       )}
-                      <p className="text-emerald-300 font-medium">
-                        <span className="font-medium">Match Score:</span> {material.match_score || 'N/A'}
+                      <p className="text-emerald-400 font-medium">
+                        <span className="font-medium text-gray-300">Match Score:</span> {material.match_score || 'N/A'}
                       </p>
-                      <p className="text-xs text-gray-400 italic mt-2">
-                        SymbioFlows will handle all logistics and communication for this match.
+                      <p className="text-gray-400">
+                        <span className="font-medium text-gray-300">Sustainability Score:</span> {material.sustainability_score}%
+                      </p>
+                      <p className="text-gray-400">
+                        <span className="font-medium text-gray-300">Value:</span> ${material.total_value?.toLocaleString() || 0}
+                      </p>
+                      <p className="text-xs text-gray-500 italic mt-2">
+                        SymbioFlows will handle all logistics and communication for this material.
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* AI-Powered Recommendations */}
-        <Card className="bg-slate-800 border-slate-700 text-white">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300">
+          <div className="mb-2 font-semibold text-lg p-6 pb-2">
+            <h3 className="text-xl font-bold mb-1 text-white flex items-center space-x-2">
               <Lightbulb className="w-5 h-5" />
               <span>AI-Powered Recommendations</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEmpty ? (
+            </h3>
+          </div>
+          <div className="text-gray-300 p-6 pt-2">
+            {recommendations.length === 0 ? (
               <div className="text-center text-gray-400 py-8">
                 <p>No recommendations yet. Complete onboarding to unlock personalized AI insights.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recommendations.map((rec) => (
-                  <Card key={rec.id} className="bg-slate-900 border-slate-700 text-white hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-3">
+                  <div key={rec.id} className="bg-slate-900 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow">
+                    <div className="mb-2 font-semibold text-lg pb-3 p-4">
                       <div className="flex items-start justify-between">
-                        <CardTitle className="text-lg">{rec.title}</CardTitle>
-                        <Badge className={getPriorityColor(rec.priority)}>
+                        <h3 className="text-lg text-white">{rec.title}</h3>
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getPriorityColor(rec.priority)}`}>
                           {rec.priority}
-                        </Badge>
+                        </span>
                       </div>
-                      <Badge className={getDifficultyColor(rec.implementation_difficulty)}>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getDifficultyColor(rec.implementation_difficulty)}`}>
                         {rec.implementation_difficulty}
-                      </Badge>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-gray-300">{rec.description}</p>
+                      </span>
+                    </div>
+                    <div className="text-gray-300 p-4 pt-0 space-y-3">
+                      <p className="text-sm text-gray-400">{rec.description}</p>
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div className="text-center">
-                          <p className="text-gray-300">Savings</p>
+                          <p className="text-gray-400">Savings</p>
                           <p className="font-bold text-green-400">${rec.potential_impact.savings.toLocaleString()}</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-gray-300">Carbon</p>
+                          <p className="text-gray-400">Carbon</p>
                           <p className="font-bold text-green-400">{rec.potential_impact.carbon_reduction} tons</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-gray-300">Efficiency</p>
+                          <p className="text-gray-400">Efficiency</p>
                           <p className="font-bold text-blue-400">+{rec.potential_impact.efficiency_gain}%</p>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-400">
-                        <p><strong>AI Reasoning:</strong> {rec.ai_reasoning}</p>
-                        <p className="mt-1"><strong>Time to implement:</strong> {rec.time_to_implement}</p>
+                      <div className="text-xs text-gray-500">
+                        <p><strong className="text-gray-300">AI Reasoning:</strong> {rec.ai_reasoning}</p>
+                        <p className="mt-1"><strong className="text-gray-300">Time to implement:</strong> {rec.time_to_implement}</p>
                       </div>
                       <Button className="w-full bg-emerald-700 hover:bg-emerald-800 text-white" size="sm">
                         Learn More <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Recent Activity */}
-        <Card className="bg-slate-800 border-slate-700 text-white">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEmpty ? (
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300">
+          <div className="mb-2 font-semibold text-lg p-6 pb-2">
+            <h3 className="text-xl font-bold mb-1 text-white">Recent Activity</h3>
+          </div>
+          <div className="text-gray-300 p-6 pt-2">
+            {recent_activity.length === 0 ? (
               <div className="text-center text-gray-400 py-8">
                 <p>No activity yet. Your recent actions will appear here after onboarding.</p>
               </div>
@@ -604,141 +610,89 @@ const PersonalPortfolio: React.FC = () => {
                     <div className={`p-2 rounded-full ${getActivityColor(activity.category)}`}>{getActivityIcon(activity.category)}</div>
                     <div className="flex-1">
                       <p className="font-medium text-white">{activity.action}</p>
-                      <p className="text-sm text-gray-300">{activity.impact}</p>
+                      <p className="text-sm text-gray-400">{activity.impact}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-400">{new Date(activity.date).toLocaleDateString()}</p>
-                      <Badge className={getActivityColor(activity.category)}>{activity.category}</Badge>
+                      <p className="text-sm text-gray-500">{new Date(activity.date).toLocaleDateString()}</p>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getActivityColor(activity.category)}`}>{activity.category}</span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Next Milestones */}
-        <Card className="bg-slate-800 border-slate-700 text-white">
-          <CardHeader>
-            <CardTitle>Next Milestones</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isEmpty ? (
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300">
+          <div className="mb-2 font-semibold text-lg p-6 pb-2">
+            <h3 className="text-xl font-bold mb-1 text-white">Next Milestones</h3>
+          </div>
+          <div className="text-gray-300 p-6 pt-2">
+            {next_milestones.length === 0 ? (
               <div className="text-center text-gray-400 py-8">
                 <p>Milestones will be shown here after onboarding.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {next_milestones.map((milestone, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-blue-900/60 rounded-lg">
+                  <div key={index} className="flex items-center space-x-3 p-3 bg-blue-900/20 rounded-lg border border-blue-700">
                     <Target className="w-5 h-5 text-blue-400" />
                     <span className="font-medium text-white">{milestone}</span>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <Card className="bg-slate-800 border-slate-700 text-white hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/marketplace'}>
-            <CardContent className="p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/marketplace'}>
+            <div className="p-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-900 rounded-lg">
+                <div className="p-2 bg-blue-900/20 rounded-lg border border-blue-700">
                   <Store className="h-5 w-5 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Browse Marketplace</h3>
-                  <p className="text-sm text-gray-300">Find materials and partners</p>
+                  <h3 className="font-semibold text-white">Browse Marketplace</h3>
+                  <p className="text-sm text-gray-400">Find materials and partners</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-800 border-slate-700 text-white hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/adaptive-onboarding'}>
-            <CardContent className="p-4">
+            </div>
+          </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/adaptive-onboarding'}>
+            <div className="p-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-purple-900 rounded-lg">
+                <div className="p-2 bg-purple-900/20 rounded-lg border border-purple-700">
                   <Brain className="h-5 w-5 text-purple-300" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">AI Onboarding</h3>
-                  <p className="text-sm text-gray-300">Complete your profile with AI</p>
+                  <h3 className="font-semibold text-white">AI Onboarding</h3>
+                  <p className="text-sm text-gray-400">Complete your profile with AI</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-slate-800 border-slate-700 text-white hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/marketplace'}>
-            <CardContent className="p-4">
+            </div>
+          </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/marketplace'}>
+            <div className="p-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-900 rounded-lg">
+                <div className="p-2 bg-green-900/20 rounded-lg border border-green-700">
                   <Package className="h-5 w-5 text-green-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Add Material</h3>
-                  <p className="text-sm text-gray-300">List your materials</p>
+                  <h3 className="font-semibold text-white">Add Material</h3>
+                  <p className="text-sm text-gray-400">List your materials</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Backend Integration Tabs */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white">Backend Services Integration</h2>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" className="border-slate-600 text-white">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh All
-              </Button>
             </div>
           </div>
-          {/* Integration Tabs */}
-          <div className="border-b border-slate-700">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveIntegrationTab('logistics')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeIntegrationTab === 'logistics'
-                    ? 'border-emerald-500 text-emerald-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-slate-600'
-                }`}
-              >
-                <Truck className="h-4 w-4 inline mr-2" />
-                Logistics
-              </button>
-              <button
-                onClick={() => setActiveIntegrationTab('ai')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeIntegrationTab === 'ai'
-                    ? 'border-emerald-500 text-emerald-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-slate-600'
-                }`}
-              >
-                <Brain className="h-4 w-4 inline mr-2" />
-                AI Services
-              </button>
-              <button
-                onClick={() => setActiveIntegrationTab('orchestration')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeIntegrationTab === 'orchestration'
-                    ? 'border-emerald-500 text-emerald-400'
-                    : 'border-transparent text-gray-400 hover:text-gray-200 hover:border-slate-600'
-                }`}
-              >
-                <Workflow className="h-4 w-4 inline mr-2" />
-                Orchestration
-              </button>
-            </nav>
-          </div>
-          {/* Integration Content */}
-          <div className="bg-slate-800 rounded-lg border border-slate-700 text-white">
-            {activeIntegrationTab === 'logistics' && <LogisticsIntegration />}
-            {activeIntegrationTab === 'ai' && <AIServicesIntegration />}
-            {activeIntegrationTab === 'orchestration' && <OrchestrationDashboard />}
-          </div>
         </div>
+
+        {/* Logistics Integration */}
+        <LogisticsIntegration />
+
+
       </div>
     </AuthenticatedLayout>
   );

@@ -291,9 +291,9 @@ class RevolutionaryAIListingsGenerator:
             products = company.get('products', [])
             materials = company.get('materials', [])
             waste_streams = company.get('waste_streams', [])
-
+            
             listings = []
-
+            
             # Helper to create a listing for any item
             async def create_listing(item_name, role, base_type):
                 # Use DeepSeek R1 and MaterialsBERT for semantic/contextual analysis
@@ -1243,7 +1243,7 @@ class RevolutionaryAIListingsGenerator:
         # For demonstration, we'll return dummy data.
         logging.warning(f"Circular economy potential data not available for {material_name}. Returning dummy data.")
         return 0.8 # Example dummy data
-
+    
     def _calculate_revolutionary_score(self, listing: RevolutionaryMaterialListing) -> float:
         """Calculate revolutionary score"""
         base_score = 0.5

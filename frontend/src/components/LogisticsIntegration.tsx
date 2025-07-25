@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle 
-} from './ui/card';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { 
   Truck, 
@@ -28,6 +21,7 @@ import {
   Zap
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { activityService } from '../lib/activityService';
 
 interface LogisticsDeal {
   deal_id: string;
@@ -75,21 +69,90 @@ export function LogisticsIntegration() {
 
       setCurrentUser(user);
 
-      // Fetch user's company role to determine buyer/seller view
+      // Fetch real company data
       const { data: company } = await supabase
         .from('companies')
-        .select('role')
+        .select('*')
         .eq('id', user.id)
         .single();
 
-      if (company?.role === 'buyer' || !company?.role) {
-        // Load buyer dashboard
-        const buyerData = await fetchBuyerDashboard(user.id);
+      // Fetch real material listings from AI onboarding
+      const { data: materialListings } = await supabase
+        .from('material_listings')
+        .select('*')
+        .eq('company_id', user.id)
+        .order('created_at', { ascending: false });
+
+      // Fetch real matches
+      const { data: matches } = await supabase
+        .from('matches')
+        .select('*')
+        .or(`company_id.eq.${user.id},partner_company_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      // Fetch real activities for deal tracking
+      const activities = await activityService.getUserActivities(user.id, 50);
+
+      // Determine if user is primarily a buyer or seller based on their materials
+      const buyerMaterials = materialListings?.filter(m => m.role === 'buyer' || m.type === 'waste') || [];
+      const sellerMaterials = materialListings?.filter(m => m.role === 'seller' || m.type === 'resource' || m.type === 'product') || [];
+      
+      const isPrimarilyBuyer = buyerMaterials.length > sellerMaterials.length;
+
+      // Create real buyer dashboard data
+      const buyerData: LogisticsDashboard = {
+        total_deals: matches?.length || 0,
+        active_deals: matches?.filter(m => m.status === 'pending' || m.status === 'accepted').length || 0,
+        total_spent: matches?.reduce((sum, m) => sum + (m.potential_savings || 0), 0) || 0,
+        pending_deals: matches?.filter(m => m.status === 'pending' || m.status === 'accepted').map(match => ({
+          deal_id: match.id,
+          material: match.partner_material_name || 'Unknown Material',
+          quantity: match.quantity || 0,
+          unit_price: match.unit_price || 0,
+          total_material_cost: (match.quantity || 0) * (match.unit_price || 0),
+          shipping_cost: match.shipping_cost || 0,
+          customs_cost: match.customs_cost || 0,
+          insurance_cost: match.insurance_cost || 0,
+          handling_cost: match.handling_cost || 0,
+          platform_fee: match.platform_fee || 0,
+          total_cost_to_buyer: match.total_cost || 0,
+          net_revenue_to_seller: match.net_revenue || 0,
+          status: match.status || 'pending',
+          expires_at: match.expires_at || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          shipment_date: match.shipment_date,
+          delivery_date: match.delivery_date
+        })) || []
+      };
+
+      // Create real seller dashboard data
+      const sellerData: LogisticsDashboard = {
+        total_deals: matches?.length || 0,
+        active_deals: matches?.filter(m => m.status === 'pending' || m.status === 'accepted').length || 0,
+        total_spent: matches?.reduce((sum, m) => sum + (m.net_revenue || 0), 0) || 0,
+        pending_deals: matches?.filter(m => m.status === 'pending' || m.status === 'accepted').map(match => ({
+          deal_id: match.id,
+          material: match.material_name || 'Unknown Material',
+          quantity: match.quantity || 0,
+          unit_price: match.unit_price || 0,
+          total_material_cost: (match.quantity || 0) * (match.unit_price || 0),
+          shipping_cost: 0, // Seller doesn't pay shipping
+          customs_cost: 0, // Seller doesn't pay customs
+          insurance_cost: 0, // Seller doesn't pay insurance
+          handling_cost: 0, // Seller doesn't pay handling
+          platform_fee: match.platform_fee || 0,
+          total_cost_to_buyer: match.total_cost || 0,
+          net_revenue_to_seller: match.net_revenue || 0,
+          status: match.status || 'pending',
+          expires_at: match.expires_at || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          shipment_date: match.shipment_date,
+          delivery_date: match.delivery_date
+        })) || []
+      };
+
+      if (isPrimarilyBuyer || !company?.role) {
         setBuyerDashboard(buyerData);
         setActiveTab('buyer');
       } else {
-        // Load seller dashboard
-        const sellerData = await fetchSellerDashboard(user.id);
         setSellerDashboard(sellerData);
         setActiveTab('seller');
       }
@@ -102,115 +165,29 @@ export function LogisticsIntegration() {
   };
 
   const fetchBuyerDashboard = async (userId: string): Promise<LogisticsDashboard> => {
-    try {
-      const response = await fetch(`http://localhost:5026/dashboard/buyer/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${await getAuthToken()}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        return await response.json();
-      } else {
-        // Fallback to mock data
-        return generateMockBuyerDashboard();
-      }
-    } catch (error) {
-      console.error('Error fetching buyer dashboard:', error);
-      return generateMockBuyerDashboard();
-    }
+    // This function is no longer needed as we load real data in loadLogisticsData
+    return {
+      total_deals: 0,
+      active_deals: 0,
+      total_spent: 0,
+      pending_deals: []
+    };
   };
 
   const fetchSellerDashboard = async (userId: string): Promise<LogisticsDashboard> => {
-    try {
-      const response = await fetch(`http://localhost:5026/dashboard/seller/${userId}`, {
-        headers: {
-          'Authorization': `Bearer ${await getAuthToken()}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        return await response.json();
-      } else {
-        // Fallback to mock data
-        return generateMockSellerDashboard();
-      }
-    } catch (error) {
-      console.error('Error fetching seller dashboard:', error);
-      return generateMockSellerDashboard();
-    }
+    // This function is no longer needed as we load real data in loadLogisticsData
+    return {
+      total_deals: 0,
+      active_deals: 0,
+      total_spent: 0,
+      pending_deals: []
+    };
   };
 
   const getAuthToken = async (): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token || '';
   };
-
-  const generateMockBuyerDashboard = (): LogisticsDashboard => ({
-    total_deals: 12,
-    active_deals: 3,
-    total_spent: 45000,
-    pending_deals: [
-      {
-        deal_id: 'deal_001',
-        material: 'Recycled Aluminum',
-        quantity: 5000,
-        unit_price: 2.50,
-        total_material_cost: 12500,
-        shipping_cost: 1200,
-        customs_cost: 625,
-        insurance_cost: 250,
-        handling_cost: 300,
-        platform_fee: 625,
-        total_cost_to_buyer: 15400,
-        net_revenue_to_seller: 11875,
-        status: 'pending',
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        deal_id: 'deal_002',
-        material: 'Recycled Plastic',
-        quantity: 2000,
-        unit_price: 1.80,
-        total_material_cost: 3600,
-        shipping_cost: 800,
-        customs_cost: 180,
-        insurance_cost: 72,
-        handling_cost: 150,
-        platform_fee: 180,
-        total_cost_to_buyer: 4802,
-        net_revenue_to_seller: 3420,
-        status: 'buyer_accepted',
-        expires_at: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()
-      }
-    ]
-  });
-
-  const generateMockSellerDashboard = (): LogisticsDashboard => ({
-    total_deals: 8,
-    active_deals: 2,
-    total_spent: 28000,
-    pending_deals: [
-      {
-        deal_id: 'deal_003',
-        material: 'Recycled Steel',
-        quantity: 3000,
-        unit_price: 3.20,
-        total_material_cost: 9600,
-        shipping_cost: 0,
-        customs_cost: 0,
-        insurance_cost: 0,
-        handling_cost: 0,
-        platform_fee: 480,
-        total_cost_to_buyer: 10080,
-        net_revenue_to_seller: 9120,
-        status: 'pending',
-        expires_at: new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString()
-      }
-    ]
-  });
 
   const handleAcceptDeal = async (dealId: string) => {
     try {
@@ -236,13 +213,13 @@ export function LogisticsIntegration() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-500';
-      case 'buyer_accepted': return 'bg-blue-500';
-      case 'seller_accepted': return 'bg-blue-500';
-      case 'accepted': return 'bg-green-500';
-      case 'logistics_booked': return 'bg-purple-500';
-      case 'completed': return 'bg-emerald-500';
-      default: return 'bg-gray-500';
+      case 'pending': return 'bg-yellow-900/20 text-yellow-400 border-yellow-700';
+      case 'buyer_accepted': return 'bg-blue-900/20 text-blue-400 border-blue-700';
+      case 'seller_accepted': return 'bg-blue-900/20 text-blue-400 border-blue-700';
+      case 'accepted': return 'bg-green-900/20 text-green-400 border-green-700';
+      case 'logistics_booked': return 'bg-purple-900/20 text-purple-400 border-purple-700';
+      case 'completed': return 'bg-emerald-900/20 text-emerald-400 border-emerald-700';
+      default: return 'bg-gray-900/20 text-gray-400 border-gray-700';
     }
   };
 
@@ -304,59 +281,59 @@ export function LogisticsIntegration() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">Total Deals</CardTitle>
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow p-4 text-gray-300">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium text-gray-400">Total Deals</h3>
             <Package className="h-4 w-4 text-emerald-400" />
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-0">
             <div className="text-2xl font-bold text-white">{dashboard?.total_deals || 0}</div>
             <p className="text-xs text-gray-400 mt-1">
               {dashboard?.active_deals || 0} currently active
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow p-4 text-gray-300">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium text-gray-400">
               {activeTab === 'buyer' ? 'Total Spent' : 'Total Revenue'}
-            </CardTitle>
+            </h3>
             <DollarSign className="h-4 w-4 text-emerald-400" />
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-0">
             <div className="text-2xl font-bold text-white">
               ${dashboard?.total_spent?.toLocaleString() || '0'}
             </div>
             <p className="text-xs text-gray-400 mt-1">
               {activeTab === 'buyer' ? 'All time purchases' : 'All time earnings'}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-400">Pending Deals</CardTitle>
+        <div className="bg-slate-800 border border-slate-700 rounded-xl shadow p-4 text-gray-300">
+          <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <h3 className="text-sm font-medium text-gray-400">Pending Deals</h3>
             <Clock className="h-4 w-4 text-emerald-400" />
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className="p-0">
             <div className="text-2xl font-bold text-white">{dashboard?.pending_deals?.length || 0}</div>
             <p className="text-xs text-gray-400 mt-1">
               Awaiting action
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Pending Deals */}
-      <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+      <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300">
+        <div className="mb-2 font-semibold text-lg p-6 pb-2">
+          <h3 className="text-xl font-bold mb-1 text-white flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />
             Pending Deals
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </h3>
+        </div>
+        <div className="text-gray-300 p-6 pt-2">
           {dashboard?.pending_deals?.length === 0 ? (
             <div className="text-center py-8">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -378,9 +355,9 @@ export function LogisticsIntegration() {
                         </p>
                       </div>
                     </div>
-                    <Badge className={getStatusColor(deal.status)}>
+                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(deal.status)}`}>
                       {getStatusText(deal.status)}
-                    </Badge>
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -438,93 +415,10 @@ export function LogisticsIntegration() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Logistics Features */}
-      <Card className="bg-slate-800 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Zap className="h-5 w-5 text-emerald-400" />
-            Logistics Features
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-blue-500/20 p-2 rounded-lg">
-                  <Truck className="h-5 w-5 text-blue-400" />
-                </div>
-                <h4 className="font-semibold text-white">Freightos Integration</h4>
-              </div>
-              <p className="text-sm text-gray-400">
-                Real-time shipping quotes and booking through Freightos
-              </p>
-            </div>
-
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-green-500/20 p-2 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-400" />
-                </div>
-                <h4 className="font-semibold text-white">Complete Cost Breakdown</h4>
-              </div>
-              <p className="text-sm text-gray-400">
-                Material cost, shipping, customs, insurance, and handling
-              </p>
-            </div>
-
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-purple-500/20 p-2 rounded-lg">
-                  <Users className="h-5 w-5 text-purple-400" />
-                </div>
-                <h4 className="font-semibold text-white">No Direct Communication</h4>
-              </div>
-              <p className="text-sm text-gray-400">
-                You handle everything - buyers and sellers never communicate directly
-              </p>
-            </div>
-
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-yellow-500/20 p-2 rounded-lg">
-                  <Star className="h-5 w-5 text-yellow-400" />
-                </div>
-                <h4 className="font-semibold text-white">Platform Fee Management</h4>
-              </div>
-              <p className="text-sm text-gray-400">
-                Automated 5% platform fee calculation and collection
-              </p>
-            </div>
-
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-red-500/20 p-2 rounded-lg">
-                  <MapPin className="h-5 w-5 text-red-400" />
-                </div>
-                <h4 className="font-semibold text-white">Shipment Tracking</h4>
-              </div>
-              <p className="text-sm text-gray-400">
-                Real-time tracking from pickup to delivery
-              </p>
-            </div>
-
-            <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="bg-emerald-500/20 p-2 rounded-lg">
-                  <CheckCircle className="h-5 w-5 text-emerald-400" />
-                </div>
-                <h4 className="font-semibold text-white">Payment Processing</h4>
-              </div>
-              <p className="text-sm text-gray-400">
-                Secure payment handling and escrow services
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      
     </div>
   );
 } 
