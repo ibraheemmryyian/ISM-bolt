@@ -31,6 +31,7 @@ import base64
 import jwt
 from functools import wraps
 import traceback
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -358,13 +359,32 @@ class WorkflowEngine:
     
     async def _get_service_endpoint(self, service_id: str) -> ServiceEndpoint:
         """Get service endpoint from service registry"""
-        # This would integrate with service discovery
-        # For now, return mock endpoint
+        # Map known services to their production ports
+        default_ports = {
+            "ai_listings_generator": 5000,
+            "ai_gateway": 8000,
+            "gnn_inference_service": 8001,
+            "ai_pricing_wrapper": 8002,
+            "logistics_wrapper": 8003,
+            "advanced_analytics_service": 5004,
+            "ai_pricing_service": 5005,
+            "logistics_cost_service": 5006,
+            "ultra_ai_listings_generator": 5007,
+            "regulatory_compliance": 5013,
+            "proactive_opportunity_engine": 5014,
+            "ai_feedback_orchestrator": 5015,
+            "value_function_arbiter": 5016,
+            "financial_analysis_engine": 5017,
+            "advanced_orchestration_engine": 5018,
+        }
+
+        port = default_ports.get(service_id, 5000)
+
         return ServiceEndpoint(
             service_id=service_id,
             service_name=service_id,
-            host="localhost",
-            port=5000,
+            host=os.getenv("SERVICE_HOST", "localhost"),
+            port=port,
             protocol="http",
             health_endpoint="/health",
             status=ServiceStatus.HEALTHY,
