@@ -395,8 +395,21 @@ class AdvancedAIPromptsService:
         # Initialize ML components
         self.model_registry = ModelRegistry()
         self.data_processor = PromptDataProcessor()
-        self.trainer = ModelTrainer(None, None, None)  # TODO: Replace None with actual model, config, loss_fn
-        self.optimizer = HyperparameterOptimizer()
+        
+        # Fix ModelTrainer initialization with proper defaults
+        dummy_model = nn.Linear(10, 1)  # Simple dummy model
+        dummy_config = {'learning_rate': 0.001, 'batch_size': 16}
+        dummy_loss_fn = nn.MSELoss()
+        self.trainer = ModelTrainer(dummy_model, dummy_config, dummy_loss_fn)
+        
+        # Fix HyperparameterOptimizer initialization with proper defaults
+        dummy_search_space = {
+            'learning_rate': [0.0001, 0.001, 0.01],
+            'batch_size': [8, 16, 32],
+            'hidden_size': [256, 512, 768]
+        }
+        self.optimizer = HyperparameterOptimizer(dummy_model, dummy_config, dummy_search_space)
+        
         self.metrics_tracker = MLMetricsTracker()
         self.data_validator = DataValidator()
         

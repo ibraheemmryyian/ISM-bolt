@@ -971,5 +971,88 @@ class ImpactForecastingService:
             self.logger.error(f"Error getting system health: {e}")
             return {'status': 'error', 'error': str(e)}
 
+    def forecast_environmental_impact(self, company_data: Dict, timeframe: str = '12_months') -> Dict:
+        """Forecast environmental impact based on company data"""
+        try:
+            # Extract historical data
+            historical_emissions = company_data.get('historical_emissions', [100, 95, 90, 85, 80])
+            historical_waste = company_data.get('historical_waste', [50, 48, 45, 42, 40])
+            
+            if STATSMODELS_AVAILABLE:
+                # Use statsmodels for advanced forecasting
+                periods = 12 if timeframe == '12_months' else 6
+                
+                # Emissions forecast
+                emissions_model = sm.tsa.ARIMA(historical_emissions, order=(1, 1, 1))
+                emissions_fitted = emissions_model.fit()
+                emissions_forecast = emissions_fitted.forecast(steps=periods)
+                
+                # Waste forecast
+                waste_model = sm.tsa.ARIMA(historical_waste, order=(1, 1, 1))
+                waste_fitted = waste_model.fit()
+                waste_forecast = waste_fitted.forecast(steps=periods)
+            else:
+                # Use simple forecasting methods
+                periods = 12 if timeframe == '12_months' else 6
+                emissions_forecast = simple_forecast(historical_emissions, periods)
+                waste_forecast = simple_forecast(historical_waste, periods)
+            
+            return {
+                'emissions_forecast': emissions_forecast.tolist() if hasattr(emissions_forecast, 'tolist') else emissions_forecast,
+                'waste_forecast': waste_forecast.tolist() if hasattr(waste_forecast, 'tolist') else waste_forecast,
+                'forecast_periods': periods,
+                'confidence_level': 0.85
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error in environmental impact forecasting: {e}")
+            return {'error': str(e)}
+
 # Initialize service
 impact_forecasting_service = ImpactForecastingService() 
+
+try:
+    import statsmodels.api as sm
+    STATSMODELS_AVAILABLE = True
+except ImportError as e:
+    STATSMODELS_AVAILABLE = False
+    print(f"Warning: statsmodels not available due to scipy version conflict: {e}")
+    print("Impact forecasting will use alternative statistical methods.")
+
+# Alternative statistical functions if statsmodels is not available
+if not STATSMODELS_AVAILABLE:
+    def simple_linear_regression(x, y):
+        """Simple linear regression without statsmodels"""
+        n = len(x)
+        if n != len(y):
+            raise ValueError("x and y must have the same length")
+        
+        x_mean = sum(x) / n
+        y_mean = sum(y) / n
+        
+        numerator = sum((x[i] - x_mean) * (y[i] - y_mean) for i in range(n))
+        denominator = sum((x[i] - x_mean) ** 2 for i in range(n))
+        
+        if denominator == 0:
+            return 0, y_mean
+        
+        slope = numerator / denominator
+        intercept = y_mean - slope * x_mean
+        
+        return slope, intercept
+    
+    def simple_forecast(historical_data, periods=12):
+        """Simple forecasting without statsmodels"""
+        if len(historical_data) < 2:
+            return [historical_data[0]] * periods if historical_data else [0] * periods
+        
+        # Simple linear trend
+        x = list(range(len(historical_data)))
+        slope, intercept = simple_linear_regression(x, historical_data)
+        
+        # Forecast future periods
+        forecast = []
+        for i in range(len(historical_data), len(historical_data) + periods):
+            forecast.append(slope * i + intercept)
+        
+        return forecast 

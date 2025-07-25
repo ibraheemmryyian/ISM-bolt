@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { loadStripe } from '@stripe/stripe-js';
+
+// Load Stripe
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface PaymentProcessorProps {
   exchangeData?: {
@@ -44,8 +48,8 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
 }) => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [approvalUrl, setApprovalUrl] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending');
 
@@ -65,7 +69,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     return () => subscription.unsubscribe();
   }, []);
 
-  const createPaymentOrder = async () => {
+  const createPaymentIntent = async () => {
     if (!user) {
       setError('User not authenticated');
       return;
@@ -75,8 +79,14 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     setError(null);
 
     try {
-      const endpoint = exchangeData ? '/api/payments/create-order' : '/api/payments/create-subscription';
-      const data = exchangeData ? { exchangeData } : { subscriptionData };
+      const endpoint = exchangeData ? '/api/payments/create-payment-intent' : '/api/payments/create-subscription';
+      const data = exchangeData ? { 
+        exchangeData,
+        amount: parseFloat(exchangeData.total_amount)
+      } : { 
+        subscriptionData,
+        amount: parseFloat(subscriptionData.monthly_price)
+      };
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
         method: 'POST',
@@ -88,76 +98,74 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create payment order');
+        throw new Error('Failed to create payment intent');
       }
 
       const result = await response.json();
-      setOrderId(result.orderId || result.subscriptionId);
-      setApprovalUrl(result.approvalUrl);
-      setPaymentStatus('processing');
-
-      // Redirect to PayPal
-      if (result.approvalUrl) {
-        window.location.href = result.approvalUrl;
+      
+      if (result.success) {
+        setPaymentIntentId(result.payment_intent_id);
+        setClientSecret(result.client_secret);
+        setPaymentStatus('processing');
+      } else {
+        throw new Error(result.error || 'Failed to create payment intent');
       }
-    } catch (err) {
-      console.error('Payment creation error:', err);
-      setError(err instanceof Error ? err.message : 'Payment creation failed');
+    } catch (error) {
+      console.error('Payment intent creation error:', error);
+      setError(error instanceof Error ? error.message : 'Payment creation failed');
       setPaymentStatus('failed');
     } finally {
       setLoading(false);
     }
   };
 
-  const capturePayment = async (orderId: string) => {
+  const handleStripePayment = async () => {
+    if (!clientSecret) {
+      setError('No payment intent available');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/capture/${orderId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user?.access_token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to capture payment');
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Stripe failed to load');
       }
 
-      const result = await response.json();
-      setPaymentStatus('completed');
-      onSuccess?.(result);
-    } catch (err) {
-      console.error('Payment capture error:', err);
-      setError(err instanceof Error ? err.message : 'Payment capture failed');
+      const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
+        clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/payment/success`,
+          payment_method_data: {
+            billing_details: {
+              name: subscriptionData?.customer_name || user?.user_metadata?.full_name || '',
+              email: subscriptionData?.customer_email || user?.email || '',
+            },
+          },
+        },
+      });
+
+      if (stripeError) {
+        throw new Error(stripeError.message);
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        setPaymentStatus('completed');
+        onSuccess?.(paymentIntent);
+      } else {
+        setPaymentStatus('failed');
+        setError('Payment failed');
+      }
+    } catch (error) {
+      console.error('Stripe payment error:', error);
+      setError(error instanceof Error ? error.message : 'Payment failed');
       setPaymentStatus('failed');
     } finally {
       setLoading(false);
     }
   };
-
-  const handleReturnFromPayPal = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const payerId = urlParams.get('PayerID');
-
-    if (token && payerId) {
-      capturePayment(token);
-    } else {
-      setError('Invalid PayPal return parameters');
-      setPaymentStatus('failed');
-    }
-  };
-
-  useEffect(() => {
-    // Check if returning from PayPal
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('token') || urlParams.get('PayerID')) {
-      handleReturnFromPayPal();
-    }
-  }, []);
 
   const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -170,45 +178,45 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     if (!exchangeData) return null;
 
     return (
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-        <div className="space-y-2">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Material Exchange Summary</h3>
+        <div className="space-y-3">
           <div className="flex justify-between">
-            <span>Material:</span>
+            <span className="text-gray-600">Material:</span>
             <span className="font-medium">{exchangeData.material_name}</span>
           </div>
           <div className="flex justify-between">
-            <span>Quantity:</span>
-            <span>{exchangeData.quantity}</span>
+            <span className="text-gray-600">Quantity:</span>
+            <span className="font-medium">{exchangeData.quantity}</span>
           </div>
           <div className="flex justify-between">
-            <span>Unit Price:</span>
-            <span>{formatCurrency(exchangeData.unit_price)}</span>
+            <span className="text-gray-600">Unit Price:</span>
+            <span className="font-medium">{formatCurrency(exchangeData.unit_price)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Material Cost:</span>
-            <span>{formatCurrency(exchangeData.material_cost)}</span>
+            <span className="text-gray-600">Material Cost:</span>
+            <span className="font-medium">{formatCurrency(exchangeData.material_cost)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Shipping:</span>
-            <span>{formatCurrency(exchangeData.shipping_cost)}</span>
+            <span className="text-gray-600">Shipping:</span>
+            <span className="font-medium">{formatCurrency(exchangeData.shipping_cost)}</span>
           </div>
           {exchangeData.tax_amount && (
             <div className="flex justify-between">
-              <span>Tax:</span>
-              <span>{formatCurrency(exchangeData.tax_amount)}</span>
+              <span className="text-gray-600">Tax:</span>
+              <span className="font-medium">{formatCurrency(exchangeData.tax_amount)}</span>
             </div>
           )}
           {exchangeData.platform_fee && (
             <div className="flex justify-between">
-              <span>Platform Fee:</span>
-              <span>{formatCurrency(exchangeData.platform_fee)}</span>
+              <span className="text-gray-600">Platform Fee:</span>
+              <span className="font-medium">{formatCurrency(exchangeData.platform_fee)}</span>
             </div>
           )}
-          <div className="border-t pt-2 mt-2">
-            <div className="flex justify-between font-semibold text-lg">
+          <div className="border-t pt-3">
+            <div className="flex justify-between text-lg font-semibold">
               <span>Total:</span>
-              <span>{formatCurrency(exchangeData.total_amount)}</span>
+              <span className="text-green-600">{formatCurrency(exchangeData.total_amount)}</span>
             </div>
           </div>
         </div>
@@ -220,80 +228,60 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     if (!subscriptionData) return null;
 
     return (
-      <div className="bg-gray-50 p-4 rounded-lg mb-6">
-        <h3 className="text-lg font-semibold mb-4">Subscription Summary</h3>
-        <div className="space-y-2">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription Summary</h3>
+        <div className="space-y-3">
           <div className="flex justify-between">
-            <span>Plan:</span>
+            <span className="text-gray-600">Plan:</span>
             <span className="font-medium">{subscriptionData.plan_name}</span>
           </div>
           <div className="flex justify-between">
-            <span>Type:</span>
-            <span>{subscriptionData.plan_type}</span>
+            <span className="text-gray-600">Type:</span>
+            <span className="font-medium">{subscriptionData.plan_type}</span>
           </div>
           <div className="flex justify-between">
-            <span>Monthly Price:</span>
-            <span>{formatCurrency(subscriptionData.monthly_price)}</span>
+            <span className="text-gray-600">Monthly Price:</span>
+            <span className="font-medium">{formatCurrency(subscriptionData.monthly_price)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Customer:</span>
-            <span>{subscriptionData.customer_name}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Email:</span>
-            <span>{subscriptionData.customer_email}</span>
+          <div className="border-t pt-3">
+            <div className="flex justify-between text-lg font-semibold">
+              <span>Total:</span>
+              <span className="text-green-600">{formatCurrency(subscriptionData.monthly_price)}</span>
+            </div>
           </div>
         </div>
+        <p className="text-sm text-gray-500 mt-3">{subscriptionData.description}</p>
       </div>
     );
   };
 
   const renderPaymentStatus = () => {
     switch (paymentStatus) {
-      case 'pending':
-        return (
-          <div className="text-center">
-            <div className="mb-4">
-              <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-            </div>
-            <p className="text-gray-600">Preparing payment...</p>
-          </div>
-        );
-      case 'processing':
-        return (
-          <div className="text-center">
-            <div className="mb-4">
-              <div className="w-16 h-16 border-4 border-yellow-200 border-t-yellow-600 rounded-full animate-spin mx-auto"></div>
-            </div>
-            <p className="text-gray-600">Processing payment...</p>
-          </div>
-        );
       case 'completed':
         return (
           <div className="text-center">
-            <div className="mb-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-green-600 font-semibold">Payment Successful!</p>
-            <p className="text-gray-600 text-sm mt-2">Your transaction has been completed.</p>
+            <div className="text-green-600 text-6xl mb-4">✓</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Payment Successful!</h3>
+            <p className="text-gray-600">Your payment has been processed successfully.</p>
           </div>
         );
       case 'failed':
         return (
           <div className="text-center">
-            <div className="mb-4">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </div>
-            </div>
-            <p className="text-red-600 font-semibold">Payment Failed</p>
-            <p className="text-gray-600 text-sm mt-2">Please try again or contact support.</p>
+            <div className="text-red-600 text-6xl mb-4">✗</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Payment Failed</h3>
+            <p className="text-gray-600">{error || 'There was an error processing your payment.'}</p>
+            <button
+              onClick={() => {
+                setPaymentStatus('pending');
+                setError(null);
+                setPaymentIntentId(null);
+                setClientSecret(null);
+              }}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            >
+              Try Again
+            </button>
           </div>
         );
       default:
@@ -305,99 +293,57 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({
     return (
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
         {renderPaymentStatus()}
-        <div className="mt-6 space-y-3">
-          {paymentStatus === 'completed' && (
-            <button
-              onClick={() => onSuccess?.({ status: 'completed' })}
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Continue
-            </button>
-          )}
-          {paymentStatus === 'failed' && (
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setPaymentStatus('pending');
-                  setError(null);
-                }}
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Try Again
-              </button>
-              <button
-                onClick={onCancel}
-                className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          {exchangeData ? 'Complete Purchase' : 'Subscribe to Plan'}
-        </h2>
-        <p className="text-gray-600">
-          {exchangeData ? 'Secure payment via PayPal' : 'Start your subscription today'}
-        </p>
-      </div>
-
-      {renderExchangeSummary()}
-      {renderSubscriptionSummary()}
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <div className="flex">
-            <svg className="w-5 h-5 text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="ml-3">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {exchangeData && renderExchangeSummary()}
+      {subscriptionData && renderSubscriptionSummary()}
 
       <div className="space-y-4">
-        <button
-          onClick={createPaymentOrder}
-          disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-        >
-          {loading ? (
-            <>
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Processing...
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
-              </svg>
-              Pay with PayPal
-            </>
-          )}
-        </button>
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        {!clientSecret ? (
+          <button
+            onClick={createPaymentIntent}
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Creating Payment...' : (exchangeData ? 'Pay with Stripe' : 'Start your subscription today')}
+          </button>
+        ) : (
+          <button
+            onClick={handleStripePayment}
+            disabled={loading}
+            className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Processing Payment...' : 'Complete Payment with Stripe'}
+          </button>
+        )}
 
         <button
           onClick={onCancel}
-          disabled={loading}
-          className="w-full bg-gray-200 text-gray-800 py-3 px-4 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400"
         >
           Cancel
         </button>
       </div>
 
-      <div className="mt-6 text-center">
-        <p className="text-xs text-gray-500">
-          Your payment is secured by PayPal's industry-leading security standards.
+      <div className="mt-6 text-center text-sm text-gray-500">
+        <p>Your payment is secured by Stripe's industry-leading security standards.</p>
+        <p className="mt-2">
+          <span className="inline-flex items-center">
+            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+            </svg>
+            Secure Payment
+          </span>
         </p>
       </div>
     </div>

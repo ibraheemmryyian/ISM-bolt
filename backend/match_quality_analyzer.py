@@ -315,7 +315,12 @@ class MatchQualityAnalyzer:
         if io_analysis['missing_source_materials'] > 0:
             base_io -= (io_analysis['missing_source_materials'] / io_analysis['source_materials_in_matches']) * 50
         if io_analysis['value_consistency_issues'] > 0:
-            base_io -= len(io_analysis['value_consistency_issues']) * 2
+            # Fix: Ensure value_consistency_issues is a list before calling len()
+            consistency_issues = io_analysis['value_consistency_issues']
+            if isinstance(consistency_issues, list):
+                base_io -= len(consistency_issues) * 2
+            else:
+                base_io -= consistency_issues * 2  # If it's already a count
         
         quality_metrics['input_output_consistency'] = max(0, base_io)
         

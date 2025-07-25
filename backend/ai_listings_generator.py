@@ -137,6 +137,20 @@ class RevolutionaryAIListingsGenerator:
         # Initialize API clients
         self._initialize_api_clients()
         
+        # Initialize Redis connection
+        try:
+            if REDIS_AVAILABLE:
+                self.redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+                self.redis_client.ping()
+                self.logger.info("✅ Redis connection established")
+            else:
+                self.redis_client = redis_get_client()
+                self.logger.info("✅ Mock Redis connection established")
+        except Exception as e:
+            self.logger.warning(f"⚠️ Redis connection failed: {e}")
+            self.redis_client = redis_get_client()
+            self.logger.info("✅ Fallback to mock Redis")
+        
         self.logger.info("✅ REVOLUTIONARY AI LISTINGS GENERATOR READY WITH ALL APIS")
     
     def _initialize_api_keys(self):
@@ -1781,3 +1795,14 @@ class CurrentsAPIClient:
         except Exception as e:
             logging.error(f"Quantum calculation failed: {e}")
             return None 
+
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    print("Warning: redis not available. Using mock Redis.")
+
+# Import mock Redis if real Redis is not available
+if not REDIS_AVAILABLE:
+    from redis_mock import redis_connect, redis_get_client

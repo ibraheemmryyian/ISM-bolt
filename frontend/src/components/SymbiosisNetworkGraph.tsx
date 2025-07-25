@@ -43,9 +43,11 @@ export function SymbiosisNetworkGraph({ networkData, onNodeClick, onEdgeClick }:
   useEffect(() => {
     if (!svgRef.current || !networkData) return;
 
-    // Clear previous content
+    // Clear previous content safely
     const svg = svgRef.current;
-    svg.innerHTML = '';
+    while (svg.firstChild) {
+      svg.removeChild(svg.firstChild);
+    }
 
     // Simple force-directed graph visualization
     // In production, you'd use D3.js or a library like vis.js

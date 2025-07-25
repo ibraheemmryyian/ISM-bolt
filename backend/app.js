@@ -17,7 +17,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const shippingService = require('./services/shippingService');
 const materialsService = require('./services/materialsService');
-const paymentService = require('./services/paymentService');
+const stripeRoutes = require('./routes/stripeRoutes');
 const heightService = require('./services/heightService');
 const intelligentMatchingService = require('./services/intelligentMatchingService');
 const apiFusionService = require('./services/apiFusionService');
@@ -3263,106 +3263,8 @@ app.post('/api/ai-onboarding/scientific-complete', async (req, res) => {
   }
 });
 
-// Payment Routes
-app.post('/api/payments/create-order', async (req, res) => {
-  try {
-    const { exchangeData } = req.body;
-    
-    if (!exchangeData) {
-      return res.status(400).json({ error: 'Exchange data is required' });
-    }
-
-    const order = await paymentService.createOrder(exchangeData);
-    res.json(order);
-  } catch (error) {
-    console.error('Error creating payment order:', error);
-    res.status(500).json({ error: 'Failed to create payment order' });
-  }
-});
-
-app.post('/api/payments/capture/:orderId', async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    
-    if (!orderId) {
-      return res.status(400).json({ error: 'Order ID is required' });
-    }
-
-    const capture = await paymentService.capturePayment(orderId);
-    res.json(capture);
-  } catch (error) {
-    console.error('Error capturing payment:', error);
-    res.status(500).json({ error: 'Failed to capture payment' });
-  }
-});
-
-app.post('/api/payments/create-subscription', async (req, res) => {
-  try {
-    const { subscriptionData } = req.body;
-    
-    if (!subscriptionData) {
-      return res.status(400).json({ error: 'Subscription data is required' });
-    }
-
-    const subscription = await paymentService.createSubscription(subscriptionData);
-    res.json(subscription);
-  } catch (error) {
-    console.error('Error creating subscription:', error);
-    res.status(500).json({ error: 'Failed to create subscription' });
-  }
-});
-
-app.post('/api/payments/refund', async (req, res) => {
-  try {
-    const { captureId, amount, reason } = req.body;
-    
-    if (!captureId || !amount) {
-      return res.status(400).json({ error: 'Capture ID and amount are required' });
-    }
-
-    const refund = await paymentService.processRefund(captureId, amount, reason);
-    res.json(refund);
-  } catch (error) {
-    console.error('Error processing refund:', error);
-    res.status(500).json({ error: 'Failed to process refund' });
-  }
-});
-
-app.get('/api/payments/analytics/:companyId', async (req, res) => {
-  try {
-    const { companyId } = req.params;
-    const { dateRange } = req.query;
-    
-    if (!companyId) {
-      return res.status(400).json({ error: 'Company ID is required' });
-    }
-
-    const analytics = await paymentService.getPaymentAnalytics(companyId, dateRange);
-    res.json(analytics);
-  } catch (error) {
-    console.error('Error getting payment analytics:', error);
-    res.status(500).json({ error: 'Failed to get payment analytics' });
-  }
-});
-
-// PayPal Webhook
-app.post('/api/payments/webhook', async (req, res) => {
-  try {
-    const event = req.body;
-    
-    // Verify webhook signature (implement based on PayPal docs)
-    // const isValid = verifyWebhookSignature(req.headers, req.body);
-    // if (!isValid) {
-    //   return res.status(400).json({ error: 'Invalid webhook signature' });
-    // }
-
-    await paymentService.handleWebhook(event);
-    res.json({ received: true });
-  } catch (error) {
-    console.error('Error handling webhook:', error);
-    res.status(500).json({ error: 'Failed to handle webhook' });
-  }
-});
+// Stripe Payment Routes
+app.use('/api/payments', stripeRoutes);
 
 // Height API Endpoints
 app.post('/api/height/create-exchange-tracking', async (req, res) => {

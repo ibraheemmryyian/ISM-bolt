@@ -21,7 +21,12 @@ import prometheus_client
 from prometheus_client import Counter, Histogram, Gauge
 import opentracing
 from opentracing import tags
-import jaeger_client
+try:
+    import jaeger_client
+    JAEGER_AVAILABLE = True
+except ImportError:
+    JAEGER_AVAILABLE = False
+    print("Warning: jaeger_client not available. Distributed tracing will be disabled.")
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import queue
@@ -97,7 +102,28 @@ class DistributedTracing:
     
     def __init__(self, service_name: str):
         self.service_name = service_name
-        self.tracer = self._init_jaeger()
+        # Add logger attribute
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize distributed tracing
+        if JAEGER_AVAILABLE:
+            try:
+                config = jaeger_client.Config(
+                    config={
+                        'sampler': {'type': 'const', 'param': 1},
+                        'logging': True,
+                        'local_agent': {'reporting_host': 'localhost', 'reporting_port': 6831}
+                    },
+                    service_name='advanced_orchestration_engine'
+                )
+                self.tracer = config.initialize_tracer()
+                self.logger.info("✅ Distributed tracing initialized with Jaeger")
+            except Exception as e:
+                self.logger.warning(f"⚠️ Failed to initialize Jaeger tracing: {e}")
+                self.tracer = None
+        else:
+            self.tracer = None
+            self.logger.info("ℹ️ Distributed tracing disabled (jaeger_client not available)")
     
     def _init_jaeger(self):
         """Initialize Jaeger tracer"""
