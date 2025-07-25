@@ -40,42 +40,88 @@ class ServiceValidator:
         
         # Define all services with their configurations
         self.services = [
-            # Core Services
+            # Core API / Frontend
             ServiceConfig("Backend API", "http://localhost:3000", endpoint="/health"),
             ServiceConfig("Frontend", "http://localhost:5173", endpoint="/"),
-            
-            # Backend Microservices
+
+            # Confirmed Backend Microservices
             ServiceConfig("Adaptive Onboarding", "http://localhost:5003", endpoint="/health"),
-            ServiceConfig("System Health Monitor", "http://localhost:5018", endpoint="/health"),
-            ServiceConfig("AI Monitoring Dashboard", "http://localhost:5004", endpoint="/health"),
+            ServiceConfig("Advanced Orchestration Engine", "http://localhost:5018", endpoint="/health"),
+            ServiceConfig("AI Monitoring Dashboard", "http://localhost:5011", endpoint="/health"),
             ServiceConfig("AI Pricing Service", "http://localhost:5005", endpoint="/health"),
             ServiceConfig("AI Pricing Orchestrator", "http://localhost:8030", endpoint="/health"),
             ServiceConfig("Meta-Learning Orchestrator", "http://localhost:8010", endpoint="/health"),
             ServiceConfig("AI Matchmaking Service", "http://localhost:8020", endpoint="/health"),
             ServiceConfig("MaterialsBERT Simple", "http://localhost:5002", endpoint="/health"),
-            ServiceConfig("Value Function Arbiter", "http://localhost:8000", endpoint="/docs"),  # FastAPI docs
-            
-            # AI Service Flask
+            ServiceConfig("MaterialsBERT Service", "http://localhost:5001", endpoint="/health"),
+            ServiceConfig("Value Function Arbiter", "http://localhost:5016", endpoint="/docs"),  # FastAPI docs
+
+            # AI Service Flask Wrappers / Gateway
             ServiceConfig("AI Gateway", "http://localhost:8000", endpoint="/health"),
             ServiceConfig("Advanced Analytics", "http://localhost:5004", endpoint="/health"),
             ServiceConfig("AI Pricing Wrapper", "http://localhost:8002", endpoint="/health"),
             ServiceConfig("GNN Inference", "http://localhost:8001", endpoint="/health"),
             ServiceConfig("Logistics Wrapper", "http://localhost:8003", endpoint="/health"),
+
+            # Symbiosis & Logistics
             ServiceConfig("Multi-Hop Symbiosis", "http://localhost:5003", endpoint="/health"),
-            
-            # Root Services
             ServiceConfig("Logistics Cost Service", "http://localhost:5006", endpoint="/health"),
+
+            # Opportunity / Compliance / Financials
+            ServiceConfig("Regulatory Compliance", "http://localhost:5013", endpoint="/health"),
+            ServiceConfig("Proactive Opportunity Engine", "http://localhost:5014", endpoint="/health"),
+            ServiceConfig("AI Feedback Orchestrator", "http://localhost:5015", endpoint="/health"),
+            ServiceConfig("Financial Analysis Engine", "http://localhost:5017", endpoint="/health"),
+
+            # Auxiliary / Experimental
             ServiceConfig("Optimize DeepSeek R1", "http://localhost:5005", endpoint="/health"),
-            
-            # Flask Apps (no specific port, test if they respond)
-            ServiceConfig("AI Listings Generator", "http://localhost:5000", endpoint="/health"),
-            ServiceConfig("MaterialsBERT Service", "http://localhost:5001", endpoint="/health"),
             ServiceConfig("Ultra AI Listings Generator", "http://localhost:5007", endpoint="/health"),
-            ServiceConfig("Regulatory Compliance", "http://localhost:5008", endpoint="/health"),
-            ServiceConfig("Proactive Opportunity Engine", "http://localhost:5009", endpoint="/health"),
-            ServiceConfig("AI Feedback Orchestrator", "http://localhost:5010", endpoint="/health"),
-            ServiceConfig("Financial Analysis Engine", "http://localhost:5011", endpoint="/health"),
+            ServiceConfig("AI Listings Generator", "http://localhost:5000", endpoint="/health"),
         ]
+
+        # Filter out services that are not referenced anywhere in the codebase
+        # unless explicitly forced via environment variable
+        if os.getenv("INCLUDE_UNUSED_SERVICES", "false").lower() not in {"1", "true", "yes"}:
+            self._filter_unused_services()
+
+    def _filter_unused_services(self):
+        """Remove services that are not referenced in the project codebase."""
+        import pathlib, re
+
+        project_root = pathlib.Path.cwd()
+        all_py_files = list(project_root.rglob("*.py"))
+
+        used_services = []
+        for svc in self.services:
+            # Build regex for port and (optionally) service name
+            try:
+                port = int(svc.url.split(":")[-1].split("/")[0])
+            except ValueError:
+                port = None
+
+            port_pattern = re.compile(rf"http[s]?://[\w\.:]*:{port}\b") if port else None
+            name_pattern = re.compile(re.escape(svc.name), re.IGNORECASE)
+
+            is_used = False
+            for py_file in all_py_files:
+                # Skip this validation script itself
+                if py_file.name == pathlib.Path(__file__).name:
+                    continue
+                try:
+                    content = py_file.read_text(encoding="utf-8", errors="ignore")
+                except Exception:
+                    continue
+
+                if (port_pattern and port_pattern.search(content)) or name_pattern.search(content):
+                    is_used = True
+                    break
+
+            if is_used:
+                used_services.append(svc)
+            else:
+                logger.warning(f"❌ Service '{svc.name}' appears unused in codebase – skipping validation")
+
+        self.services = used_services
     
     async def start_session(self):
         """Start aiohttp session"""
