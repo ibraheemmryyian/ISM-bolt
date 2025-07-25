@@ -24,6 +24,7 @@ from functools import wraps
 import traceback
 import ssl
 import certifi
+from symbioflows.config import load_service_registry
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -185,191 +186,19 @@ class RealServiceCommunication:
     
     def _register_default_services(self):
         """Register default service endpoints"""
-        default_services = [
-            ServiceEndpoint(
-                service_id="ai_listings_generator",
-                service_name="AI Listings Generator",
-                host="localhost",
-                port=5010,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="ai_matchmaking_service",
-                service_name="AI Matchmaking Service",
-                host="localhost",
-                port=8020,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="ai_pricing_service",
-                service_name="AI Pricing Service",
-                host="localhost",
-                port=5005,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="ai_pricing_orchestrator",
-                service_name="AI Pricing Orchestrator",
-                host="localhost",
-                port=8030,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="meta_learning_orchestrator",
-                service_name="Meta-Learning Orchestrator",
-                host="localhost",
-                port=8010,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="materials_bert_service_simple",
-                service_name="MaterialsBERT Simple Service",
-                host="localhost",
-                port=5002,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="ai_monitoring_dashboard",
-                service_name="AI Monitoring Dashboard",
-                host="localhost",
-                port=5011,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="ultra_ai_listings_generator",
-                service_name="Ultra AI Listings Generator",
-                host="localhost",
-                port=5012,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="regulatory_compliance",
-                service_name="Regulatory Compliance Service",
-                host="localhost",
-                port=5013,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="proactive_opportunity_engine",
-                service_name="Proactive Opportunity Engine",
-                host="localhost",
-                port=5014,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="ai_feedback_orchestrator",
-                service_name="AI Feedback Orchestrator",
-                host="localhost",
-                port=5015,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="value_function_arbiter",
-                service_name="Value Function Arbiter",
-                host="localhost",
-                port=5016,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="financial_analysis_engine",
-                service_name="Financial Analysis Engine",
-                host="localhost",
-                port=5017,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="logistics_cost_service",
-                service_name="Logistics Cost Service",
-                host="localhost",
-                port=5006,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="ai_gateway",
-                service_name="AI Gateway",
-                host="localhost",
-                port=8000,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="advanced_analytics_service",
-                service_name="Advanced Analytics Service",
-                host="localhost",
-                port=5004,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="gnn_inference_service",
-                service_name="GNN Inference Service",
-                host="localhost",
-                port=8001,
-                protocol=ServiceProtocol.HTTP,
-                health_endpoint="/health",
-                base_path="",
-                auth_required=False
-            ),
-            ServiceEndpoint(
-                service_id="multi_hop_symbiosis_service",
-                service_name="Multi-Hop Symbiosis Service",
-                host="localhost",
-                port=5003,
+        registry = load_service_registry()
+        for svc_id, info in registry.items():
+            svc = ServiceEndpoint(
+                service_id=svc_id,
+                service_name=svc_id.replace('_', ' ').title(),
+                host=info.get('host', 'localhost'),
+                port=int(info['port']),
                 protocol=ServiceProtocol.HTTP,
                 health_endpoint="/health",
                 base_path="",
                 auth_required=False
             )
-        ]
-        
-        for service in default_services:
-            self.endpoints[service.service_id] = service
+            self.endpoints[svc_id] = svc
     
     async def call_service(self, 
                           service_id: str, 

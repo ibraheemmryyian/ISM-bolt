@@ -1,0 +1,24 @@
+ai_gateway:                   {host: localhost, port: 8000}
+gnn_inference_service:        {host: localhost, port: 8001}
+ai_pricing_wrapper:           {host: localhost, port: 8002}
+logistics_wrapper:            {host: localhost, port: 8003}
+advanced_analytics_service:   {host: localhost, port: 5004}
+ai_pricing_service:           {host: localhost, port: 5005}
+logistics_cost_service:       {host: localhost, port: 5006}
+ultra_ai_listings_generator:  {host: localhost, port: 5007}
+ai_listings_generator:        {host: localhost, port: 5000}
+materialsbert_simple:         {host: localhost, port: 5002}
+materialsbert_service:        {host: localhost, port: 5001}
+regulatory_compliance:        {host: localhost, port: 5013}
+proactive_opportunity_engine: {host: localhost, port: 5014}
+ai_feedback_orchestrator:     {host: localhost, port: 5015}
+value_function_arbiter:       {host: localhost, port: 5016}
+financial_analysis_engine:    {host: localhost, port: 5017}
+advanced_orchestration_engine:{host: localhost, port: 5018}
+meta_learning_orchestrator:   {host: localhost, port: 8010}
+ai_pricing_orchestrator:      {host: localhost, port: 8030}
+ai_matchmaking_service:       {host: localhost, port: 8020}
+multihop_symbiosis_service:   {host: localhost, port: 5003}
+adaptive_onboarding:          {host: localhost, port: 5003}
+ai_monitoring_dashboard:      {host: localhost, port: 5011}
+optimize_deepseek_r1:         {host: localhost, port: 5005}

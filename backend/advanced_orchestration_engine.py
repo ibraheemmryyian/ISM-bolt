@@ -31,6 +31,8 @@ import base64
 import jwt
 from functools import wraps
 import traceback
+import os
+from symbioflows.config import get_service_endpoint
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -358,13 +360,17 @@ class WorkflowEngine:
     
     async def _get_service_endpoint(self, service_id: str) -> ServiceEndpoint:
         """Get service endpoint from service registry"""
-        # This would integrate with service discovery
-        # For now, return mock endpoint
+        # Fetch from central registry
+        try:
+            host, port = get_service_endpoint(service_id)
+        except Exception as e:
+            raise RuntimeError(f"Service '{service_id}' not found in registry: {e}")
+
         return ServiceEndpoint(
             service_id=service_id,
             service_name=service_id,
-            host="localhost",
-            port=5000,
+            host=host,
+            port=port,
             protocol="http",
             health_endpoint="/health",
             status=ServiceStatus.HEALTHY,

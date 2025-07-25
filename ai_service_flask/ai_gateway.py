@@ -191,4 +191,5 @@ class Health(Resource):
 
 if __name__ == '__main__':
     logger.info("Starting AI Gateway service...")
-    app.run(host='0.0.0.0', port=8000, debug=False) 
+    port = int(os.getenv("AI_GATEWAY_PORT", "8000"))
+    app.run(host='0.0.0.0', port=port, debug=False) 
