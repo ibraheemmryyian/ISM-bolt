@@ -24,6 +24,13 @@ from dataclasses import dataclass
 from enum import Enum
 from dotenv import load_dotenv
 
+# Import the advanced quality assessment engine
+from advanced_quality_assessment_engine import AdvancedQualityAssessmentEngine, QualityGrade as AssessmentQualityGrade
+# Import the advanced description generator
+from advanced_description_generator import AdvancedDescriptionGenerator
+# Import the material diversity manager
+from material_diversity_manager import MaterialDiversityManager, DiversityStrategy
+
 # Load environment variables
 load_dotenv()
 
@@ -98,6 +105,15 @@ class RevolutionaryAIListingsGenerator:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        
+        # Initialize quality assessment engine
+        self.quality_assessment_engine = AdvancedQualityAssessmentEngine()
+        
+        # Initialize description generator
+        self.description_generator = AdvancedDescriptionGenerator()
+        
+        # Initialize diversity manager
+        self.diversity_manager = MaterialDiversityManager(strategy=DiversityStrategy.MODERATE)
         self.logger.info("🚀 INITIALIZING REVOLUTIONARY AI LISTINGS GENERATOR WITH ALL APIS")
         
         # Initialize API keys
@@ -282,17 +298,22 @@ class RevolutionaryAIListingsGenerator:
             async def create_listing(item_name, role, base_type):
                 # Use DeepSeek R1 and MaterialsBERT for semantic/contextual analysis
                 deepseek_analysis = await self.deepseek_client.analyze_material_semantics(item_name, base_type)
-                # Generate a unique, context-aware description
+                # Generate a unique, context-aware description using advanced generator
                 industry_context = company.get('industry', 'Unknown')
                 employee_count = company.get('employee_count', 0)
                 location = company.get('location', 'Unknown')
-                top_materials = ', '.join(company.get('materials', [])[:2])
-                top_products = ', '.join(company.get('products', [])[:2])
-                top_waste = ', '.join(company.get('waste_streams', [])[:2])
-                description = (
-                    f"A {role} from the {industry_context} sector, primarily involving {item_name}. "
-                    f"Key materials: {top_materials}. Main products: {top_products}. Waste streams: {top_waste}. "
-                    f"Located in {location} with {employee_count} employees. Sustainability: {company.get('sustainability_score', 0)}."
+                
+                # Use advanced description generator
+                description = await self.description_generator.generate_description(
+                    material_name=item_name,
+                    role=role,
+                    company_context=company,
+                    material_properties={
+                        'type': base_type,
+                        'category': role,
+                        'deepseek_score': deepseek_analysis.get('semantic_score', 0),
+                        'sustainability_aligned': company.get('sustainability_score', 0) > 50
+                    }
                 )
                 # Get all API data for pricing
                 next_gen_analysis = await self.next_gen_client.analyze_material(item_name, base_type)
@@ -336,22 +357,78 @@ class RevolutionaryAIListingsGenerator:
                 node = item_name.lower()
                 degree = self.knowledge_graph.degree[node] if node in self.knowledge_graph else 0
                 knowledge_graph_features = {'degree': degree}
-                # Reasoning
-                reasoning = (
-                    f"This listing is for {item_name} ({role}) in the {industry_context} sector, located in {location}. "
-                    f"The company has {employee_count} employees and sustainability score {company.get('sustainability_score', 0)}. "
-                    f"Matching preferences: {mp}. Pricing is enhanced by company scale, ESG focus, and market/innovation factors. "
-                    f"Neural embedding and quantum vector computed for advanced matching."
+                # Generate diverse reasoning using advanced generator
+                reasoning = await self.description_generator.generate_reasoning(
+                    material_name=item_name,
+                    company_context=company,
+                    quality_assessment={'overall_score': 0.7, 'quality_grade': 'STANDARD'},  # Will be updated after assessment
+                    pricing_info=pricing_breakdown
                 )
+                
+                # Generate quantity dynamically based on company size and material type
+                quantity = self._generate_dynamic_quantity(employee_count, role, material_name)
+                
+                # Create temporary listing for quality assessment
+                temp_listing = {
+                    'material_name': item_name,
+                    'material_type': base_type,
+                    'description': description,
+                    'quantity': quantity,
+                    'unit': 'tons',
+                    'potential_value': api_enhanced_value,
+                    'generated_at': datetime.now().isoformat(),
+                    'metadata': {
+                        'deepseek_score': deepseek_analysis.get('semantic_score', 0),
+                        'next_gen_score': next_gen_analysis.get('score', 0),
+                        'api_sources': 7,  # Number of APIs used
+                        'innovation_rate': innovation_rate
+                    },
+                    'certifications': [],  # Could be enhanced based on industry
+                    'sustainability_metrics': {
+                        'sustainability_score': company.get('sustainability_score', 0),
+                        'energy_needs': company.get('energy_needs', 'Unknown'),
+                        'water_usage': company.get('water_usage', 'Unknown'),
+                        'carbon_footprint': company.get('carbon_footprint', 'Unknown')
+                    }
+                }
+                
+                # Perform quality assessment
+                quality_assessment = await self.quality_assessment_engine.assess_listing_quality(
+                    temp_listing, 
+                    company
+                )
+                
+                # Map assessment grade to listing grade
+                quality_grade_mapping = {
+                    'PREMIUM': QualityGrade.PREMIUM,
+                    'HIGH': QualityGrade.HIGH,
+                    'STANDARD': QualityGrade.STANDARD,
+                    'BASIC': QualityGrade.BASIC,
+                    'LOW': QualityGrade.BASIC  # Map LOW to BASIC as we don't have LOW in listing grades
+                }
+                
+                assessed_grade = quality_grade_mapping.get(
+                    quality_assessment['quality_grade'], 
+                    QualityGrade.STANDARD
+                )
+                
+                # Regenerate reasoning with actual quality assessment results
+                reasoning = await self.description_generator.generate_reasoning(
+                    material_name=item_name,
+                    company_context=company,
+                    quality_assessment=quality_assessment,
+                    pricing_info=pricing_breakdown
+                )
+                
                 return RevolutionaryMaterialListing(
                     company_id=company_id,
                     company_name=company_name,
                     material_name=item_name,
                     material_type=MaterialType[base_type.upper()] if base_type.upper() in MaterialType.__members__ else MaterialType.SPECIALTY,
-                    quantity=np.random.uniform(10, 100),
+                    quantity=quantity,
                     unit='tons',
                     description=description,
-                    quality_grade=QualityGrade.PREMIUM,
+                    quality_grade=assessed_grade,
                     potential_value=api_enhanced_value,
                     ai_generated=True,
                     generated_at=datetime.now().isoformat(),
@@ -381,23 +458,111 @@ class RevolutionaryAIListingsGenerator:
                     knowledge_graph_features=knowledge_graph_features
                 )
 
-            # Generate listings for all materials (requirements)
-            for material in materials:
-                listings.append(await create_listing(material, 'requirement', 'raw'))
+            # Apply diversity constraints to materials
+            diverse_materials = await self.diversity_manager.apply_diversity_constraints(
+                materials, company_id, company
+            )
+            
+            # Apply diversity constraints to products
+            diverse_products = await self.diversity_manager.apply_diversity_constraints(
+                products, company_id, company
+            )
+            
+            # Apply diversity constraints to waste streams
+            diverse_waste = await self.diversity_manager.apply_diversity_constraints(
+                waste_streams, company_id, company
+            )
+            
+            # Generate listings for all materials (requirements) with diversity
+            for material_info in diverse_materials:
+                material_name = material_info['selected']
+                listing = await create_listing(material_name, 'requirement', 'raw')
+                
+                # Record usage with actual quality grade
+                await self.diversity_manager.record_material_usage(
+                    material_name,
+                    company_id,
+                    company,
+                    listing.description,
+                    listing.quality_grade.value
+                )
+                
+                listings.append(listing)
 
-            # Generate listings for all products
-            for product in products:
-                listings.append(await create_listing(product, 'product', 'processed'))
+            # Generate listings for all products with diversity
+            for product_info in diverse_products:
+                product_name = product_info['selected']
+                listing = await create_listing(product_name, 'product', 'processed')
+                
+                # Record usage
+                await self.diversity_manager.record_material_usage(
+                    product_name,
+                    company_id,
+                    company,
+                    listing.description,
+                    listing.quality_grade.value
+                )
+                
+                listings.append(listing)
 
-            # Generate listings for all waste streams
-            for waste in waste_streams:
-                listings.append(await create_listing(waste, 'waste', 'waste'))
+            # Generate listings for all waste streams with diversity
+            for waste_info in diverse_waste:
+                waste_name = waste_info['selected']
+                listing = await create_listing(waste_name, 'waste', 'waste')
+                
+                # Record usage
+                await self.diversity_manager.record_material_usage(
+                    waste_name,
+                    company_id,
+                    company,
+                    listing.description,
+                    listing.quality_grade.value
+                )
+                
+                listings.append(listing)
 
             self.logger.info(f"✅ Generated {len(listings)} world-class, context-rich listings for {company_name}")
             return listings
         except Exception as e:
             self.logger.error(f"❌ Error in world-class AI listings generation: {e}")
             return []
+    
+    def _generate_dynamic_quantity(self, employee_count: int, role: str, material_name: str) -> float:
+        """Generate realistic quantities based on company size and material type"""
+        # Base quantity influenced by company size
+        size_factor = np.log10(max(employee_count, 10)) / 4  # Normalized log scale
+        
+        # Role-based multipliers
+        role_multipliers = {
+            'waste': 0.8,      # Waste tends to be in larger quantities
+            'product': 1.2,    # Products are in moderate quantities
+            'requirement': 1.0 # Requirements vary
+        }
+        role_mult = role_multipliers.get(role, 1.0)
+        
+        # Material-specific adjustments
+        bulk_materials = ['sand', 'gravel', 'slag', 'scrap', 'waste', 'water']
+        specialty_materials = ['catalyst', 'enzyme', 'additive', 'pigment']
+        
+        material_lower = material_name.lower()
+        if any(bulk in material_lower for bulk in bulk_materials):
+            material_mult = 5.0  # Bulk materials in larger quantities
+        elif any(spec in material_lower for spec in specialty_materials):
+            material_mult = 0.1  # Specialty materials in smaller quantities
+        else:
+            material_mult = 1.0
+        
+        # Calculate base quantity (in tons)
+        base_quantity = 20 * size_factor * role_mult * material_mult
+        
+        # Add some controlled variation (±30%)
+        variation = np.random.uniform(0.7, 1.3)
+        
+        # Round to reasonable precision
+        quantity = round(base_quantity * variation, 2)
+        
+        # Ensure minimum and maximum bounds
+        return max(0.1, min(quantity, 10000))
     
     async def _generate_revolutionary_materials_with_apis(self, company: Dict[str, Any]) -> List[RevolutionaryMaterialListing]:
         """Generate revolutionary materials with ALL APIs"""
