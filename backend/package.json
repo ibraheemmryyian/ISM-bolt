@@ -42,6 +42,7 @@
     "python-shell": "^5.0.0",
     "redis": "^4.6.10",
     "shippo": "^2.15.0",
+    "stripe": "^13.0.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1",

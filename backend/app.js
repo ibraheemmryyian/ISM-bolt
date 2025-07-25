@@ -18,6 +18,7 @@ const jwt = require('jsonwebtoken');
 const shippingService = require('./services/shippingService');
 const materialsService = require('./services/materialsService');
 const paymentService = require('./services/paymentService');
+const stripePaymentService = require('./services/stripePaymentService');
 const heightService = require('./services/heightService');
 const intelligentMatchingService = require('./services/intelligentMatchingService');
 const apiFusionService = require('./services/apiFusionService');
@@ -60,7 +61,7 @@ app.use(cors({
 }));
 
 // Body parsing middleware - MUST come before routes
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb', verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // JSON parsing error handler
@@ -5036,3 +5037,19 @@ function withMetrics(endpoint, handler) {
       });
   };
 }
+
+// Stripe Payment Routes
+app.post('/api/payments/stripe/create-checkout-session', async (req, res) => {
+  try {
+    const session = await stripePaymentService.createCheckoutSession(req.body);
+    res.json({ id: session.id, url: session.url });
+  } catch (error) {
+    console.error('Error creating Stripe checkout session:', error);
+    res.status(500).json({ error: 'Failed to create Stripe checkout session' });
+  }
+});
+
+// Stripe Webhook – uses rawBody for signature verification
+app.post('/api/payments/stripe/webhook', async (req, res) => {
+  await stripePaymentService.handleWebhook(req, res);
+});
