@@ -94,18 +94,21 @@ registry = ServiceRegistry()
 # Flask app for service registry API
 app = Flask(__name__)
 
-@app.route('/v1/agent/service/register', methods=['POST'])
+@app.route('/v1/agent/service/register', methods=['POST', 'PUT'])
 def register_service():
     """Register a service"""
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
         service_name = data.get('name')
         service_url = data.get('url')
         service_type = data.get('type', 'python')
         port = data.get('port')
         
         if not service_name or not service_url:
-            return jsonify({'error': 'Missing required fields'}), 400
+            return jsonify({'error': 'Missing required fields: name and url'}), 400
         
         success = registry.register_service(service_name, service_url, service_type, port)
         
@@ -137,20 +140,23 @@ def deregister_service():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/v1/agent/service/heartbeat', methods=['POST'])
+@app.route('/v1/agent/service/heartbeat', methods=['POST', 'PUT'])
 def update_heartbeat():
     """Update service heartbeat"""
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
         service_name = data.get('name')
         
         if not service_name:
-            return jsonify({'error': 'Missing service name'}), 400
+            return jsonify({'error': 'Missing required field: name'}), 400
         
         success = registry.update_heartbeat(service_name)
         
         if success:
-            return jsonify({'status': 'success'})
+            return jsonify({'status': 'success', 'message': f'Heartbeat updated for {service_name}'})
         else:
             return jsonify({'error': 'Service not found'}), 404
             

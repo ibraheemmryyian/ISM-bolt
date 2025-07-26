@@ -6,7 +6,19 @@ Advanced semantic analysis using DeepSeek R1 for industrial symbiosis
 
 import torch
 from transformers import BertTokenizer, BertModel
-from .ml_core.monitoring import log_metrics, save_checkpoint
+# ML Core imports - Fixed to use absolute imports
+try:
+    from ml_core.monitoring import log_metrics, save_checkpoint
+    MLCORE_AVAILABLE = True
+except ImportError:
+    # Fallback implementations if ml_core is not available
+    def log_metrics(*args, **kwargs):
+        pass
+    
+    def save_checkpoint(*args, **kwargs):
+        pass
+    
+    MLCORE_AVAILABLE = False
 import numpy as np
 import os
 

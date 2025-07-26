@@ -1011,12 +1011,16 @@ class ImpactForecastingService:
 # Initialize service
 impact_forecasting_service = ImpactForecastingService() 
 
+# Try to import statsmodels with better error handling
 try:
     import statsmodels.api as sm
+    from statsmodels.tsa.arima.model import ARIMA
+    from statsmodels.tsa.stattools import adfuller, kpss
+    from statsmodels.tsa.seasonal import seasonal_decompose
     STATSMODELS_AVAILABLE = True
 except ImportError as e:
     STATSMODELS_AVAILABLE = False
-    print(f"Warning: statsmodels not available due to scipy version conflict: {e}")
+    print(f"Warning: statsmodels not available due to import error: {e}")
     print("Impact forecasting will use alternative statistical methods.")
 
 # Alternative statistical functions if statsmodels is not available
@@ -1055,4 +1059,43 @@ if not STATSMODELS_AVAILABLE:
         for i in range(len(historical_data), len(historical_data) + periods):
             forecast.append(slope * i + intercept)
         
-        return forecast 
+        return forecast
+    
+    def simple_arima(data, order=(1, 1, 1)):
+        """Simple ARIMA-like forecasting without statsmodels"""
+        # Simple moving average as fallback
+        window = order[0] if order[0] > 0 else 3
+        if len(data) < window:
+            return data
+        
+        forecast = []
+        for i in range(len(data), len(data) + 12):  # 12 periods forecast
+            # Simple moving average
+            recent_data = data[-window:]
+            forecast.append(sum(recent_data) / len(recent_data))
+        
+        return forecast
+    
+    def simple_seasonal_decompose(data, period=12):
+        """Simple seasonal decomposition without statsmodels"""
+        if len(data) < period * 2:
+            return {'trend': data, 'seasonal': [0] * len(data), 'resid': [0] * len(data)}
+        
+        # Simple trend (moving average)
+        trend = []
+        for i in range(len(data)):
+            start = max(0, i - period // 2)
+            end = min(len(data), i + period // 2 + 1)
+            trend.append(sum(data[start:end]) / (end - start))
+        
+        # Simple seasonal (average by position in period)
+        seasonal = []
+        for i in range(len(data)):
+            seasonal_pos = i % period
+            seasonal_values = [data[j] for j in range(seasonal_pos, len(data), period)]
+            seasonal.append(sum(seasonal_values) / len(seasonal_values))
+        
+        # Residual
+        resid = [data[i] - trend[i] - seasonal[i] for i in range(len(data))]
+        
+        return {'trend': trend, 'seasonal': seasonal, 'resid': resid} 

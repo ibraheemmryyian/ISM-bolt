@@ -83,7 +83,10 @@ try:
 except ImportError:
     # Fallback implementations if ml_core is not available
     class HyperparameterOptimizer:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, model=None, config=None, search_space=None, *args, **kwargs):
+            self.model = model
+            self.config = config
+            self.search_space = search_space
             pass
     
     class MLMetricsTracker:

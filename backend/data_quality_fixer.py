@@ -32,9 +32,9 @@ class DataQualityFixer:
         """Remove duplicate matches while preserving the best ones"""
         self.logger.info("🔧 Fixing duplicate matches...")
         
-        # Create a unique identifier for each match
+        # Create a unique identifier for each match using correct column names
         matches['match_id'] = matches.apply(
-            lambda row: f"{row['source_company_id']}_{row['source_material']}_{row['target_company_id']}_{row['target_material']}", 
+            lambda row: f"{row['source_company_id']}_{row['source_material_name']}_{row['target_company_id']}_{row['target_material_name']}", 
             axis=1
         )
         
@@ -126,7 +126,7 @@ class DataQualityFixer:
         
         # Update match values to be more consistent with listing prices
         for idx, row in matches.iterrows():
-            source_material = row['source_material']
+            source_material = row['source_material_name']  # Fixed column name
             if source_material in material_avg_values:
                 listing_avg = material_avg_values[source_material]
                 current_match_value = row['potential_value']
