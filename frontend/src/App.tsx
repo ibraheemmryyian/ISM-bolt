@@ -11,7 +11,7 @@ import PersonalPortfolio from './components/PersonalPortfolio';
 import { Marketplace } from './components/Marketplace';
 import { isUserAdmin } from './lib/supabase';
 import { TransactionPage } from './components/TransactionPage';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import AIOnboardingWizard from './components/AIOnboardingWizard';
 import { NotificationsPanel } from './components/NotificationsPanel';
 import { ChatsPanel } from './components/ChatsPanel';
@@ -180,7 +180,7 @@ function App() {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showMaterialForm, setShowMaterialForm] = useState<'waste' | 'requirement' | null>(null);
-  // Remove showOnboarding and legacy onboarding modal
+  const location = useLocation();
 
   useEffect(() => {
     // Mark that user has seen the landing page
@@ -197,6 +197,22 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Dynamic document title based on route
+  useEffect(() => {
+    const path = location.pathname;
+    let title = 'SymbioFlows - Industrial Symbiosis Platform';
+    if (path === '/' || path === '/home') title = 'Home | SymbioFlows';
+    else if (path.startsWith('/dashboard') || path.startsWith('/portfolio')) title = 'Personal Portfolio | SymbioFlows';
+    else if (path.startsWith('/marketplace')) title = 'Marketplace | SymbioFlows';
+    else if (path.startsWith('/admin')) title = 'Admin Hub | SymbioFlows';
+    else if (path.startsWith('/onboarding') || path.startsWith('/adaptive-onboarding')) title = 'AI Onboarding | SymbioFlows';
+    else if (path.startsWith('/notifications')) title = 'Notifications | SymbioFlows';
+    else if (path.startsWith('/chats')) title = 'Chats | SymbioFlows';
+    else if (path.startsWith('/transaction')) title = 'Transaction | SymbioFlows';
+    else if (path.startsWith('/review-ai-listings')) title = 'Review AI Listings | SymbioFlows';
+    document.title = title;
+  }, [location.pathname]);
 
   if (!sessionChecked) {
     return (
