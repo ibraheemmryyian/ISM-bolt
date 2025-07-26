@@ -1,0 +1,10 @@
+
+# Ignore everything by default
+**/*
+
+# Exception: include the frontend app and root config files
+!frontend/**
+!package.json
+!package-lock.json
+!README.md
+!vercel.json
