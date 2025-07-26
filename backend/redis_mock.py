@@ -232,6 +232,10 @@ class RedisMock:
             self.logger.error(f"Error in hgetall for key {key}: {e}")
             return {}
     
+    def ping(self):
+        """Ping the mock Redis server"""
+        return True
+    
     def _cleanup_expired_keys(self):
         """Clean up expired keys periodically"""
         while True:
@@ -266,3 +270,10 @@ def redis_connect(host='localhost', port=6379, db=0, **kwargs):
 def redis_get_client():
     """Get Redis mock client"""
     return redis_mock 
+
+try:
+    import redis
+    redis.Redis = RedisMock
+    redis.StrictRedis = RedisMock
+except ImportError:
+    pass 

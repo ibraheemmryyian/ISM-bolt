@@ -94,7 +94,7 @@ registry = ServiceRegistry()
 # Flask app for service registry API
 app = Flask(__name__)
 
-@app.route('/v1/agent/service/register', methods=['POST'])
+@app.route('/v1/agent/service/register', methods=['POST', 'PUT'])
 def register_service():
     """Register a service"""
     try:
@@ -117,7 +117,7 @@ def register_service():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/v1/agent/service/deregister', methods=['POST'])
+@app.route('/v1/agent/service/deregister', methods=['POST', 'PUT'])
 def deregister_service():
     """Deregister a service"""
     try:
@@ -137,7 +137,7 @@ def deregister_service():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/v1/agent/service/heartbeat', methods=['POST'])
+@app.route('/v1/agent/service/heartbeat', methods=['POST', 'PUT'])
 def update_heartbeat():
     """Update service heartbeat"""
     try:

@@ -17,11 +17,21 @@ class DataQualityFixer:
         self.listings_path = "material_listings.csv"
         self.matches_path = "material_matches.csv"
         
+    def _resolve_columns(self, df: pd.DataFrame):
+        """Resolve column names dynamically"""
+        cols = df.columns
+        self.source_material_col = 'source_material' if 'source_material' in cols else 'source_material_name'
+        self.target_material_col = 'target_material' if 'target_material' in cols else 'target_material_name'
+        self.source_company_col = 'source_company_id' if 'source_company_id' in cols else 'source_company_name'
+        self.target_company_col = 'target_company_id' if 'target_company_id' in cols else 'target_company_name'
+
     def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Load listings and matches data"""
         try:
             listings = pd.read_csv(self.listings_path)
             matches = pd.read_csv(self.matches_path)
+            # Resolve columns
+            self._resolve_columns(matches)
             self.logger.info(f"✅ Loaded {len(listings)} listings and {len(matches)} matches")
             return listings, matches
         except Exception as e:
@@ -34,7 +44,7 @@ class DataQualityFixer:
         
         # Create a unique identifier for each match
         matches['match_id'] = matches.apply(
-            lambda row: f"{row['source_company_id']}_{row['source_material']}_{row['target_company_id']}_{row['target_material']}", 
+            lambda row: f"{row[self.source_company_col]}_{row[self.source_material_col]}_{row[self.target_company_col]}_{row[self.target_material_col]}", 
             axis=1
         )
         
@@ -83,7 +93,7 @@ class DataQualityFixer:
         ]
         
         # Distribute matches across more companies
-        unique_matches = matches.drop_duplicates(subset=['source_company_id', 'source_material'])
+        unique_matches = matches.drop_duplicates(subset=[self.source_company_col, self.source_material_col])
         company_cycle = additional_companies * (len(unique_matches) // len(additional_companies) + 1)
         
         for i, (idx, row) in enumerate(unique_matches.iterrows()):
@@ -108,7 +118,7 @@ class DataQualityFixer:
         
         # Replace generic materials with specific ones
         for generic, specific_list in generic_materials.items():
-            mask = matches['target_material'] == generic
+            mask = matches[self.target_material_col] == generic
             if mask.any():
                 # Distribute specific materials across matches
                 specific_materials = specific_list * (mask.sum() // len(specific_list) + 1)
@@ -126,7 +136,7 @@ class DataQualityFixer:
         
         # Update match values to be more consistent with listing prices
         for idx, row in matches.iterrows():
-            source_material = row['source_material']
+            source_material = row[self.source_material_col]
             if source_material in material_avg_values:
                 listing_avg = material_avg_values[source_material]
                 current_match_value = row['potential_value']
@@ -220,11 +230,11 @@ class DataQualityFixer:
             return {'error': 'Failed to load data for validation'}
         
         validation_results = {
-            'duplicate_matches': len(matches) - len(matches.drop_duplicates(subset=['source_company_id', 'source_material', 'target_company_id', 'target_material'])),
-            'generic_companies': matches['target_company_id'].str.contains('Generic|Waste|Chemical', case=False).sum(),
-            'generic_materials': matches['target_material'].str.contains('Waste$', case=False).sum(),
-            'unique_target_companies': matches['target_company_id'].nunique(),
-            'unique_target_materials': matches['target_material'].nunique(),
+            'duplicate_matches': len(matches) - len(matches.drop_duplicates(subset=[self.source_company_col, self.source_material_col, self.target_company_col, self.target_material_col])),
+            'generic_companies': matches[self.target_company_col].astype(str).str.contains('Generic|Waste|Chemical', case=False).sum(),
+            'generic_materials': matches[self.target_material_col].astype(str).str.contains('Waste$', case=False).sum(),
+            'unique_target_companies': matches[self.target_company_col].nunique(),
+            'unique_target_materials': matches[self.target_material_col].nunique(),
             'avg_match_score': matches['match_score'].mean(),
             'score_distribution': {
                 'high_quality': (matches['match_score'] >= 0.9).sum(),
