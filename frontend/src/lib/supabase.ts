@@ -81,7 +81,7 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
       .from('companies')
       .select('role')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
     
     if (companyError) {
       console.error('Error checking admin status:', companyError);
@@ -102,7 +102,7 @@ export async function getUserByEmail(email: string) {
       .from('companies')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
     
     if (error) {
       throw error;
@@ -155,7 +155,7 @@ export async function signUpWithEmail(password: string, companyName: string, ema
       .from('companies')
       .select('email')
       .eq('email', email)
-      .single();
+      .maybeSingle();
 
     if (existingEmail) {
       throw new Error('Email already registered. Please use a different email or sign in.');

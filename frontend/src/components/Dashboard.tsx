@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
         .from('companies')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       if (companyError) {
         setHasCompletedOnboarding(false);
         setPortfolioData(null);

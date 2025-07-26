@@ -123,7 +123,7 @@ const AIInferenceMatching: React.FC = () => {
         .from('companies')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (company) {
         setCompanyProfile(company);

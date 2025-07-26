@@ -55,7 +55,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
           .from('companies')
           .select('email')
           .eq('email', formData.email)
-          .single();
+          .maybeSingle();
 
         if (existingEmail) {
           throw new Error('Email already registered. Please use a different email or sign in.');

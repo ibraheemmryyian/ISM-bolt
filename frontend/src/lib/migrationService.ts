@@ -52,7 +52,7 @@ export class MigrationService {
         .from('companies')
         .select('id, name')
         .eq('name', companyProfile.name)
-        .single();
+        .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
         console.error('Error checking existing company:', checkError);
@@ -66,7 +66,7 @@ export class MigrationService {
           .from('companies')
           .select('*')
           .eq('id', existingCompany.id)
-          .single();
+          .maybeSingle();
         
         if (fetchError) {
           console.error('Error fetching company data:', fetchError);
@@ -97,7 +97,7 @@ export class MigrationService {
         .from('companies')
         .insert(companyData)
         .select()
-        .single();
+        .maybeSingle();
 
       if (insertError) {
         console.error('Company insertion error:', insertError);
@@ -160,7 +160,7 @@ export class MigrationService {
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error || !company) {
         return null;
@@ -182,7 +182,7 @@ export class MigrationService {
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       // Get materials and requirements
       const { data: materials } = await supabase

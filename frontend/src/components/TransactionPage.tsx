@@ -18,7 +18,7 @@ export function TransactionPage() {
         .from('connections')
         .select('*')
         .eq('id', connectionId)
-        .single();
+        .maybeSingle();
       setConnection(data);
       // Optionally fetch related material
       // setMaterial(...)

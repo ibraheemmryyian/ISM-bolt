@@ -92,7 +92,7 @@ export function ChatsPanel() {
           p2:companies!conversations_participant2_fkey(name)
         `)
         .eq('id', conversationId)
-        .single();
+        .maybeSingle();
 
       if (convError) throw convError;
 
@@ -136,7 +136,7 @@ export function ChatsPanel() {
           conversation_id: currentConversation.id
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

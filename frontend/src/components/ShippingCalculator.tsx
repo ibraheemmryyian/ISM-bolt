@@ -118,7 +118,7 @@ const ShippingCalculator: React.FC<ShippingCalculatorProps> = ({
         .from('companies')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       const exchangeData = {
         from_company_id: selectedRate.seller_company, // This should be the seller's company ID

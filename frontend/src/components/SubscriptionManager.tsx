@@ -108,7 +108,7 @@ const SubscriptionManager: React.FC = () => {
         .from('companies')
         .select('id, company_name, subscription_plan, subscription_status, subscription_expires_at')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (companies) {
         const { data: subscription } = await supabase
@@ -116,7 +116,7 @@ const SubscriptionManager: React.FC = () => {
           .select('*')
           .eq('company_id', companies.id)
           .eq('status', 'ACTIVE')
-          .single();
+          .maybeSingle();
 
         if (subscription) {
           setUserSubscription({

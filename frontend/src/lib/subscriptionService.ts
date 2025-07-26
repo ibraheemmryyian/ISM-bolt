@@ -35,7 +35,7 @@ class SubscriptionService {
         .select('*')
         .eq('company_id', userId)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching subscription:', error);

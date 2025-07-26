@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import AuthenticatedLayout from './AuthenticatedLayout';
@@ -118,6 +119,7 @@ interface PortfolioData {
 }
 
 const PersonalPortfolio: React.FC = () => {
+  const navigate = useNavigate();
   const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -145,7 +147,7 @@ const PersonalPortfolio: React.FC = () => {
         .from('companies')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (companyError) {
         setPortfolioData(null);
@@ -387,7 +389,7 @@ const PersonalPortfolio: React.FC = () => {
               <h2 className="text-lg font-semibold text-emerald-200">Complete AI Onboarding</h2>
               <p className="text-emerald-300 text-sm">Unlock personalized insights, recommendations, and full dashboard features by completing your onboarding.</p>
             </div>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => window.location.href = '/adaptive-onboarding'}>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => navigate('/adaptive-onboarding')}>
               Start AI Onboarding
             </Button>
           </div>
@@ -662,7 +664,7 @@ const PersonalPortfolio: React.FC = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/marketplace'}>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/marketplace')}>
             <div className="p-4">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-blue-900/20 rounded-lg border border-blue-700">
@@ -675,7 +677,7 @@ const PersonalPortfolio: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/adaptive-onboarding'}>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/adaptive-onboarding')}>
             <div className="p-4">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-purple-900/20 rounded-lg border border-purple-700">
@@ -688,7 +690,7 @@ const PersonalPortfolio: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => window.location.href = '/marketplace'}>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow text-gray-300 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/marketplace')}>
             <div className="p-4">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-green-900/20 rounded-lg border border-green-700">

@@ -74,7 +74,7 @@ export function LogisticsIntegration() {
         .from('companies')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       // Fetch real material listings from AI onboarding
       const { data: materials, error } = await supabase

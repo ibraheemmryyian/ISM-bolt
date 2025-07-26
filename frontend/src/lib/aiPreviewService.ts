@@ -120,7 +120,7 @@ class AIPreviewService {
         .from('companies')
         .select('*')
         .eq('id', companyId)
-        .single();
+        .maybeSingle();
 
       if (companyError || !company) {
         throw new Error('Company not found');
@@ -166,7 +166,7 @@ class AIPreviewService {
         .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (insightsError) {
         console.error('Error fetching AI insights:', insightsError);
@@ -280,7 +280,7 @@ class AIPreviewService {
         .from('companies')
         .select('*')
         .eq('id', companyId)
-        .single();
+        .maybeSingle();
 
       if (companyError || !company) {
         throw new Error('Company not found');

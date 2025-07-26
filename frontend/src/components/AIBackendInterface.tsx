@@ -88,7 +88,7 @@ export class AIService implements AIBackendInterface {
         .from('materials')
         .select('*')
         .eq('id', materialId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

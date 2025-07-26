@@ -32,7 +32,7 @@ export function MaterialForm({ onClose, type }: MaterialFormProps) {
         .from('companies')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       if (!company) {
         // Try to create company record with minimal info
         await supabase.from('companies').insert([

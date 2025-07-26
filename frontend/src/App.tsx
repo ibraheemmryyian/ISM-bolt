@@ -181,6 +181,7 @@ function App() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showMaterialForm, setShowMaterialForm] = useState<'waste' | 'requirement' | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Mark that user has seen the landing page
@@ -239,7 +240,7 @@ function App() {
             <Route path="/" element={
               <LandingPage 
                 onGetStarted={() => setShowAuthModal(true)}
-                onMarketplace={() => window.location.href = '/marketplace'}
+                onMarketplace={() => navigate('/marketplace')}
                 session={session}
                 handleSignOut={handleSignOut}
               />
@@ -270,8 +271,8 @@ function App() {
             <Route path="/onboarding" element={
               session ? (
                 <AdaptiveAIOnboarding
-                  onClose={() => window.location.href = '/dashboard'}
-                  onComplete={() => window.location.href = '/dashboard'}
+                  onClose={() => navigate('/dashboard')}
+                  onComplete={() => navigate('/dashboard')}
                 />
               ) : (
                 <Navigate to="/" replace />
@@ -280,8 +281,8 @@ function App() {
             <Route path="/adaptive-onboarding" element={
               session ? (
                 <AdaptiveAIOnboarding
-                  onClose={() => window.location.href = '/dashboard'}
-                  onComplete={() => window.location.href = '/dashboard'}
+                  onClose={() => navigate('/dashboard')}
+                  onComplete={() => navigate('/dashboard')}
                 />
               ) : (
                 <Navigate to="/" replace />
@@ -311,7 +312,7 @@ function App() {
             <Route path="/review-ai-listings" element={
               session ? (
                 <ReviewAIListings onConfirm={() => {
-                  window.location.href = '/dashboard';
+                  navigate('/dashboard');
                 }} />
               ) : (
                 <Navigate to="/" replace />

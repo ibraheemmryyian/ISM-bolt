@@ -300,7 +300,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
         .select('id')
         .or(`participant1.eq.${currentUserId},participant2.eq.${currentUserId}`)
         .or(`participant1.eq.${companyId},participant2.eq.${companyId}`)
-        .single();
+        .maybeSingle();
 
       let conversationId;
       
@@ -316,7 +316,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
             created_at: new Date().toISOString()
           })
           .select('id')
-          .single();
+          .maybeSingle();
         
         if (createError) throw createError;
         conversationId = newChat.id;

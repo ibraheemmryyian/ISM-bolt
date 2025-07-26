@@ -85,7 +85,7 @@ const ScientificMaterialCard: React.FC<ScientificMaterialCardProps> = ({
         .from('materials')
         .select('*')
         .eq('id', materialId)
-        .single();
+        .maybeSingle();
 
       if (dbError) throw dbError;
 
