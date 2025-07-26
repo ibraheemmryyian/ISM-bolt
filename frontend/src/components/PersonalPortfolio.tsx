@@ -144,233 +144,215 @@ const PersonalPortfolio: React.FC = () => {
       }
       setUser(user);
 
-      // Fetch real company data from database
-      const { data: company, error: companyError } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (companyError) {
-        setPortfolioData(null);
-        setError('Failed to load company data');
-        setLoading(false);
-        return;
-      }
-
-      // Check if company exists, if not create a default profile
-      if (!company) {
-        // Create a default company profile instead of showing error
-        const defaultCompany = {
+      // ALWAYS create a default portfolio structure - no data dependencies
+      const defaultPortfolio: PortfolioData = {
+        company: {
           id: user.id,
           name: 'Your Company',
           industry: 'Unknown',
           location: 'Unknown',
           employee_count: 0,
-          onboarding_completed: false,
-          created_at: new Date().toISOString()
-        };
-        
-        // Use default company data
-        const portfolio: PortfolioData = {
-          company: {
-            id: defaultCompany.id,
-            name: defaultCompany.name,
-            industry: defaultCompany.industry,
-            location: defaultCompany.location,
-            employee_count: defaultCompany.employee_count,
-            size_category: 'Small',
-            industry_position: 'Pending',
-            sustainability_rating: 'Developing',
-            growth_potential: 'High',
-            joined_date: defaultCompany.created_at,
-            onboarding_completed: defaultCompany.onboarding_completed
-          },
-          achievements: {
-            total_savings: 0,
-            carbon_reduced: 0,
-            partnerships_formed: 0,
-            waste_diverted: 0,
-            matches_completed: 0,
-            sustainability_score: 0,
-            efficiency_improvement: 0
-          },
-          recommendations: [],
-          recent_activity: [],
-          next_milestones: ['Complete Onboarding', 'Start Listing Materials'],
-          industry_comparison: {
-            rank: 0,
-            total_companies: 0,
-            average_savings: 0,
-            your_savings: 0
-          },
-          materialListings: [],
-          matches: []
-        };
-        
-        setPortfolioData(portfolio);
-        setLoading(false);
-        return;
+          size_category: 'Small',
+          industry_position: 'Pending',
+          sustainability_rating: 'Developing',
+          growth_potential: 'High',
+          joined_date: new Date().toISOString(),
+          onboarding_completed: false
+        },
+        achievements: {
+          total_savings: 0,
+          carbon_reduced: 0,
+          partnerships_formed: 0,
+          waste_diverted: 0,
+          matches_completed: 0,
+          sustainability_score: 0,
+          efficiency_improvement: 0
+        },
+        recommendations: [],
+        recent_activity: [],
+        next_milestones: ['Complete Onboarding', 'Start Listing Materials'],
+        industry_comparison: {
+          rank: 0,
+          total_companies: 0,
+          average_savings: 0,
+          your_savings: 0
+        },
+        materialListings: [],
+        matches: []
+      };
+
+      // Set the default portfolio immediately
+      setPortfolioData(defaultPortfolio);
+      setLoading(false);
+
+      // Then try to load real data in the background (non-blocking)
+      try {
+        // Fetch real company data from database
+        const { data: company, error: companyError } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!companyError && company) {
+          // Update portfolio with real company data
+          setPortfolioData(prev => prev ? {
+            ...prev,
+            company: {
+              id: company.id,
+              name: company.name || 'Your Company',
+              industry: company.industry || 'Unknown',
+              location: company.location || 'Unknown',
+              employee_count: company.employee_count || 0,
+              size_category: (company.employee_count || 0) > 1000 ? 'Large' : 
+                           (company.employee_count || 0) > 200 ? 'Medium' : 'Small',
+              industry_position: company.onboarding_completed ? 'Active' : 'Pending',
+              sustainability_rating: 'Developing',
+              growth_potential: 'High',
+              joined_date: company.created_at || new Date().toISOString(),
+              onboarding_completed: company.onboarding_completed
+            }
+          } : prev);
+        }
+      } catch (error) {
+        console.warn('Company data loading failed:', error);
       }
 
-      // Fetch real user activities (with error handling)
-      let activities: any[] = [];
+      // Try to load other data in background
       try {
-        activities = await activityService.getUserActivities(user.id, 10);
-      } catch (activityError) {
-        console.warn('Activities query failed:', activityError);
-      }
-
-      // Fetch AI insights if available (with error handling)
-      let aiInsights: any = null;
-      try {
-        const { data: aiInsightsData, error: aiInsightsError } = await supabase
+        // Fetch real user activities
+        const activities = await activityService.getUserActivities(user.id, 10);
+        
+        // Fetch AI insights
+        const { data: aiInsights } = await supabase
           .from('ai_insights')
           .select('impact, description, metadata, confidence_score, created_at')
           .eq('company_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1);
 
-        if (!aiInsightsError) {
-          aiInsights = aiInsightsData;
-        } else {
-          console.warn('AI insights query failed:', aiInsightsError);
-        }
-      } catch (error) {
-        console.warn('AI insights query failed:', error);
-      }
-
-      // Fetch material listings from AI onboarding (with error handling)
-      let materials: any[] = [];
-      try {
-        const { data: materialsData, error: materialsError } = await supabase
+        // Fetch materials
+        const { data: materials } = await supabase
           .from('materials')
           .select('*')
           .eq('company_id', user.id)
           .order('created_at', { ascending: false });
 
-        if (!materialsError) {
-          materials = materialsData || [];
-        } else {
-          console.warn('Materials query failed:', materialsError);
-        }
-      } catch (error) {
-        console.warn('Materials query failed:', error);
-      }
-
-      // Fetch matches (with error handling)
-      let matches: any[] = [];
-      try {
-        const { data: matchesData, error: matchesError } = await supabase
+        // Fetch matches
+        const { data: matches } = await supabase
           .from('matches')
           .select('*')
           .or(`company_id.eq.${user.id},partner_company_id.eq.${user.id}`)
           .order('created_at', { ascending: false });
 
-        if (!matchesError) {
-          matches = matchesData || [];
-        } else {
-          console.warn('Matches query failed:', matchesError);
-        }
+        // Update portfolio with real data if available
+        const aiMeta = aiInsights && aiInsights[0]?.metadata ? aiInsights[0].metadata : {};
+        
+        setPortfolioData(prev => prev ? {
+          ...prev,
+          achievements: {
+            total_savings: parseInt(aiMeta.estimated_savings?.replace(/[^0-9]/g, '') || '0'),
+            carbon_reduced: parseInt(aiMeta.carbon_reduction?.replace(/[^0-9]/g, '') || '0'),
+            partnerships_formed: activities.filter(a => a.activity_type === 'connection_accepted').length,
+            waste_diverted: activities.filter(a => a.activity_type === 'material_listed').length,
+            matches_completed: activities.filter(a => a.activity_type === 'match_found').length,
+            sustainability_score: parseInt(aiMeta.symbiosis_score?.replace(/[^0-9]/g, '') || '65'),
+            efficiency_improvement: 15
+          },
+          recommendations: aiMeta.top_opportunities?.map((opportunity: string, index: number) => ({
+            id: `rec-${index}`,
+            category: 'symbiosis',
+            title: opportunity,
+            description: `AI-recommended opportunity based on your company profile`,
+            potential_impact: {
+              savings: 15000 + (index * 5000),
+              carbon_reduction: 25 + (index * 5),
+              efficiency_gain: 20 + (index * 3)
+            },
+            implementation_difficulty: index === 0 ? 'easy' : index === 1 ? 'medium' : 'hard',
+            time_to_implement: index === 0 ? '1-2 weeks' : index === 1 ? '1-2 months' : '3-6 months',
+            priority: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
+            ai_reasoning: `Based on your company profile`
+          })) || [],
+          recent_activity: activities.map((activity: any) => ({
+            id: activity.id,
+            date: new Date(activity.created_at).toLocaleDateString(),
+            action: activity.title,
+            impact: activity.impact_level === 'high' ? 'High Impact' : activity.impact_level === 'medium' ? 'Medium Impact' : 'Low Impact',
+            category: activity.activity_type === 'match_found' ? 'match' :
+                     activity.activity_type === 'connection_accepted' ? 'partnership' :
+                     activity.activity_type === 'material_listed' ? 'savings' : 'sustainability'
+          })),
+          materialListings: materials?.map((material: any) => ({
+            id: material.id,
+            material_name: material.material_name,
+            type: material.type || 'resource',
+            quantity: material.quantity || 0,
+            unit: material.unit || 'units',
+            description: material.description || '',
+            category: material.category || '',
+            match_score: material.match_score || 0,
+            role: material.role || 'neutral',
+            sustainability_score: material.sustainability_score || 0,
+            price_per_unit: material.price_per_unit || 0,
+            total_value: material.total_value || 0
+          })) || [],
+          matches: matches?.map((match: any) => ({
+            id: match.id,
+            material_id: match.material_id,
+            partner_company: match.partner_company_name || 'Unknown',
+            partner_material: match.partner_material_name || 'Unknown',
+            match_score: match.match_score || 0,
+            potential_savings: match.potential_savings || 0,
+            carbon_reduction: match.carbon_reduction || 0,
+            status: match.status || 'pending',
+            created_at: match.created_at
+          })) || []
+        } : prev);
       } catch (error) {
-        console.warn('Matches query failed:', error);
+        console.warn('Background data loading failed:', error);
       }
 
-      // Approval state
-      const aiMeta = aiInsights && aiInsights[0]?.metadata ? aiInsights[0].metadata : {};
-
-      // Create portfolio data from real database information
-      const portfolio: PortfolioData = {
+    } catch (err: any) {
+      // Even if everything fails, show default portfolio
+      const fallbackPortfolio: PortfolioData = {
         company: {
-          id: company.id,
-          name: company.name || 'Your Company',
-          industry: company.industry || 'Unknown',
-          location: company.location || 'Unknown',
-          employee_count: company.employee_count || 0,
-          size_category: (company.employee_count || 0) > 1000 ? 'Large' : 
-                       (company.employee_count || 0) > 200 ? 'Medium' : 'Small',
-          industry_position: company.onboarding_completed ? 'Active' : 'Pending',
-          sustainability_rating: aiMeta.symbiosis_score || 'Developing',
+          id: 'fallback',
+          name: 'Your Company',
+          industry: 'Unknown',
+          location: 'Unknown',
+          employee_count: 0,
+          size_category: 'Small',
+          industry_position: 'Pending',
+          sustainability_rating: 'Developing',
           growth_potential: 'High',
-          joined_date: company.created_at || new Date().toISOString(),
-          onboarding_completed: company.onboarding_completed
+          joined_date: new Date().toISOString(),
+          onboarding_completed: false
         },
         achievements: {
-          total_savings: parseInt(aiMeta.estimated_savings?.replace(/[^0-9]/g, '') || '0'),
-          carbon_reduced: parseInt(aiMeta.carbon_reduction?.replace(/[^0-9]/g, '') || '0'),
-          partnerships_formed: activities.filter(a => a.activity_type === 'connection_accepted').length,
-          waste_diverted: activities.filter(a => a.activity_type === 'material_listed').length,
-          matches_completed: activities.filter(a => a.activity_type === 'match_found').length,
-          sustainability_score: parseInt(aiMeta.symbiosis_score?.replace(/[^0-9]/g, '') || '65'),
-          efficiency_improvement: 15
+          total_savings: 0,
+          carbon_reduced: 0,
+          partnerships_formed: 0,
+          waste_diverted: 0,
+          matches_completed: 0,
+          sustainability_score: 0,
+          efficiency_improvement: 0
         },
-        recommendations: aiMeta.top_opportunities?.map((opportunity: string, index: number) => ({
-          id: `rec-${index}`,
-          category: 'symbiosis',
-          title: opportunity,
-          description: `AI-recommended opportunity based on your company profile`,
-          potential_impact: {
-            savings: 15000 + (index * 5000),
-            carbon_reduction: 25 + (index * 5),
-            efficiency_gain: 20 + (index * 3)
-          },
-          implementation_difficulty: index === 0 ? 'easy' : index === 1 ? 'medium' : 'hard',
-          time_to_implement: index === 0 ? '1-2 weeks' : index === 1 ? '1-2 months' : '3-6 months',
-          priority: index === 0 ? 'high' : index === 1 ? 'medium' : 'low',
-          ai_reasoning: `Based on your ${company.industry} industry and ${company.location} location`
-        })) || [],
-        recent_activity: activities.map((activity: any) => ({
-          id: activity.id,
-          date: new Date(activity.created_at).toLocaleDateString(),
-          action: activity.title,
-          impact: activity.impact_level === 'high' ? 'High Impact' : activity.impact_level === 'medium' ? 'Medium Impact' : 'Low Impact',
-          category: activity.activity_type === 'match_found' ? 'match' :
-                   activity.activity_type === 'connection_accepted' ? 'partnership' :
-                   activity.activity_type === 'material_listed' ? 'savings' : 'sustainability'
-        })),
-        next_milestones: [
-          company.onboarding_completed ? 'Listing Approval' : 'Complete Onboarding',
-          'Form New Partnerships'
-        ],
+        recommendations: [],
+        recent_activity: [],
+        next_milestones: ['Complete Onboarding', 'Start Listing Materials'],
         industry_comparison: {
-          rank: 1,
-          total_companies: 100,
-          average_savings: 25000,
-          your_savings: parseInt(aiMeta.estimated_savings?.replace(/[^0-9]/g, '') || '0')
+          rank: 0,
+          total_companies: 0,
+          average_savings: 0,
+          your_savings: 0
         },
-        materialListings: materials?.map((material: any) => ({
-          id: material.id,
-          material_name: material.material_name,
-          type: material.type || 'resource',
-          quantity: material.quantity || 0,
-          unit: material.unit || 'units',
-          description: material.description || '',
-          category: material.category || '',
-          match_score: material.match_score || 0,
-          role: material.role || 'neutral',
-          sustainability_score: material.sustainability_score || 0,
-          price_per_unit: material.price_per_unit || 0,
-          total_value: material.total_value || 0,
-          company: material.companies
-        })) || [],
-        matches: matches?.map((match: any) => ({
-          id: match.id,
-          material_id: match.material_id,
-          partner_company: match.partner_company_name || 'Unknown',
-          partner_material: match.partner_material_name || 'Unknown',
-          match_score: match.match_score || 0,
-          potential_savings: match.potential_savings || 0,
-          carbon_reduction: match.carbon_reduction || 0,
-          status: match.status || 'pending',
-          created_at: match.created_at
-        })) || []
+        materialListings: [],
+        matches: []
       };
-
-      setPortfolioData(portfolio);
+      
+      setPortfolioData(fallbackPortfolio);
       setError(null);
-    } catch (err: any) {
-      setPortfolioData(null);
-      setError(err.message || 'Failed to load portfolio data');
     } finally {
       setLoading(false);
     }
