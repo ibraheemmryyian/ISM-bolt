@@ -389,7 +389,6 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
     setLoadingMatch(material.id);
 
     try {
-      // Call AI matching endpoint with specific material
       const response = await fetch('/api/generate-matches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -400,7 +399,7 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
       });
       
       if (response.ok) {
-      const result = await response.json();
+        const result = await response.json();
         setMatchResults(prev => ({ 
           ...prev, 
           [material.id]: result

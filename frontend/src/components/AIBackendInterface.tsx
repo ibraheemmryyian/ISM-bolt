@@ -20,7 +20,6 @@ export class AIService implements AIBackendInterface {
 
   async generateRecommendations(userId: string, userProfile: any): Promise<any[]> {
     try {
-      // Call revolutionary AI backend for recommendations
       const response = await fetch('/api/match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -244,36 +244,7 @@ const AIInferenceMatching: React.FC = () => {
 
     } catch (error) {
       console.error('AI Matchmaking error:', error);
-      // Continue with fallback matches
-      const fallbackMatches: AIMatch[] = [
-        {
-          id: 'match_1',
-          company_name: 'Gulf Steel Manufacturing',
-          company_type: 'Steel Manufacturing',
-          location: 'Dubai, UAE',
-          match_score: 85,
-          material_match: 'Steel Scrap',
-          potential_savings: '$45,000',
-          carbon_reduction: '12.5 tons CO2',
-          implementation_time: '3-6 months',
-          contact_info: 'contact@gulfsteel.com',
-          ai_generated: true
-        },
-        {
-          id: 'match_2',
-          company_name: 'Arabian Chemical Solutions',
-          company_type: 'Chemical Processing',
-          location: 'Riyadh, Saudi Arabia',
-          match_score: 78,
-          material_match: 'Chemical Byproducts',
-          potential_savings: '$32,000',
-          carbon_reduction: '8.2 tons CO2',
-          implementation_time: '4-8 months',
-          contact_info: 'info@arabianchemical.com',
-          ai_generated: true
-        }
-      ];
-      setAiMatches(fallbackMatches);
+      throw error;
     }
   };
 
@@ -306,53 +277,7 @@ const AIInferenceMatching: React.FC = () => {
 
     } catch (error) {
       console.error('Logistics preview error:', error);
-      // Generate fallback logistics preview
-      const fallbackLogistics: LogisticsPreview = {
-        origin: companyProfile?.location || 'Dubai, UAE',
-        destination: match.location,
-        material: match.material_match,
-        weight_kg: 1000,
-        transport_modes: [
-          {
-            mode: 'Truck',
-            cost: 2500,
-            transit_time: 2,
-            carbon_emissions: 150,
-            reliability: 0.95
-          },
-          {
-            mode: 'Sea',
-            cost: 1800,
-            transit_time: 5,
-            carbon_emissions: 80,
-            reliability: 0.90
-          },
-          {
-            mode: 'Air',
-            cost: 8500,
-            transit_time: 1,
-            carbon_emissions: 400,
-            reliability: 0.99
-          }
-        ],
-        total_cost: 2500,
-        total_carbon: 150,
-        cost_breakdown: {
-          transport: 2000,
-          handling: 300,
-          customs: 150,
-          insurance: 50
-        },
-        recommendations: [
-          'Truck transport offers best cost-benefit ratio',
-          'Consider bulk shipping for larger quantities',
-          'Negotiate long-term contracts for better rates'
-        ],
-        is_feasible: true,
-        roi_percentage: 85
-      };
-      setLogisticsPreview(fallbackLogistics);
-      setCurrentStep('logistics');
+      throw error;
     } finally {
       setIsLoading(false);
     }

@@ -135,38 +135,34 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AIOnboardingProps)
       // Start analysis phase
       setIsAnalyzing(true);
 
-      // Try to send to AI backend (but don't fail if unavailable)
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const response = await fetch('/api/adaptive-onboarding/complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
-        },
-        body: JSON.stringify({
-              companyProfile: {
-                industry: formData.industry,
-                products: formData.products,
-                production_volume: formData.productionVolume,
-                processes: formData.processes,
-                onboarding_completed: true
-              }
-        })
-      });
+            // Send to AI backend for analysis
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const response = await fetch('/api/adaptive-onboarding/complete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            companyProfile: {
+              industry: formData.industry,
+              products: formData.products,
+              production_volume: formData.productionVolume,
+              processes: formData.processes,
+              onboarding_completed: true
+            }
+          })
+        });
 
-          if (response.ok) {
-      const result = await response.json();
-            onComplete(result.analysis || { success: true });
-        return;
-          }
+        if (response.ok) {
+          const result = await response.json();
+          onComplete(result.analysis || { success: true });
+          return;
         }
-      } catch (aiError) {
-        console.warn('AI backend not available, proceeding with local completion:', aiError);
       }
 
-      // Fallback: Complete locally if AI is not available
+      // Complete locally if AI is not available
       const localAnalysis = {
         success: true,
         company_profile: {

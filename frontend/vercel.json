@@ -6,33 +6,7 @@
       "destination": "/index.html"
     }
   ],
-  "redirects": [
-    {
-      "source": "/marketplace",
-      "destination": "/index.html",
-      "permanent": false
-    },
-    {
-      "source": "/onboarding",
-      "destination": "/index.html",
-      "permanent": false
-    },
-    {
-      "source": "/adaptive-onboarding",
-      "destination": "/index.html",
-      "permanent": false
-    },
-    {
-      "source": "/dashboard",
-      "destination": "/index.html",
-      "permanent": false
-    },
-    {
-      "source": "/admin",
-      "destination": "/index.html",
-      "permanent": false
-    }
-  ],
+
   "headers": [
     {
       "source": "/(.*)",
