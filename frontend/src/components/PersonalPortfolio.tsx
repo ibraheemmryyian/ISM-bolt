@@ -160,17 +160,28 @@ const PersonalPortfolio: React.FC = () => {
       // Fetch AI insights if available
       const { data: aiInsights, error: aiInsightsError } = await supabase
         .from('ai_insights')
-        .select('impact, description, metadata, confidence_score, created_at, approval_status')
+        .select('impact, description, metadata, confidence_score, created_at')
         .eq('company_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1);
 
+      if (aiInsightsError) {
+        console.warn('AI insights query failed:', aiInsightsError);
+      }
+
       // Fetch material listings from AI onboarding
-      const { data: materialListings, error: listingsError } = await supabase
-        .from('material_listings')
-        .select('*')
+      const { data: materials, error: materialsError } = await supabase
+        .from('materials')
+        .select(`
+          *,
+          companies!inner(name, industry, location)
+        `)
         .eq('company_id', user.id)
         .order('created_at', { ascending: false });
+
+      if (materialsError) {
+        console.warn('Materials query failed:', materialsError);
+      }
 
       // Fetch matches
       const { data: matches, error: matchesError } = await supabase
@@ -179,8 +190,11 @@ const PersonalPortfolio: React.FC = () => {
         .or(`company_id.eq.${user.id},partner_company_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
+      if (matchesError) {
+        console.warn('Matches query failed:', matchesError);
+      }
+
       // Approval state
-      const approvalStatus = aiInsights && aiInsights[0]?.approval_status;
       const aiMeta = aiInsights && aiInsights[0]?.metadata ? aiInsights[0].metadata : {};
 
       // Create portfolio data from real database information
@@ -234,7 +248,6 @@ const PersonalPortfolio: React.FC = () => {
         })),
         next_milestones: [
           company.onboarding_completed ? 'Listing Approval' : 'Complete Onboarding',
-          approvalStatus === 'approved' ? 'Matching' : 'Awaiting Approval',
           'Form New Partnerships'
         ],
         industry_comparison: {
@@ -243,19 +256,20 @@ const PersonalPortfolio: React.FC = () => {
           average_savings: 25000,
           your_savings: parseInt(aiMeta.estimated_savings?.replace(/[^0-9]/g, '') || '0')
         },
-        materialListings: materialListings?.map((listing: any) => ({
-          id: listing.id,
-          material_name: listing.material_name,
-          type: listing.type || 'resource',
-          quantity: listing.quantity || 0,
-          unit: listing.unit || 'units',
-          description: listing.description || '',
-          category: listing.category || '',
-          match_score: listing.match_score || 0,
-          role: listing.role || 'neutral',
-          sustainability_score: listing.sustainability_score || 0,
-          price_per_unit: listing.price_per_unit || 0,
-          total_value: listing.total_value || 0
+        materialListings: materials?.map((material: any) => ({
+          id: material.id,
+          material_name: material.material_name,
+          type: material.type || 'resource',
+          quantity: material.quantity || 0,
+          unit: material.unit || 'units',
+          description: material.description || '',
+          category: material.category || '',
+          match_score: material.match_score || 0,
+          role: material.role || 'neutral',
+          sustainability_score: material.sustainability_score || 0,
+          price_per_unit: material.price_per_unit || 0,
+          total_value: material.total_value || 0,
+          company: material.companies
         })) || [],
         matches: matches?.map((match: any) => ({
           id: match.id,

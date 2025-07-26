@@ -77,8 +77,8 @@ export function LogisticsIntegration() {
         .single();
 
       // Fetch real material listings from AI onboarding
-      const { data: materialListings } = await supabase
-        .from('material_listings')
+      const { data: materials, error } = await supabase
+        .from('materials')
         .select('*')
         .eq('company_id', user.id)
         .order('created_at', { ascending: false });
@@ -94,8 +94,8 @@ export function LogisticsIntegration() {
       const activities = await activityService.getUserActivities(user.id, 50);
 
       // Determine if user is primarily a buyer or seller based on their materials
-      const buyerMaterials = materialListings?.filter(m => m.role === 'buyer' || m.type === 'waste') || [];
-      const sellerMaterials = materialListings?.filter(m => m.role === 'seller' || m.type === 'resource' || m.type === 'product') || [];
+      const buyerMaterials = materials?.filter(m => m.role === 'buyer' || m.type === 'waste') || [];
+      const sellerMaterials = materials?.filter(m => m.role === 'seller' || m.type === 'resource' || m.type === 'product') || [];
       
       const isPrimarilyBuyer = buyerMaterials.length > sellerMaterials.length;
 
