@@ -156,6 +156,61 @@ const PersonalPortfolio: React.FC = () => {
         return;
       }
 
+      // Check if company exists, if not create a default profile
+      if (!company) {
+        // Create a default company profile instead of showing error
+        const defaultCompany = {
+          id: user.id,
+          name: 'Your Company',
+          industry: 'Unknown',
+          location: 'Unknown',
+          employee_count: 0,
+          onboarding_completed: false,
+          created_at: new Date().toISOString()
+        };
+        
+        // Use default company data
+        const portfolio: PortfolioData = {
+          company: {
+            id: defaultCompany.id,
+            name: defaultCompany.name,
+            industry: defaultCompany.industry,
+            location: defaultCompany.location,
+            employee_count: defaultCompany.employee_count,
+            size_category: 'Small',
+            industry_position: 'Pending',
+            sustainability_rating: 'Developing',
+            growth_potential: 'High',
+            joined_date: defaultCompany.created_at,
+            onboarding_completed: defaultCompany.onboarding_completed
+          },
+          achievements: {
+            total_savings: 0,
+            carbon_reduced: 0,
+            partnerships_formed: 0,
+            waste_diverted: 0,
+            matches_completed: 0,
+            sustainability_score: 0,
+            efficiency_improvement: 0
+          },
+          recommendations: [],
+          recent_activity: [],
+          next_milestones: ['Complete Onboarding', 'Start Listing Materials'],
+          industry_comparison: {
+            rank: 0,
+            total_companies: 0,
+            average_savings: 0,
+            your_savings: 0
+          },
+          materialListings: [],
+          matches: []
+        };
+        
+        setPortfolioData(portfolio);
+        setLoading(false);
+        return;
+      }
+
       // Fetch real user activities
       const activities = await activityService.getUserActivities(user.id, 10);
 
@@ -363,7 +418,24 @@ const PersonalPortfolio: React.FC = () => {
   }
 
   if (error) {
-    return <div className="p-8 text-center text-red-400">{error}</div>;
+    return (
+      <div className="p-8 text-center">
+        <div className="bg-red-900/20 border border-red-700 rounded-lg p-6 max-w-md mx-auto">
+          <div className="text-red-400 mb-4">
+            <h3 className="text-lg font-semibold mb-2">Dashboard Error</h3>
+            <p className="text-sm">{error}</p>
+          </div>
+          {error.includes('onboarding') && (
+            <Button 
+              onClick={() => navigate('/adaptive-onboarding')}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Complete Onboarding
+            </Button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (!portfolioData) {
