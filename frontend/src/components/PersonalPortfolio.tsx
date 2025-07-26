@@ -134,6 +134,8 @@ const PersonalPortfolio: React.FC = () => {
   const loadPortfolioData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       // Get authenticated user
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
@@ -211,44 +213,67 @@ const PersonalPortfolio: React.FC = () => {
         return;
       }
 
-      // Fetch real user activities
-      const activities = await activityService.getUserActivities(user.id, 10);
-
-      // Fetch AI insights if available
-      const { data: aiInsights, error: aiInsightsError } = await supabase
-        .from('ai_insights')
-        .select('impact, description, metadata, confidence_score, created_at')
-        .eq('company_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (aiInsightsError) {
-        console.warn('AI insights query failed:', aiInsightsError);
+      // Fetch real user activities (with error handling)
+      let activities: any[] = [];
+      try {
+        activities = await activityService.getUserActivities(user.id, 10);
+      } catch (activityError) {
+        console.warn('Activities query failed:', activityError);
       }
 
-      // Fetch material listings from AI onboarding
-      const { data: materials, error: materialsError } = await supabase
-        .from('materials')
-        .select(`
-          *,
-          companies!inner(name, industry, location)
-        `)
-        .eq('company_id', user.id)
-        .order('created_at', { ascending: false });
+      // Fetch AI insights if available (with error handling)
+      let aiInsights: any = null;
+      try {
+        const { data: aiInsightsData, error: aiInsightsError } = await supabase
+          .from('ai_insights')
+          .select('impact, description, metadata, confidence_score, created_at')
+          .eq('company_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
 
-      if (materialsError) {
-        console.warn('Materials query failed:', materialsError);
+        if (!aiInsightsError) {
+          aiInsights = aiInsightsData;
+        } else {
+          console.warn('AI insights query failed:', aiInsightsError);
+        }
+      } catch (error) {
+        console.warn('AI insights query failed:', error);
       }
 
-      // Fetch matches
-      const { data: matches, error: matchesError } = await supabase
-        .from('matches')
-        .select('*')
-        .or(`company_id.eq.${user.id},partner_company_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+      // Fetch material listings from AI onboarding (with error handling)
+      let materials: any[] = [];
+      try {
+        const { data: materialsData, error: materialsError } = await supabase
+          .from('materials')
+          .select('*')
+          .eq('company_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (matchesError) {
-        console.warn('Matches query failed:', matchesError);
+        if (!materialsError) {
+          materials = materialsData || [];
+        } else {
+          console.warn('Materials query failed:', materialsError);
+        }
+      } catch (error) {
+        console.warn('Materials query failed:', error);
+      }
+
+      // Fetch matches (with error handling)
+      let matches: any[] = [];
+      try {
+        const { data: matchesData, error: matchesError } = await supabase
+          .from('matches')
+          .select('*')
+          .or(`company_id.eq.${user.id},partner_company_id.eq.${user.id}`)
+          .order('created_at', { ascending: false });
+
+        if (!matchesError) {
+          matches = matchesData || [];
+        } else {
+          console.warn('Matches query failed:', matchesError);
+        }
+      } catch (error) {
+        console.warn('Matches query failed:', error);
       }
 
       // Approval state
