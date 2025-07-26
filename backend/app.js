@@ -53,7 +53,22 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "data:"],
+      connectSrc: ["'self'", "https:", "wss:"],
+      frameAncestors: ["'none'"],
+    },
+  },
+}));
+
+// CORS configuration - must come after helmet
 app.use(cors({
   origin: [
     'https://symbioflows.com',
@@ -62,9 +77,55 @@ app.use(cors({
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
+
+// Additional CORS headers for preflight requests
+app.use((req, res, next) => {
+  // Debug logging for CORS issues
+  console.log('CORS Debug:', {
+    method: req.method,
+    origin: req.headers.origin,
+    url: req.url,
+    headers: req.headers
+  });
+
+  // Set CORS headers
+  const allowedOrigins = [
+    'https://symbioflows.com',
+    'https://www.symbioflows.com',
+    'http://localhost:5173',
+    process.env.FRONTEND_URL
+  ].filter(Boolean);
+
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Access-Control-Request-Method, Access-Control-Request-Headers');
+  
+  if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request for:', req.url);
+    res.sendStatus(204);
+  } else {
+    next();
+  }
+});
 
 // Body parsing middleware - MUST come before routes
 app.use(express.json({ limit: '10mb' }));
@@ -4935,6 +4996,314 @@ app.get('/api/ai-matching/insights/:id', async (req, res) => {
     console.error('Insights error:', error);
     return sendResponse(res, { success: false, error: error.message }, 500);
   }
+});
+
+// ===== FAVORITES ENDPOINTS =====
+
+/**
+ * GET /api/favorites/:userId
+ * Returns: { success: boolean, data: Favorite[] }
+ */
+app.get('/api/favorites/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return sendResponse(res, { success: false, error: 'User ID is required' }, 400);
+    }
+
+    const { data: favorites, error } = await supabase
+      .from('favorites')
+      .select(`
+        id,
+        user_id,
+        material_id,
+        created_at,
+        material:material_id (
+          material_name,
+          description,
+          companies (
+            name
+          )
+        )
+      `)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching favorites:', error);
+      return sendResponse(res, { success: false, error: 'Failed to fetch favorites' }, 500);
+    }
+
+    return sendResponse(res, { success: true, data: favorites || [] });
+  } catch (error) {
+    console.error('Favorites fetch error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/favorites
+ * Body: { userId: string, materialId: string }
+ * Returns: { success: boolean }
+ */
+app.post('/api/favorites', async (req, res) => {
+  try {
+    const { userId, materialId } = req.body;
+    if (!userId || !materialId) {
+      return sendResponse(res, { success: false, error: 'User ID and Material ID are required' }, 400);
+    }
+
+    const { data, error } = await supabase
+      .from('favorites')
+      .insert({
+        user_id: userId,
+        material_id: materialId
+      })
+      .select();
+
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        return sendResponse(res, { success: false, error: 'Material is already in favorites' }, 409);
+      }
+      console.error('Error adding to favorites:', error);
+      return sendResponse(res, { success: false, error: 'Failed to add to favorites' }, 500);
+    }
+
+    return sendResponse(res, { success: true, data });
+  } catch (error) {
+    console.error('Add to favorites error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/favorites/:userId/:materialId
+ * Returns: { success: boolean }
+ */
+app.delete('/api/favorites/:userId/:materialId', async (req, res) => {
+  try {
+    const { userId, materialId } = req.params;
+    if (!userId || !materialId) {
+      return sendResponse(res, { success: false, error: 'User ID and Material ID are required' }, 400);
+    }
+
+    const { error } = await supabase
+      .from('favorites')
+      .delete()
+      .eq('user_id', userId)
+      .eq('material_id', materialId);
+
+    if (error) {
+      console.error('Error removing from favorites:', error);
+      return sendResponse(res, { success: false, error: 'Failed to remove from favorites' }, 500);
+    }
+
+    return sendResponse(res, { success: true });
+  } catch (error) {
+    console.error('Remove from favorites error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/favorites/check/:userId/:materialId
+ * Returns: { success: boolean, data: { isFavorited: boolean } }
+ */
+app.get('/api/favorites/check/:userId/:materialId', async (req, res) => {
+  try {
+    const { userId, materialId } = req.params;
+    if (!userId || !materialId) {
+      return sendResponse(res, { success: false, error: 'User ID and Material ID are required' }, 400);
+    }
+
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('material_id', materialId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+      console.error('Error checking favorite status:', error);
+      return sendResponse(res, { success: false, error: 'Failed to check favorite status' }, 500);
+    }
+
+    return sendResponse(res, { success: true, data: { isFavorited: !!data } });
+  } catch (error) {
+    console.error('Check favorite error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+// ===== CONNECTIONS/FOLLOWING ENDPOINTS =====
+
+/**
+ * GET /api/connections/following/:userId
+ * Returns: { success: boolean, data: Connection[] }
+ */
+app.get('/api/connections/following/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return sendResponse(res, { success: false, error: 'User ID is required' }, 400);
+    }
+
+    const { data: connections, error } = await supabase
+      .from('connections')
+      .select(`
+        id,
+        follower_id,
+        following_id,
+        created_at,
+        following:following_id (
+          id,
+          name,
+          industry
+        )
+      `)
+      .eq('follower_id', userId);
+
+    if (error) {
+      console.error('Error fetching connections:', error);
+      return sendResponse(res, { success: false, error: 'Failed to fetch connections' }, 500);
+    }
+
+    return sendResponse(res, { success: true, data: connections || [] });
+  } catch (error) {
+    console.error('Connections fetch error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * POST /api/connections/follow
+ * Body: { followerId: string, followingId: string }
+ * Returns: { success: boolean }
+ */
+app.post('/api/connections/follow', async (req, res) => {
+  try {
+    const { followerId, followingId } = req.body;
+    if (!followerId || !followingId) {
+      return sendResponse(res, { success: false, error: 'Follower ID and Following ID are required' }, 400);
+    }
+
+    if (followerId === followingId) {
+      return sendResponse(res, { success: false, error: 'Cannot follow yourself' }, 400);
+    }
+
+    const { data, error } = await supabase
+      .from('connections')
+      .insert({
+        follower_id: followerId,
+        following_id: followingId
+      })
+      .select();
+
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        return sendResponse(res, { success: false, error: 'Already following this company' }, 409);
+      }
+      console.error('Error following company:', error);
+      return sendResponse(res, { success: false, error: 'Failed to follow company' }, 500);
+    }
+
+    return sendResponse(res, { success: true, data });
+  } catch (error) {
+    console.error('Follow company error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * DELETE /api/connections/unfollow/:followerId/:followingId
+ * Returns: { success: boolean }
+ */
+app.delete('/api/connections/unfollow/:followerId/:followingId', async (req, res) => {
+  try {
+    const { followerId, followingId } = req.params;
+    if (!followerId || !followingId) {
+      return sendResponse(res, { success: false, error: 'Follower ID and Following ID are required' }, 400);
+    }
+
+    const { error } = await supabase
+      .from('connections')
+      .delete()
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId);
+
+    if (error) {
+      console.error('Error unfollowing company:', error);
+      return sendResponse(res, { success: false, error: 'Failed to unfollow company' }, 500);
+    }
+
+    return sendResponse(res, { success: true });
+  } catch (error) {
+    console.error('Unfollow company error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+/**
+ * GET /api/connections/check/:followerId/:followingId
+ * Returns: { success: boolean, data: { isFollowing: boolean } }
+ */
+app.get('/api/connections/check/:followerId/:followingId', async (req, res) => {
+  try {
+    const { followerId, followingId } = req.params;
+    if (!followerId || !followingId) {
+      return sendResponse(res, { success: false, error: 'Follower ID and Following ID are required' }, 400);
+    }
+
+    const { data, error } = await supabase
+      .from('connections')
+      .select('id')
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+      console.error('Error checking connection status:', error);
+      return sendResponse(res, { success: false, error: 'Failed to check connection status' }, 500);
+    }
+
+    return sendResponse(res, { success: true, data: { isFollowing: !!data } });
+  } catch (error) {
+    console.error('Check connection error:', error);
+    return sendResponse(res, { success: false, error: error.message }, 500);
+  }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    cors: {
+      allowedOrigins: [
+        'https://symbioflows.com',
+        'https://www.symbioflows.com',
+        'http://localhost:5173',
+        process.env.FRONTEND_URL
+      ].filter(Boolean)
+    }
+  });
+});
+
+// API health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    cors: {
+      allowedOrigins: [
+        'https://symbioflows.com',
+        'https://www.symbioflows.com',
+        'http://localhost:5173',
+        process.env.FRONTEND_URL
+      ].filter(Boolean)
+    }
+  });
 });
 
 // Prometheus metrics endpoint
