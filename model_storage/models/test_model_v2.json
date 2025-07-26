@@ -1,0 +1,9 @@
+{
+  "type": "regression",
+  "parameters": {
+    "learning_rate": 0.01
+  },
+  "performance": {
+    "accuracy": 0.85
+  }
+}

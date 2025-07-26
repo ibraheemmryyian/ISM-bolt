@@ -141,14 +141,17 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Large data files
-*.json
+# Large data files (only ignore large data files, not config files)
+data/*.json
+archive/*.json
+*.large.json
 !package.json
 !package-lock.json
 !tsconfig*.json
 !tailwind.config.js
 !postcss.config.js
 !vite.config.ts
+!next_gen_materials_config.json
 
 # Test files
 test_*.py
@@ -158,9 +161,11 @@ test_*.py
 *.test.tsx
 __tests__/
 
-# Documentation
-*.md
-!README.md
+# Documentation (allow all documentation files)
+# *.md files are now tracked - removed this restriction
+# Explicitly track docs folder
+!docs/
+!docs/**/*
 
 # Backup files
 *.bak

@@ -1,0 +1,27 @@
+{
+  "name": "test_model",
+  "type": "gcn",
+  "parameters": {
+    "type": "gcn",
+    "layers": 2,
+    "embedding_dim": 64,
+    "activation": "relu",
+    "dropout": 0.2
+  },
+  "performance": {
+    "accuracy": 0.9019999999999999,
+    "precision": 0.8118,
+    "recall": 0.7666999999999999,
+    "f1_score": 0.7847399999999999,
+    "loss": 0.09800000000000009,
+    "epochs_completed": 100,
+    "convergence": true
+  },
+  "created_at": "2025-07-12T05:36:09.198232",
+  "last_updated": "2025-07-12T05:36:09.198271",
+  "graph_stats": {
+    "nodes": 2,
+    "edges": 1,
+    "density": 1.0
+  }
+}

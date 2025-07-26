@@ -1,0 +1,42 @@
+{
+  "models": {
+    "test_model": [
+      {
+        "version": 1,
+        "hash": "10d7db3e09ac6da5",
+        "created_at": "2025-07-12T05:31:15.892486",
+        "format": "json"
+      },
+      {
+        "version": 2,
+        "hash": "10d7db3e09ac6da5",
+        "created_at": "2025-07-12T05:36:09.200810",
+        "format": "json"
+      }
+    ]
+  },
+  "versions": {
+    "test_model": 2
+  },
+  "metadata": {
+    "test_model_v1": {
+      "name": "test_model",
+      "version": 1,
+      "hash": "10d7db3e09ac6da5",
+      "created_at": "2025-07-12T05:31:15.892486",
+      "size_bytes": 96,
+      "format": "json",
+      "custom_metadata": {}
+    },
+    "test_model_v2": {
+      "name": "test_model",
+      "version": 2,
+      "hash": "10d7db3e09ac6da5",
+      "created_at": "2025-07-12T05:36:09.200810",
+      "size_bytes": 96,
+      "format": "json",
+      "custom_metadata": {}
+    }
+  },
+  "last_updated": "2025-07-12T05:36:09.202008"
+}

@@ -1,0 +1,25 @@
+{
+  "model": {
+    "weights": {
+      "semantic_weight": 0.25,
+      "numerical_weight": 0.25,
+      "graph_weight": 0.25,
+      "trust_weight": 0.25
+    },
+    "hyperparameters": {
+      "learning_rate": 0.01,
+      "batch_size": 32,
+      "epochs": 10
+    },
+    "performance_metrics": {
+      "accuracy": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1_score": 0.0
+    },
+    "training_history": []
+  },
+  "version": 0,
+  "metadata": {},
+  "last_updated": "2025-07-12T05:31:15.477141"
+}

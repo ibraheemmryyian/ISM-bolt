@@ -1,0 +1,22 @@
+{
+  "models": [
+    {
+      "model_id": "default_weighted_sum",
+      "model_type": "weighted_sum",
+      "weights": {
+        "gnn": 0.3,
+        "federated": 0.25,
+        "knowledge_graph": 0.25,
+        "matching": 0.2
+      },
+      "parameters": {
+        "normalize_scores": true,
+        "confidence_threshold": 0.5
+      },
+      "performance_metrics": {
+        "accuracy": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0
+      },
+      "last_updated": 
