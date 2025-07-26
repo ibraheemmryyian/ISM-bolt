@@ -66,46 +66,53 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AdaptiveAIOnboardi
   const [aiInsights, setAiInsights] = useState<any>(null);
   const [showReasoning, setShowReasoning] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [accuracyConfidence, setAccuracyConfidence] = useState<number>(0);
+  const [has95PercentConfidence, setHas95PercentConfidence] = useState(false);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
   
   const navigate = useNavigate();
 
   // Pre-defined initial questions for instant loading
   const initialQuestions: OnboardingQuestion[] = [
     {
-      id: "basic_0",
-      question: "What is your company name?",
-      type: "text",
-      category: "basic_info",
-      importance: "high",
-      reasoning: "Essential for identification and compliance",
-      compliance_related: false
-    },
-    {
-      id: "basic_1", 
+      id: "ai_onboarding_0",
       question: "What industry are you in?",
-      type: "text",
-      category: "basic_info",
+      type: "select",
+      category: "ai_onboarding",
       importance: "high",
       reasoning: "Determines relevant symbiosis opportunities and compliance requirements",
-      compliance_related: false
+      compliance_related: false,
+      options: [
+        "Manufacturing", "Textiles", "Food & Beverage", "Chemicals",
+        "Construction", "Electronics", "Automotive", "Pharmaceuticals",
+        "Mining", "Energy", "Agriculture", "Other"
+      ]
     },
     {
-      id: "basic_2",
-      question: "Where is your company located?",
-      type: "text", 
-      category: "basic_info",
+      id: "ai_onboarding_1", 
+      question: "What products or services do you produce?",
+      type: "textarea",
+      category: "ai_onboarding",
       importance: "high",
-      reasoning: "Critical for logistics optimization and local compliance",
+      reasoning: "Identifies potential waste streams and resource needs for accurate portfolio generation",
       compliance_related: false
     },
     {
-      id: "basic_3",
-      question: "How many employees do you have?",
-      type: "select",
-      category: "basic_info", 
-      importance: "medium",
-      reasoning: "Helps assess company scale and resource needs",
-      options: ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"],
+      id: "ai_onboarding_2",
+      question: "What is your production volume and time frame? (e.g., 100 tons per month, 5000 units per week)",
+      type: "text", 
+      category: "ai_onboarding",
+      importance: "high",
+      reasoning: "Essential for quantifying material listings and symbiosis opportunities with 95% accuracy",
+      compliance_related: false
+    },
+    {
+      id: "ai_onboarding_3",
+      question: "What processes do you use in your operations? (e.g., injection molding, extrusion, chemical processing)",
+      type: "textarea",
+      category: "ai_onboarding", 
+      importance: "high",
+      reasoning: "Critical for understanding waste streams and identifying potential material exchanges",
       compliance_related: false
     }
   ];
@@ -239,8 +246,19 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AdaptiveAIOnboardi
         setAiInsights(result.ai_insights);
       }
 
+      // Update accuracy confidence from backend
+      if (result.confidence_score !== undefined) {
+        setAccuracyConfidence(result.confidence_score);
+      }
+      if (result.has_95_percent_confidence !== undefined) {
+        setHas95PercentConfidence(result.has_95_percent_confidence);
+      }
+      if (result.missing_fields) {
+        setMissingFields(result.missing_fields);
+      }
+
       // Check if we should continue or complete
-      if (result.next_actions?.completion_ready) {
+      if (result.next_actions?.completion_ready || result.has_95_percent_confidence) {
         await completeOnboarding();
       } else {
         // Move to next question or wait for new questions
@@ -574,6 +592,36 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AdaptiveAIOnboardi
             </div>
             <Progress value={getProgressPercentage()} className="h-2" />
           </div>
+
+          {/* Accuracy Confidence Display */}
+          {accuracyConfidence > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                <span>AI Accuracy Confidence</span>
+                <span>{Math.round(accuracyConfidence * 100)}%</span>
+              </div>
+              <div className="relative">
+                <Progress value={accuracyConfidence * 100} className="h-2" />
+                <div className="absolute top-0 right-0 h-2 w-0.5 bg-red-500" style={{ left: '95%' }}></div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                <span>Current</span>
+                <span className="text-red-500 font-medium">95% Threshold</span>
+              </div>
+              {has95PercentConfidence && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-800">
+                  <CheckCircle className="h-4 w-4 inline mr-1" />
+                  Sufficient information for 95% accuracy! Ready to generate portfolio.
+                </div>
+              )}
+              {missingFields.length > 0 && !has95PercentConfidence && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                  <AlertCircle className="h-4 w-4 inline mr-1" />
+                  Need more information: {missingFields.join(', ')}
+                </div>
+              )}
+            </div>
+          )}
         </CardHeader>
 
         <CardContent className="p-6">

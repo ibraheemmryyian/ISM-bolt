@@ -170,75 +170,63 @@ class AdaptiveAIOnboarding:
     def _initialize_question_templates(self) -> Dict[str, List[Dict]]:
         """Initialize question templates for different categories"""
         return {
-            "basic_info": [
-                {
-                    "question": "What is your company name?",
-                    "type": "text",
-                    "importance": "high",
-                    "reasoning": "Essential for identification and compliance"
-                },
+            "ai_onboarding": [
                 {
                     "question": "What industry are you in?",
-                    "type": "text",
+                    "type": "select",
+                    "options": [
+                        "Manufacturing", "Textiles", "Food & Beverage", "Chemicals",
+                        "Construction", "Electronics", "Automotive", "Pharmaceuticals",
+                        "Mining", "Energy", "Agriculture", "Other"
+                    ],
                     "importance": "high",
                     "reasoning": "Determines relevant symbiosis opportunities and compliance requirements"
                 },
                 {
-                    "question": "Where is your company located?",
-                    "type": "text",
-                    "importance": "high",
-                    "reasoning": "Critical for logistics optimization and local compliance"
-                },
-                {
-                    "question": "How many employees do you have?",
-                    "type": "select",
-                    "options": ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"],
-                    "importance": "medium",
-                    "reasoning": "Helps assess company scale and resource needs"
-                }
-            ],
-            "production_info": [
-                {
                     "question": "What products or services do you produce?",
                     "type": "textarea",
                     "importance": "high",
-                    "reasoning": "Identifies potential waste streams and resource needs"
+                    "reasoning": "Identifies potential waste streams and resource needs for accurate portfolio generation"
                 },
+                {
+                    "question": "What is your production volume and time frame? (e.g., 100 tons per month, 5000 units per week)",
+                    "type": "text",
+                    "importance": "high",
+                    "reasoning": "Essential for quantifying material listings and symbiosis opportunities with 95% accuracy"
+                },
+                {
+                    "question": "What processes do you use in your operations? (e.g., injection molding, extrusion, chemical processing)",
+                    "type": "textarea",
+                    "importance": "high",
+                    "reasoning": "Critical for understanding waste streams and identifying potential material exchanges"
+                }
+            ],
+            "follow_up": [
                 {
                     "question": "What are your main raw materials?",
                     "type": "textarea",
                     "importance": "high",
-                    "reasoning": "Essential for identifying symbiosis opportunities"
+                    "reasoning": "Needed to identify potential input material opportunities"
                 },
                 {
-                    "question": "What is your production volume?",
-                    "type": "text",
-                    "importance": "medium",
-                    "reasoning": "Helps quantify potential symbiosis impact"
-                }
-            ],
-            "sustainability": [
+                    "question": "What waste streams do you currently generate?",
+                    "type": "textarea",
+                    "importance": "high",
+                    "reasoning": "Essential for identifying potential output materials for other companies"
+                },
                 {
-                    "question": "What are your current sustainability goals?",
+                    "question": "What is your current waste management approach?",
+                    "type": "select",
+                    "options": ["Landfill", "Recycling", "Incineration", "Composting", "Other"],
+                    "importance": "medium",
+                    "reasoning": "Helps assess current sustainability practices and improvement opportunities"
+                },
+                {
+                    "question": "What are your sustainability goals?",
                     "type": "multiselect",
                     "options": ["Carbon reduction", "Waste minimization", "Energy efficiency", "Circular economy", "Water conservation", "None yet"],
                     "importance": "medium",
-                    "reasoning": "Assesses current sustainability maturity"
-                },
-                {
-                    "question": "Do you currently track your waste streams?",
-                    "type": "boolean",
-                    "importance": "medium",
-                    "reasoning": "Indicates readiness for symbiosis"
-                }
-            ],
-            "compliance": [
-                {
-                    "question": "Are you certified to any environmental standards?",
-                    "type": "multiselect",
-                    "options": ["ISO 14001", "ISO 50001", "EMAS", "LEED", "BREEAM", "None"],
-                    "importance": "medium",
-                    "reasoning": "Assesses compliance maturity and potential requirements"
+                    "reasoning": "Assesses current sustainability maturity and potential symbiosis readiness"
                 }
             ]
         }
@@ -356,13 +344,13 @@ class AdaptiveAIOnboarding:
         questions = []
         
         # Always start with basic info
-        basic_templates = self.question_templates["basic_info"]
+        basic_templates = self.question_templates["ai_onboarding"]
         for i, template in enumerate(basic_templates):
             question = OnboardingQuestion(
-                id=f"basic_{i}",
+                id=f"ai_onboarding_{i}",
                 type=QuestionType.BASIC_INFO,
                 question=template["question"],
-                category="basic_info",
+                category="ai_onboarding",
                 importance=template["importance"],
                 expected_answer_type=template["type"],
                 options=template.get("options"),
@@ -526,29 +514,25 @@ class AdaptiveAIOnboarding:
     def _update_company_profile(self, session: OnboardingSession, question: OnboardingQuestion, answer: Any):
         """Update company profile based on user response"""
         try:
-            if question.category == "basic_info":
-                if "name" in question.question.lower():
-                    session.company_profile["name"] = answer
-                elif "industry" in question.question.lower():
+            if question.category == "ai_onboarding":
+                if "industry" in question.question.lower():
                     session.company_profile["industry"] = answer
-                elif "location" in question.question.lower():
-                    session.company_profile["location"] = answer
-                elif "employee" in question.question.lower():
-                    session.company_profile["employee_count"] = answer
-            
-            elif question.category == "production_info":
-                if "product" in question.question.lower():
+                elif "product" in question.question.lower():
                     session.company_profile["products"] = answer
-                elif "material" in question.question.lower():
-                    session.company_profile["main_materials"] = answer
-                elif "volume" in question.question.lower():
+                elif "volume" in question.question.lower() or "amount" in question.question.lower():
                     session.company_profile["production_volume"] = answer
+                elif "process" in question.question.lower():
+                    session.company_profile["processes"] = answer
             
-            elif question.category == "sustainability":
-                if "goal" in question.question.lower():
-                    session.company_profile["sustainability_goals"] = answer if isinstance(answer, list) else [answer]
+            elif question.category == "follow_up":
+                if "raw material" in question.question.lower():
+                    session.company_profile["main_materials"] = answer
                 elif "waste" in question.question.lower():
-                    session.company_profile["tracks_waste"] = answer
+                    session.company_profile["waste_streams"] = answer
+                elif "waste management" in question.question.lower():
+                    session.company_profile["waste_management_approach"] = answer
+                elif "sustainability goal" in question.question.lower():
+                    session.company_profile["sustainability_goals"] = answer if isinstance(answer, list) else [answer]
             
             elif question.category == "industry_specific":
                 # Store industry-specific data
@@ -669,38 +653,139 @@ class AdaptiveAIOnboarding:
         # Calculate average effectiveness per question
         return {qid: np.mean(scores) for qid, scores in effectiveness.items()}
 
-    async def _determine_next_actions(self, session: OnboardingSession, last_response: UserResponse) -> Dict[str, Any]:
-        """Determine next actions based on user response"""
+    def _evaluate_accuracy_confidence(self, session: OnboardingSession) -> Dict[str, Any]:
+        """Evaluate if we have enough information for 95% accuracy in portfolio generation"""
         try:
-            next_actions = {
-                "should_continue": True,
-                "next_questions": [],
-                "completion_ready": False,
-                "recommendations": []
+            profile = session.company_profile
+            confidence_score = 0.0
+            missing_fields = []
+            required_fields = {
+                "industry": 0.25,
+                "products": 0.25,
+                "production_volume": 0.25,
+                "processes": 0.25
             }
             
-            # Check if we have enough information
-            if session.completion_percentage >= 0.8:
-                next_actions["completion_ready"] = True
+            # Check each required field
+            for field, weight in required_fields.items():
+                if field in profile and profile[field] and str(profile[field]).strip():
+                    confidence_score += weight
+                else:
+                    missing_fields.append(field)
+            
+            # Additional confidence from follow-up questions
+            follow_up_bonus = 0.0
+            if "main_materials" in profile and profile["main_materials"]:
+                follow_up_bonus += 0.1
+            if "waste_streams" in profile and profile["waste_streams"]:
+                follow_up_bonus += 0.1
+            if "waste_management_approach" in profile and profile["waste_management_approach"]:
+                follow_up_bonus += 0.05
+            if "sustainability_goals" in profile and profile["sustainability_goals"]:
+                follow_up_bonus += 0.05
+            
+            confidence_score = min(confidence_score + follow_up_bonus, 1.0)
+            
+            # Determine if we have 95% confidence
+            has_95_percent_confidence = confidence_score >= 0.95
+            
+            # Generate specific follow-up questions for missing critical information
+            follow_up_questions = []
+            if not has_95_percent_confidence and missing_fields:
+                follow_up_templates = self.question_templates["follow_up"]
+                for field in missing_fields:
+                    # Map missing fields to follow-up questions
+                    if field == "industry":
+                        follow_up_questions.append("What industry are you in?")
+                    elif field == "products":
+                        follow_up_questions.append("What products or services do you produce?")
+                    elif field == "production_volume":
+                        follow_up_questions.append("What is your production volume and time frame?")
+                    elif field == "processes":
+                        follow_up_questions.append("What processes do you use in your operations?")
+            
+            return {
+                "confidence_score": confidence_score,
+                "has_95_percent_confidence": has_95_percent_confidence,
+                "missing_fields": missing_fields,
+                "follow_up_questions": follow_up_questions,
+                "recommendation": "complete" if has_95_percent_confidence else "continue_questions"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error evaluating accuracy confidence: {e}")
+            return {
+                "confidence_score": 0.0,
+                "has_95_percent_confidence": False,
+                "missing_fields": ["industry", "products", "production_volume", "processes"],
+                "follow_up_questions": [],
+                "recommendation": "continue_questions"
+            }
+
+    async def _determine_next_actions(self, session: OnboardingSession, last_response: UserResponse) -> Dict[str, Any]:
+        """Determine next actions based on user response and accuracy evaluation"""
+        try:
+            # Evaluate current accuracy confidence
+            accuracy_evaluation = self._evaluate_accuracy_confidence(session)
+            
+            next_actions = {
+                "should_continue": True,
+                "completion_ready": False,
+                "confidence_score": accuracy_evaluation["confidence_score"],
+                "has_95_percent_confidence": accuracy_evaluation["has_95_percent_confidence"],
+                "missing_fields": accuracy_evaluation["missing_fields"],
+                "follow_up_questions": accuracy_evaluation["follow_up_questions"]
+            }
+            
+            # If we have 95% confidence, we're ready to complete
+            if accuracy_evaluation["has_95_percent_confidence"]:
                 next_actions["should_continue"] = False
-                next_actions["recommendations"].append("You have provided excellent information! Ready to complete onboarding.")
+                next_actions["completion_ready"] = True
                 return next_actions
             
-            # Generate follow-up questions based on last response
-            follow_up_questions = await self._generate_follow_up_questions(session, last_response)
+            # If we don't have 95% confidence, determine what questions to ask next
+            last_question = next((q for q in session.questions_asked if q.id == last_response.question_id), None)
+            if not last_question:
+                return next_actions
             
-            if follow_up_questions:
-                next_actions["next_questions"] = follow_up_questions
-            else:
-                # No more questions needed
-                next_actions["completion_ready"] = True
-                next_actions["should_continue"] = False
+            # Generate follow-up questions based on missing information
+            if last_response.answer_quality in [AnswerQuality.EXCELLENT, AnswerQuality.GOOD]:
+                # User is engaged, ask follow-up questions for missing information
+                if accuracy_evaluation["missing_fields"]:
+                    follow_up_templates = self.question_templates["follow_up"]
+                    for i, template in enumerate(follow_up_templates):
+                        question = OnboardingQuestion(
+                            id=f"follow_up_{len(session.questions_asked) + i}",
+                            type=QuestionType.FOLLOW_UP,
+                            question=template["question"],
+                            category="follow_up",
+                            importance=template["importance"],
+                            expected_answer_type=template["type"],
+                            options=template.get("options"),
+                            reasoning=template["reasoning"],
+                            compliance_related=False,
+                            federated_learning_value=0.7
+                        )
+                        # Add to session questions
+                        session.questions_asked.append(question)
+            
+            elif last_response.answer_quality == AnswerQuality.POOR:
+                # User gave poor quality answer, ask for clarification
+                next_actions["should_continue"] = True
+                next_actions["completion_ready"] = False
+                next_actions["needs_clarification"] = True
             
             return next_actions
             
         except Exception as e:
             logger.error(f"Error determining next actions: {e}")
-            return {"should_continue": False, "error": str(e)}
+            return {
+                "should_continue": True,
+                "completion_ready": False,
+                "confidence_score": 0.0,
+                "has_95_percent_confidence": False,
+                "error": str(e)
+            }
 
     async def _generate_follow_up_questions(self, session: OnboardingSession, last_response: UserResponse) -> List[OnboardingQuestion]:
         """Generate follow-up questions based on user response"""
@@ -715,15 +800,15 @@ class AdaptiveAIOnboarding:
             # Generate questions based on answer quality and content
             if last_response.answer_quality in [AnswerQuality.EXCELLENT, AnswerQuality.GOOD]:
                 # User is engaged, ask deeper questions
-                if last_question.category == "basic_info":
-                    # Move to production info
-                    production_templates = self.question_templates["production_info"]
-                    for i, template in enumerate(production_templates):
+                if last_question.category == "ai_onboarding":
+                    # Move to follow_up questions
+                    follow_up_templates = self.question_templates["follow_up"]
+                    for i, template in enumerate(follow_up_templates):
                         question = OnboardingQuestion(
-                            id=f"production_{len(session.questions_asked) + i}",
+                            id=f"follow_up_{len(session.questions_asked) + i}",
                             type=QuestionType.FOLLOW_UP,
                             question=template["question"],
-                            category="production_info",
+                            category="follow_up",
                             importance=template["importance"],
                             expected_answer_type=template["type"],
                             options=template.get("options"),
@@ -733,23 +818,10 @@ class AdaptiveAIOnboarding:
                         )
                         follow_up_questions.append(question)
                 
-                elif last_question.category == "production_info":
-                    # Move to sustainability
-                    sustainability_templates = self.question_templates["sustainability"]
-                    for i, template in enumerate(sustainability_templates):
-                        question = OnboardingQuestion(
-                            id=f"sustainability_{len(session.questions_asked) + i}",
-                            type=QuestionType.SUSTAINABILITY,
-                            question=template["question"],
-                            category="sustainability",
-                            importance=template["importance"],
-                            expected_answer_type=template["type"],
-                            options=template.get("options"),
-                            reasoning=template["reasoning"],
-                            compliance_related=True,
-                            federated_learning_value=0.8
-                        )
-                        follow_up_questions.append(question)
+                elif last_question.category == "follow_up":
+                    # No more follow-up questions needed
+                    next_actions["completion_ready"] = True
+                    next_actions["should_continue"] = False
             
             elif last_response.answer_quality == AnswerQuality.POOR:
                 # User needs simpler questions or clarification

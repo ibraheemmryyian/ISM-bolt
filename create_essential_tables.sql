@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS companies (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255),
-  username VARCHAR(100),
+  username VARCHAR(100) NULL,
   role VARCHAR(20) DEFAULT 'user',
   user_type VARCHAR(20) DEFAULT 'business',
   industry VARCHAR(100),

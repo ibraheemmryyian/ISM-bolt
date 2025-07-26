@@ -2460,7 +2460,21 @@ app.post('/api/adaptive-onboarding/respond', async (req, res) => {
       }
 
       const responseResult = await response.json();
-      res.json(responseResult);
+      
+      // Return the response with accuracy evaluation
+      return sendResponse(res, {
+        success: true,
+        session_id: responseResult.session_id,
+        answer_quality: responseResult.answer_quality,
+        confidence: responseResult.confidence,
+        compliance_status: responseResult.compliance_status,
+        ai_insights: responseResult.ai_insights,
+        next_actions: responseResult.next_actions,
+        confidence_score: responseResult.confidence_score,
+        has_95_percent_confidence: responseResult.has_95_percent_confidence,
+        missing_fields: responseResult.missing_fields,
+        follow_up_questions: responseResult.follow_up_questions
+      });
     } catch (pythonError) {
       console.warn('Python adaptive onboarding server not available, using fallback:', pythonError.message);
       

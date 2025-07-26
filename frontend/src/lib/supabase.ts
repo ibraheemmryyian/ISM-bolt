@@ -95,25 +95,22 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
   }
 }
 
-// Get user profile by username
-export async function getUserByUsername(username: string) {
+// Get user by email
+export async function getUserByEmail(email: string) {
   try {
-    // Get user from companies table
-    const { data: companyData, error: companyError } = await supabase
+    const { data, error } = await supabase
       .from('companies')
       .select('*')
-      .eq('username', username)
+      .eq('email', email)
       .single();
     
-    if (companyError) {
-      console.error('Error getting user by username:', companyError);
-      return null;
+    if (error) {
+      throw error;
     }
     
-    return companyData;
+    return data;
   } catch (error) {
-    console.error('Error getting user by username:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -151,14 +148,8 @@ export async function signInWithUsername(username: string, password: string) {
 }
 
 // Sign up with real email and verification
-export async function signUpWithUsername(username: string, password: string, companyName: string, email: string) {
+export async function signUpWithEmail(password: string, companyName: string, email: string) {
   try {
-    // Check if username already exists
-    const existingUser = await getUserByUsername(username);
-    if (existingUser) {
-      throw new Error('Username already taken. Please choose a different one.');
-    }
-
     // Check if email already exists
     const { data: existingEmail } = await supabase
       .from('companies')
@@ -176,7 +167,6 @@ export async function signUpWithUsername(username: string, password: string, com
       password: password,
       options: {
         data: {
-          username: username,
           company_name: companyName,
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`

@@ -18,7 +18,6 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const [applicationSubmitted, setApplicationSubmitted] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [formData, setFormData] = useState({
-    username: '',
     password: '',
     companyName: '',
     email: '',
@@ -51,17 +50,6 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
     try {
       if (isSignUp) {
-        // Check if username already exists
-        const { data: existingUser } = await supabase
-          .from('companies')
-          .select('username')
-          .eq('username', formData.username)
-          .single();
-
-        if (existingUser) {
-          throw new Error('Username already taken. Please choose a different one.');
-        }
-
         // Check if email already exists
         const { data: existingEmail } = await supabase
           .from('companies')
@@ -79,7 +67,6 @@ export function AuthModal({ onClose }: AuthModalProps) {
           password: formData.password,
           options: {
             data: {
-              username: formData.username,
               company_name: formData.companyName,
             },
             emailRedirectTo: `${window.location.origin}/auth/callback`
@@ -101,7 +88,6 @@ export function AuthModal({ onClose }: AuthModalProps) {
               id: authData.user.id,
               name: formData.companyName,
               email: formData.email,
-              username: formData.username,
               role: 'pending', // Pending approval
               industry: formData.industry,
               process_description: `Waste Streams: ${formData.wasteStreams}\nSustainability Goals: ${formData.sustainabilityGoals}`,
@@ -115,7 +101,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
           const { error: applicationError } = await supabase.from('company_applications').insert([
             {
               company_name: formData.companyName,
-              contact_name: formData.username,
+              contact_name: formData.companyName, // Use company name as contact name
               contact_email: formData.email,
               application_answers: {
                 industry: formData.industry,
@@ -138,37 +124,15 @@ export function AuthModal({ onClose }: AuthModalProps) {
           });
         }
       } else {
-        // Sign in - try username first, then email
-        let userEmail = formData.email;
-        
-        if (!userEmail) {
-          // Try to find user by username
-          const { data: userProfile, error: profileError } = await supabase
-            .from('companies')
-            .select('email, username, role')
-            .eq('username', formData.username)
-            .single();
-
-          if (profileError || !userProfile) {
-            throw new Error('Invalid username or password');
-          }
-          userEmail = userProfile.email;
-
-          // Check if user is approved
-          if (userProfile.role === 'pending') {
-            throw new Error('Your account is pending approval. Please wait for admin approval or contact support.');
-          }
-        }
-
-        // Sign in with the email
+        // Sign in - use email only
         const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: userEmail,
+          email: formData.email,
           password: formData.password,
         });
 
         if (signInError) {
           if (signInError.message.includes('Invalid login credentials')) {
-            throw new Error('Invalid username/email or password. If you just created an account, please check your email for verification.');
+            throw new Error('Invalid email or password. If you just created an account, please check your email for verification.');
           }
           if (signInError.message.includes('Email not confirmed')) {
             throw new Error('Please verify your email address before signing in. Check your inbox for a verification link.');
@@ -228,7 +192,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
       // Show success message
       setTimeout(() => {
         setEmailSent(false);
-                      setFormData({ username: '', password: '', companyName: '', email: '', industry: '', wasteStreams: '', sustainabilityGoals: '' });
+        setFormData({ password: '', companyName: '', email: '', industry: '', wasteStreams: '', sustainabilityGoals: '' });
       }, 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to resend verification email.');
@@ -358,7 +322,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
               <button
                 onClick={() => {
                   setEmailSent(false);
-                  setFormData({ username: '', password: '', companyName: '', email: '', industry: '', wasteStreams: '', sustainabilityGoals: '' });
+                  setFormData({ password: '', companyName: '', email: '', industry: '', wasteStreams: '', sustainabilityGoals: '' });
                 }}
                 className="w-full text-sm text-gray-600 hover:text-gray-800"
               >
@@ -450,30 +414,11 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              {isSignUp ? 'Username' : 'Username or Email'}
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              placeholder={isSignUp ? "Choose a unique username" : "Enter your username or email"}
-            />
-            {isSignUp && (
-              <p className="text-xs text-gray-500 mt-1">
-                This will be your login identifier
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               Email Address
             </label>
             <input
               type="email"
-              required={isSignUp}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -542,9 +487,9 @@ export function AuthModal({ onClose }: AuthModalProps) {
               onClick={() => {
                 setIsSignUp(!isSignUp);
                 setError('');
-                setFormData({ username: '', password: '', companyName: '', email: '', industry: '', wasteStreams: '', sustainabilityGoals: '' });
+                setFormData({ password: '', companyName: '', email: '', industry: '', wasteStreams: '', sustainabilityGoals: '' });
               }}
-                            className="text-sm text-emerald-600 hover:text-emerald-700"
+              className="text-sm text-emerald-600 hover:text-emerald-700"
             >
               {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
             </button>
