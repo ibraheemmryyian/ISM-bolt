@@ -72,10 +72,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
 from scipy.stats import pearsonr, spearmanr
-import statsmodels.api as sm
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.stattools import adfuller, kpss
-from statsmodels.tsa.seasonal import seasonal_decompose
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -1013,11 +1009,19 @@ impact_forecasting_service = ImpactForecastingService()
 
 try:
     import statsmodels.api as sm
+    from statsmodels.tsa.arima.model import ARIMA
+    from statsmodels.tsa.stattools import adfuller, kpss
+    from statsmodels.tsa.seasonal import seasonal_decompose
     STATSMODELS_AVAILABLE = True
-except ImportError as e:
+except Exception as e:
     STATSMODELS_AVAILABLE = False
-    print(f"Warning: statsmodels not available due to scipy version conflict: {e}")
-    print("Impact forecasting will use alternative statistical methods.")
+    print(f"Warning: statsmodels not available due to {e}")
+    # Dummy placeholders
+    sm = None
+    ARIMA = None
+    adfuller = None
+    kpss = None
+    seasonal_decompose = None
 
 # Alternative statistical functions if statsmodels is not available
 if not STATSMODELS_AVAILABLE:

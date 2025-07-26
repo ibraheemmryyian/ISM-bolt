@@ -1021,6 +1021,30 @@ class Explain(Resource):
             logger.error(f'Explainability error: {e}')
             return {'error': str(e)}, 500 
 
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+
+if not REDIS_AVAILABLE:
+    from redis_mock import redis_get_client as _redis_get_client
+    redis = None
+else:
+    from redis_mock import redis_get_client as _redis_get_client
+
+# Function to get redis client
+
+def get_redis_client():
+    if REDIS_AVAILABLE:
+        try:
+            client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+            client.ping()
+            return client
+        except Exception:
+            pass
+    return _redis_get_client()
+
 if __name__ == "__main__":
     print("🚀 Starting AI Monitoring Dashboard on port 5011...")
     app.run(host='0.0.0.0', port=5011, debug=False) 
