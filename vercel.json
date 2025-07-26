@@ -1,0 +1,20 @@
+
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/((?!api|_next/static|_next/image|favicon.ico).*)",
+      "dest": "/index.html"
+    }
+  ],
+  "ignoreCommand": "echo 'Backend resources are excluded – Vercel builds frontend only'"
+}
