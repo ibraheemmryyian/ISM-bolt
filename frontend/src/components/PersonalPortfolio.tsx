@@ -24,8 +24,7 @@ import {
   Brain
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { activityService } from '../lib/activityService';
-import { LogisticsIntegration } from './LogisticsIntegration';
+
 
 interface CompanyProfile {
   id?: string;
@@ -616,10 +615,6 @@ const PersonalPortfolio: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Logistics Integration */}
-        <LogisticsIntegration />
-
 
       </div>
     </AuthenticatedLayout>
