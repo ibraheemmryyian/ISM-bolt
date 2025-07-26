@@ -285,7 +285,7 @@ class EnhancedMaterialsIntegrationDemo:
             "industry": "manufacturing",
             "products": "Steel products, construction materials",
             "process_description": "Integrated steel mill producing 2 million tons annually. Generates significant waste heat and CO2 emissions from blast furnaces and coke ovens.",
-            "location": "Pittsburgh, Pennsylvania",
+            "location": "Amman, Jordan",
             "employee_count": 1200,
             "main_materials": "iron_ore, coal, limestone, scrap_steel, waste_heat, co2_emissions",
             "production_volume": "2,000,000 tons/year"

@@ -183,14 +183,8 @@ function App() {
   // Remove showOnboarding and legacy onboarding modal
 
   useEffect(() => {
-    // Check if user has seen the landing page
-    const hasSeenLanding = localStorage.getItem('symbioflows-landing-seen');
-    
-    if (!hasSeenLanding) {
-      // Redirect to investor landing page for first-time visitors
-      window.location.href = '/investor.html';
-      return;
-    }
+    // Mark that user has seen the landing page
+    localStorage.setItem('symbioflows-landing-seen', 'true');
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);

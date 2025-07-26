@@ -25,6 +25,26 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Test Supabase connection
+export async function testSupabaseConnection() {
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Supabase connection test failed:', error);
+      return false;
+    }
+    
+    console.log('Supabase connection test successful');
+    return true;
+  } catch (error) {
+    console.error('Supabase connection test error:', error);
+    return false;
+  }
+}
+
 // Add error handling middleware
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_OUT') {

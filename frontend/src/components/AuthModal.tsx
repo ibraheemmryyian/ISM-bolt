@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { X, Mail, CheckCircle, AlertCircle, Users, Building, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { supabase, testSupabaseConnection } from '../lib/supabase';
+import { X, Mail, CheckCircle, AlertCircle, Users, Building, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../lib/notificationContext';
 
@@ -16,6 +16,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const [error, setError] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [applicationSubmitted, setApplicationSubmitted] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -25,6 +26,23 @@ export function AuthModal({ onClose }: AuthModalProps) {
     wasteStreams: '',
     sustainabilityGoals: '',
   });
+
+  // Test connection on component mount
+  useEffect(() => {
+    const testConnection = async () => {
+      setConnectionStatus('checking');
+      const isConnected = await testSupabaseConnection();
+      setConnectionStatus(isConnected ? 'connected' : 'disconnected');
+    };
+    
+    testConnection();
+  }, []);
+
+  const retryConnection = async () => {
+    setConnectionStatus('checking');
+    const isConnected = await testSupabaseConnection();
+    setConnectionStatus(isConnected ? 'connected' : 'disconnected');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,8 +186,24 @@ export function AuthModal({ onClose }: AuthModalProps) {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please try again.');
       console.error('Auth Error:', err);
+      
+      // Provide more specific error messages
+      if (err.message?.includes('fetch')) {
+        setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+      } else if (err.message?.includes('Invalid login credentials')) {
+        setError('Invalid username/email or password. Please check your credentials and try again.');
+      } else if (err.message?.includes('Email not confirmed')) {
+        setError('Please verify your email address before signing in. Check your inbox for a verification link.');
+      } else if (err.message?.includes('Username already taken')) {
+        setError('This username is already taken. Please choose a different username.');
+      } else if (err.message?.includes('Email already registered')) {
+        setError('This email is already registered. Please use a different email or sign in with your existing account.');
+      } else if (err.message?.includes('pending approval')) {
+        setError('Your account is pending approval. Please wait for admin approval or contact support.');
+      } else {
+        setError(err.message || 'Authentication failed. Please try again. If the problem persists, please contact support.');
+      }
     } finally {
       setLoading(false);
     }
@@ -357,9 +391,48 @@ export function AuthModal({ onClose }: AuthModalProps) {
           <p className="text-gray-600 mt-2">
             {isSignUp ? 'Create your account to start connecting with industrial partners' : 'Sign in to access your dashboard'}
           </p>
+          
+          {/* Connection Status Indicator */}
+          <div className="mt-4 flex items-center justify-center space-x-2">
+            {connectionStatus === 'checking' && (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                <span className="text-sm text-blue-600">Checking connection...</span>
+              </>
+            )}
+            {connectionStatus === 'connected' && (
+              <>
+                <Wifi className="h-4 w-4 text-green-500" />
+                <span className="text-sm text-green-600">Connected</span>
+              </>
+            )}
+            {connectionStatus === 'disconnected' && (
+              <>
+                <WifiOff className="h-4 w-4 text-red-500" />
+                <span className="text-sm text-red-600">Connection failed</span>
+                <button
+                  onClick={retryConnection}
+                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  Retry
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {connectionStatus === 'disconnected' && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start">
+                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                <div className="text-sm text-red-800">
+                  <p className="font-medium">Connection Error</p>
+                  <p className="mt-1">Unable to connect to the server. Please check your internet connection and try again.</p>
+                </div>
+              </div>
+            </div>
+          )}
           {isSignUp && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -446,7 +519,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || connectionStatus === 'disconnected'}
             className="w-full bg-emerald-500 text-white py-2 px-4 rounded-lg hover:bg-emerald-600 transition disabled:opacity-50"
           >
             {loading ? 'Processing...' : (isSignUp ? 'Create Account & Continue' : 'Sign In')}

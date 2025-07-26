@@ -1189,7 +1189,7 @@ if __name__ == "__main__":
             "carbon_footprint": 25000,  # tons CO2/year
             "waste_type": "steel_slag",
             "distance_to_seller": 120,  # km
-            "location": "Pittsburgh, PA"
+            "location": "Amman, Jordan"
         }
         
         seller = {

@@ -76,7 +76,7 @@ Content-Type: application/json
   "companyName": "Steel Corp",
   "industry": "Manufacturing",
   "products": "Steel products",
-  "location": "Pittsburgh",
+      "location": "Amman",
   "productionVolume": "1000 tons/year",
   "mainMaterials": "Iron ore, coal",
   "processDescription": "Steel manufacturing process"
@@ -129,7 +129,7 @@ Content-Type: application/json
       "annual_waste": 1000,
       "carbon_footprint": 500,
       "waste_type": "Slag",
-      "location": "Pittsburgh"
+      "location": "Amman"
     }
   ]
 }
