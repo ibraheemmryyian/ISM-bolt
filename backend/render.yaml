@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: symbioflows-backend
+    env: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: FRONTEND_URL
+        value: https://symbioflows.com
+      - key: SUPABASE_URL
+        value: https://jifkiwbxnttrkdrdcose.supabase.co
+      - key: SUPABASE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppZmtpd2J4bnR0cmtkcmRjb3NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzNjM5MTQsImV4cCI6MjA2NzkzOTkxNH0.4PE6Zu0RaMhz3QkocYCQsENS9Tv19avtfXSe_ChHcLA
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImppZmtpd2J4bnR0cmtkcmRjb3NlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjM2MzkxNCwiZXhwIjoyMDY3OTM5OTE0fQ.a3gnL-rgpLgfzRoxpHdb3jNsLLsbo_2e-U5OU6tcabU
+      - key: DEEPSEEK_API_KEY
+        value: sk-7ce79f30332d45d5b3acb8968b052132
+      - key: DEEPSEEK_R1_API_KEY
+        value: sk-7ce79f30332d45d5b3acb8968b052132
+      - key: FREIGHTOS_API_KEY
+        value: V2C6teoe9xSKKpTxL8j4xxuOFGHxQWhx
+      - key: FREIGHTOS_SECRET_KEY
+        value: k6hEyfd3b6ao8rKQ
+      - key: MP_API_KEY
+        value: zSFjfpRg6m020aK84yOjM7oLIhjDNPjE
+      - key: NEWS_API_KEY
+        value: 33d86c63e63c46c58c7dfd81068e79a4
+      - key: NEXT_GEN_MATERIALS_API_KEY
+        value: zSFjfpRg6m020aK84yOjM7oLIhjDNPjE
+      - key: JWT_SECRET
+        value: YWOBJFEkz70pSIvZ8F4FkZ0EjSAYcAHHwU9Bq63G5tGuBrXYWnXHRvF4/sT8AcIBZPkJisoW99TeCNOAz6v2lw==
+      - key: SESSION_SECRET
+        value: ism_ai_platform_session_secret_2025_secure_random_string_64_chars_moat_level
+      - key: BACKEND_URL
+        value: https://api.symbioflows.com
+    autoDeploy: true 
