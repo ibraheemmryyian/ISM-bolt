@@ -140,12 +140,12 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AIOnboardingProps)
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           const response = await fetch('/api/adaptive-onboarding/complete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
               companyProfile: {
                 industry: formData.industry,
                 products: formData.products,
@@ -153,13 +153,13 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AIOnboardingProps)
                 processes: formData.processes,
                 onboarding_completed: true
               }
-            })
-          });
+        })
+      });
 
           if (response.ok) {
-            const result = await response.json();
+      const result = await response.json();
             onComplete(result.analysis || { success: true });
-            return;
+        return;
           }
         }
       } catch (aiError) {
@@ -228,7 +228,7 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AIOnboardingProps)
               <div className="flex items-center text-sm text-gray-500">
                 <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                 Industry analysis complete
-              </div>
+      </div>
               <div className="flex items-center text-sm text-gray-500">
                 <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                 Material identification in progress
@@ -249,37 +249,37 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AIOnboardingProps)
       <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <Card className="w-full bg-white shadow-2xl">
           <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-blue-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
                 <div className="p-3 bg-emerald-100 rounded-xl">
                   <Brain className="h-8 w-8 text-emerald-600" />
-                </div>
-                <div>
+              </div>
+              <div>
                   <CardTitle className="text-2xl text-gray-900">AI Portfolio Setup</CardTitle>
                   <p className="text-gray-600 mt-1">
                     Tell us about your operations to generate accurate material listings
-                  </p>
-                </div>
+                </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClose}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </Button>
             </div>
-            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </Button>
+          </div>
+          
             {/* Progress and Accuracy Display */}
             <div className="mt-6 space-y-4">
               <div>
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+            <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                   <span>Form Completion</span>
                   <span>{Math.round(getCompletionPercentage())}%</span>
-                </div>
+            </div>
                 <Progress value={getCompletionPercentage()} className="h-3" />
-              </div>
+          </div>
 
               {accuracyConfidence > 0 && (
                 <div>
@@ -464,8 +464,8 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AIOnboardingProps)
                 )}
               </div>
             </form>
-          </CardContent>
-        </Card>
+        </CardContent>
+      </Card>
       </div>
     </div>
   );
