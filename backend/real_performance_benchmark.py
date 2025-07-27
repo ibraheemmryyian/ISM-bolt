@@ -118,60 +118,85 @@ class RealPerformanceBenchmark:
             start_time = time.time()
             ai_system = RevolutionaryAIMatching()
             init_time = time.time() - start_time
+            print(f"✅ System initialized in {init_time:.2f} seconds")
             
-            print(f"✅ System initialization: {init_time:.4f}s")
+            # Benchmark match generation
+            results = []
             
-            # Test matching performance
-            matching_times = []
-            match_counts = []
-            match_scores = []
+            for material in self.test_materials[:3]:  # Test first 3 materials
+                for company in self.test_companies:
+                    print(f"  Testing: {material} for {company['name']}")
+                    
+                    # Determine material type
+                    if 'Steel' in material or 'Aluminum' in material:
+                        material_type = 'metal'
+                    elif 'Plastic' in material:
+                        material_type = 'plastic'
+                    elif 'Chemical' in material:
+                        material_type = 'chemical'
+                    elif 'Electronic' in material:
+                        material_type = 'electronic'
+                    elif 'Paper' in material:
+                        material_type = 'paper'
+                    elif 'Glass' in material:
+                        material_type = 'glass'
+                    elif 'Rubber' in material:
+                        material_type = 'rubber'
+                    else:
+                        material_type = 'other'
+                    
+                    # Measure performance
+                    start_time = time.time()
+                    memory_before = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+                    
+                    # Use the updated API
+                    matches = await ai_system.generate_high_quality_matches(
+                        material, material_type, company['name']
+                    )
+                    
+                    elapsed_time = time.time() - start_time
+                    memory_after = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
+                    memory_used = memory_after - memory_before
+                    
+                    # Record results
+                    results.append({
+                        'material': material,
+                        'company': company['name'],
+                        'matches_count': len(matches),
+                        'time_seconds': elapsed_time,
+                        'memory_mb': memory_used,
+                        'matches_per_second': len(matches) / elapsed_time if elapsed_time > 0 else 0
+                    })
+                    
+                    print(f"    ✓ Generated {len(matches)} matches in {elapsed_time:.2f} seconds")
             
-            for i, material in enumerate(self.test_materials):
-                print(f"  Testing material {i+1}/{len(self.test_materials)}: {material}")
-                
-                start_time = time.time()
-                matches = await ai_system.generate_high_quality_matches(
-                    material, "metal", "Test Company"
-                )
-                end_time = time.time()
-                
-                matching_time = end_time - start_time
-                matching_times.append(matching_time)
-                match_counts.append(len(matches))
-                
-                if matches:
-                    avg_score = np.mean([m.get('match_score', 0) for m in matches])
-                    match_scores.append(avg_score)
-                
-                print(f"    Generated {len(matches)} matches in {matching_time:.4f}s")
+            # Calculate aggregate metrics
+            total_matches = sum(r['matches_count'] for r in results)
+            total_time = sum(r['time_seconds'] for r in results)
+            avg_time_per_match = total_time / total_matches if total_matches > 0 else 0
+            avg_memory = sum(r['memory_mb'] for r in results) / len(results) if results else 0
             
-            # Calculate real metrics
-            avg_matching_time = np.mean(matching_times)
-            avg_match_count = np.mean(match_counts)
-            avg_match_score = np.mean(match_scores) if match_scores else 0
-            throughput = len(self.test_materials) / sum(matching_times)
+            print("\n📊 REVOLUTIONARY AI MATCHING BENCHMARK RESULTS:")
+            print(f"  Total matches generated: {total_matches}")
+            print(f"  Total processing time: {total_time:.2f} seconds")
+            print(f"  Average time per match: {avg_time_per_match:.4f} seconds")
+            print(f"  Average memory usage: {avg_memory:.2f} MB")
+            print(f"  Matches per second: {total_matches / total_time:.2f}")
             
+            # Store benchmark results
             self.benchmark_results['revolutionary_ai_matching'] = {
-                'initialization_time': init_time,
-                'avg_matching_time': avg_matching_time,
-                'avg_match_count': avg_match_count,
-                'avg_match_score': avg_match_score,
-                'throughput': throughput,
-                'total_matches_generated': sum(match_counts),
-                'success': True
+                'total_matches': total_matches,
+                'total_time': total_time,
+                'avg_time_per_match': avg_time_per_match,
+                'avg_memory': avg_memory,
+                'matches_per_second': total_matches / total_time if total_time > 0 else 0,
+                'detailed_results': results
             }
-            
-            print(f"✅ Average matching time: {avg_matching_time:.4f}s")
-            print(f"✅ Average matches per material: {avg_match_count:.1f}")
-            print(f"✅ Average match score: {avg_match_score:.3f}")
-            print(f"✅ Throughput: {throughput:.2f} materials/second")
             
         except Exception as e:
-            self.logger.error(f"❌ Revolutionary AI Matching benchmark failed: {e}")
-            self.benchmark_results['revolutionary_ai_matching'] = {
-                'success': False,
-                'error': str(e)
-            }
+            print(f"❌ Error benchmarking Revolutionary AI Matching: {e}")
+            import traceback
+            traceback.print_exc()
     
     async def _benchmark_ai_listings_generation(self):
         """Benchmark AI Listings Generation performance"""

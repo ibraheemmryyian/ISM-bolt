@@ -261,27 +261,40 @@ class UltraAdvancedAIIntegration:
             return await self._process_with_existing_ai(material_data, company_data, market_data, task_type)
     
     async def _process_with_existing_ai(self, material_data, company_data, market_data, task_type):
-        """Process data using existing AI systems"""
+        """Process data with existing AI systems"""
         try:
             if task_type == "matching" and self.existing_systems.get('revolutionary_matching'):
-                return await self.existing_systems['revolutionary_matching'].generate_high_quality_matches(
-                    material_data, company_data, market_data
-                )
-            elif task_type == "pricing" and self.existing_systems.get('pricing_orchestrator'):
-                return await self.existing_systems['pricing_orchestrator'].calculate_optimal_pricing(
-                    material_data, company_data, market_data
-                )
-            elif task_type == "forecasting" and self.existing_systems.get('impact_forecasting'):
-                return self.existing_systems['impact_forecasting'](
-                    material_data, company_data, market_data
-                )
-            else:
-                # Default processing
-                return self._default_processing(material_data, company_data, market_data)
+                source_material = material_data.get('name', '')
+                source_type = material_data.get('type', '')
+                source_company = company_data.get('name', '')
                 
+                # Use the updated RevolutionaryAIMatching API
+                matches = await self.existing_systems['revolutionary_matching'].generate_high_quality_matches(
+                    source_material, source_type, source_company
+                )
+                
+                return {
+                    'matches': matches,
+                    'match_count': len(matches),
+                    'source_material': source_material,
+                    'source_company': source_company,
+                    'success': True
+                }
+            elif task_type == "pricing" and self.existing_systems.get('pricing_orchestrator'):
+                # Use existing pricing system
+                pricing = await self.existing_systems['pricing_orchestrator'].generate_pricing(
+                    material_data, company_data, market_data
+                )
+                return pricing
+            else:
+                # Default processing for other tasks
+                return self._default_processing(material_data, company_data, market_data)
         except Exception as e:
-            self.logger.error(f"❌ Error in existing AI processing: {e}")
-            return self._default_processing(material_data, company_data, market_data)
+            self.logger.error(f"Error in existing AI processing: {e}")
+            return {
+                'error': str(e),
+                'success': False
+            }
     
     def _convert_to_tensor(self, data):
         """Convert data to tensor format"""
