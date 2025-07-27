@@ -1,3 +1,4 @@
+import logging
 #!/usr/bin/env python3
 """
 Script to fix import paths in backend files
@@ -28,7 +29,12 @@ def fix_imports_in_file(file_path):
         content = re.sub(r'from \.requests', 'from requests', content)
         content = re.sub(r'from \.numpy', 'from numpy', content)
         content = re.sub(r'from \.torch', 'from torch', content)
-        content = re.sub(r'from \.transformers', 'from transformers', content)
+        content = re.sub(r'from \.transformers', 'try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False', content)
         content = re.sub(r'from \.sklearn', 'from sklearn', content)
         content = re.sub(r'from \.pandas', 'from pandas', content)
         content = re.sub(r'from \.aiohttp', 'from aiohttp', content)

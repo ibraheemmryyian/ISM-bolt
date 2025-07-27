@@ -12,7 +12,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from transformers import (
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import (
     AutoTokenizer, 
     AutoModelForCausalLM, 
     AutoModelForSeq2SeqLM,

@@ -10,7 +10,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import AutoTokenizer, AutoModel
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Any, Optional, Tuple, Union
 import json

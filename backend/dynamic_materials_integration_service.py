@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """
 Dynamic Materials Integration Service
@@ -29,7 +30,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer, AutoModel
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import AutoTokenizer, AutoModel
 # Try to import sklearn components with fallback
 try:
     from sklearn.preprocessing import StandardScaler, LabelEncoder

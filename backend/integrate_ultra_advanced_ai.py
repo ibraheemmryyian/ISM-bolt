@@ -30,7 +30,12 @@ from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 import xgboost as xgb
 import lightgbm as lgb
-from transformers import AutoTokenizer, AutoModel
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer
 import optuna
 import ray
@@ -43,7 +48,12 @@ from lime.lime_tabular import LimeTabularExplainer
 import shap
 from shap import TreeExplainer, DeepExplainer
 import networkx as nx
-from torch_geometric.nn import GCNConv, GATConv, HeteroConv
+try:
+    from torch_geometric
+    HAS_TORCH_GEOMETRIC = True
+except ImportError:
+    from .fallbacks.torch_geometric_fallback import *
+    HAS_TORCH_GEOMETRIC = False.nn import GCNConv, GATConv, HeteroConv
 from torch_geometric.data import HeteroData
 import warnings
 warnings.filterwarnings('ignore')

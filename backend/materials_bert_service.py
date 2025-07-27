@@ -12,7 +12,12 @@ import numpy as np
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import torch
-from transformers import BertTokenizer, BertModel, BertForMaskedLM
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import BertTokenizer, BertModel, BertForMaskedLM
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests

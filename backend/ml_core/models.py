@@ -16,7 +16,12 @@ class BaseNN:
 
 # GNN base (to be extended by torch-geometric models)
 try:
-    from torch_geometric.nn import GCNConv, GATConv
+    try:
+    from torch_geometric
+    HAS_TORCH_GEOMETRIC = True
+except ImportError:
+    from .fallbacks.torch_geometric_fallback import *
+    HAS_TORCH_GEOMETRIC = False.nn import GCNConv, GATConv
     class BaseGCN(nn.Module):
         def __init__(self, in_channels, out_channels):
             super().__init__()

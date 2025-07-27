@@ -1,5 +1,10 @@
 import torch
-from torch_geometric.data import Data
+try:
+    from torch_geometric
+    HAS_TORCH_GEOMETRIC = True
+except ImportError:
+    from .fallbacks.torch_geometric_fallback import *
+    HAS_TORCH_GEOMETRIC = False.data import Data
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, SAGEConv, GATConv, GINConv, RGCNConv
 import networkx as nx

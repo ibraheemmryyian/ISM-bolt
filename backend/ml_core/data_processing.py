@@ -6,7 +6,12 @@ from torch.utils.data import Dataset, DataLoader
 from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 import pandas as pd
-from torch_geometric.data import HeteroData
+try:
+    from torch_geometric
+    HAS_TORCH_GEOMETRIC = True
+except ImportError:
+    from .fallbacks.torch_geometric_fallback import *
+    HAS_TORCH_GEOMETRIC = False.data import HeteroData
 
 class DataProcessor:
     def __init__(self, transforms: Optional[List[Callable]] = None, validation_fn: Optional[Callable] = None):

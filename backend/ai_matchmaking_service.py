@@ -4,7 +4,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
-from torch_geometric.nn import GCNConv, GATConv
+try:
+    from torch_geometric
+    HAS_TORCH_GEOMETRIC = True
+except ImportError:
+    from .fallbacks.torch_geometric_fallback import *
+    HAS_TORCH_GEOMETRIC = False.nn import GCNConv, GATConv
 from flask import Flask, request, jsonify
 from flask_restx import Api, Resource, fields
 import shap
