@@ -2,6 +2,7 @@
 Advanced Analytics & Simulation Engine for Industrial Symbiosis
 Real-time analytics, predictive modeling, Monte Carlo simulations, and scenario planning
 """
+import os
 
 import numpy as np
 import pandas as pd

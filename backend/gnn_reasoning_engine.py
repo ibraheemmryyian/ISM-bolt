@@ -16,7 +16,12 @@ from enum import Enum
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.data import Data, HeteroData
+try:
+    from torch_geometric
+    HAS_TORCH_GEOMETRIC = True
+except ImportError:
+    from .fallbacks.torch_geometric_fallback import *
+    HAS_TORCH_GEOMETRIC = False.data import Data, HeteroData
 from torch_geometric.nn import GCNConv, GATConv, HeteroConv, SAGEConv
 from torch_geometric.utils import to_undirected
 import warnings

@@ -13,8 +13,18 @@ import logging
 from sklearn.preprocessing import MinMaxScaler
 import torch
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModel
-import spacy
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import AutoTokenizer, AutoModel
+try:
+    import spacy
+    HAS_SPACY = True
+except ImportError:
+    from .fallbacks.spacy_fallback import *
+    HAS_SPACY = False
 from collections import defaultdict
 import re
 

@@ -11,7 +11,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import AutoTokenizer, AutoModel, pipeline
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import AutoTokenizer, AutoModel, pipeline
 from sentence_transformers import SentenceTransformer
 import networkx as nx
 from typing import List, Dict, Any, Optional, Tuple, Union
@@ -41,7 +46,12 @@ import shap
 import lime
 from lime.lime_tabular import LimeTabularExplainer
 import networkx as nx
-from torch_geometric.nn import GCNConv, GATConv, HeteroConv
+try:
+    from torch_geometric
+    HAS_TORCH_GEOMETRIC = True
+except ImportError:
+    from .fallbacks.torch_geometric_fallback import *
+    HAS_TORCH_GEOMETRIC = False.nn import GCNConv, GATConv, HeteroConv
 from torch_geometric.data import HeteroData
 
 class RevolutionaryAIMatchingIntelligence:

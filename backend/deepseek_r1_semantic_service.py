@@ -5,7 +5,12 @@ Advanced semantic analysis using DeepSeek R1 for industrial symbiosis
 """
 
 import torch
-from transformers import BertTokenizer, BertModel
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import BertTokenizer, BertModel
 # ML Core imports - Fixed to use absolute imports
 try:
     from ml_core.monitoring import log_metrics, save_checkpoint

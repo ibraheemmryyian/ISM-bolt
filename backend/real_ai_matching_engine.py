@@ -14,9 +14,9 @@ import asyncio
 import time
 
 # Add imports for advanced engines
-from backend.proactive_opportunity_engine import proactive_opportunity_engine
-from backend.regulatory_compliance import regulatory_compliance_engine
-from backend.impact_forecasting import impact_forecasting_engine
+from .proactive_opportunity_engine import proactive_opportunity_engine
+from .regulatory_compliance import regulatory_compliance_engine
+from .impact_forecasting import impact_forecasting_engine
 
 @dataclass
 class CompanyProfile:

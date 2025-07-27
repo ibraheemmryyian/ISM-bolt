@@ -2,6 +2,7 @@
 Production-Grade AI Fusion Layer
 Combines outputs from all AI engines for optimal decision making
 """
+import os
 
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -19,7 +20,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from transformers import (
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import (
     AutoTokenizer, 
     AutoModel,
     AutoModelForSequenceClassification,

@@ -2,6 +2,7 @@
 Production-Grade AI System Orchestrator
 Main orchestrator that coordinates all AI components for production deployment
 """
+import os
 
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

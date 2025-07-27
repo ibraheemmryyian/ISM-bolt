@@ -1,5 +1,10 @@
 import torch
-from transformers import BertTokenizer, BertModel
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import BertTokenizer, BertModel
 from ml_core.monitoring import log_metrics, save_checkpoint
 import numpy as np
 import os

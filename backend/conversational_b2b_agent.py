@@ -13,7 +13,12 @@ from datetime import datetime
 import logging
 from enum import Enum
 # Removed: import openai
-from transformers import AutoTokenizer, AutoModel
+try:
+    from transformers
+    HAS_TRANSFORMERS = True
+except ImportError:
+    from .fallbacks.transformers_fallback import *
+    HAS_TRANSFORMERS = False import AutoTokenizer, AutoModel
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
