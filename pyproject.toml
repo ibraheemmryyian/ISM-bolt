@@ -1,0 +1,31 @@
+[project]
+name = "symbioflows"
+version = "0.1.0"
+description = "Advanced modular AI platform for circular economy materials matching and logistics."
+requires-python = ">=3.10"
+readme = "README.md"
+authors = [
+    { name = "SymbioFlows Team", email = "tech@symbioflows.example" }
+]
+license = { text = "Apache-2.0" }
+
+[project.urls]
+homepage = "https://example.com/symbioflows"
+repository = "https://github.com/example/symbioflows"
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "W", "C90", "N", "B", "A", "D", "UP"]
+ignore = ["E501"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
