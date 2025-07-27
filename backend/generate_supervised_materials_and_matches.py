@@ -384,79 +384,37 @@ class WorldClassMaterialDataGenerator:
         return True
     
     async def generate_material_matches(self, source_company_id: str, source_material: dict) -> List[dict]:
-        """Generate world-class material matches with comprehensive details and reasoning"""
-        self.logger.info(f"🔗 Generating world-class matches for material: {source_material.get('material_name', 'Unknown')} from {source_material.get('company_name', 'Unknown')}")
+        """Generate world-class material matches with comprehensive details"""
+        self.logger.info(f"🔄 Generating world-class matches for material: {source_material.get('name', 'Unknown')}")
         
         matches = []
-        source_material_name = source_material.get('material_name', '')
-        source_material_type = source_material.get('material_type', '')
-        source_company_name = source_material.get('company_name', '')
+        material_name = source_material.get('name', 'Unknown Material')
+        material_type = source_material.get('material_type', 'unknown')
+        company_name = source_material.get('company_name', 'Unknown Company')
         
-        # 1. Use world-class revolutionary AI matching
         try:
-            self.logger.info(f"  🚀 Running world-class revolutionary AI matching...")
-            ai_matches = await self.services['revolutionary_matching'].generate_high_quality_matches(
-                source_material_name, source_material_type, source_company_name
+            # Use the updated RevolutionaryAIMatching API
+            revolutionary_matches = await self.services['revolutionary_matching'].generate_high_quality_matches(
+                material_name, material_type, company_name
             )
-            if ai_matches:
-                enhanced_ai_matches = []
-                for match in ai_matches:
-                    enhanced_match = self._enhance_match_with_comprehensive_details(
-                        match, source_material, 'ai_revolutionary'
-                    )
-                    if enhanced_match:
-                        enhanced_ai_matches.append(enhanced_match)
-                matches.extend(enhanced_ai_matches)
-                self.logger.info(f"  ✅ Generated {len(enhanced_ai_matches)} high-quality matches")
+            
+            # Process and enhance matches
+            for match in revolutionary_matches:
+                enhanced_match = self._enhance_match_with_comprehensive_details(
+                    match, source_material, "revolutionary_ai"
+                )
+                
+                if self._validate_match(enhanced_match, source_company_id):
+                    matches.append(enhanced_match)
+            
+            self.logger.info(f"✅ Generated {len(matches)} world-class matches for {material_name}")
+            
         except Exception as e:
-            self.logger.warning(f"  ⚠️ Revolutionary AI matching failed: {e}")
+            self.logger.error(f"❌ Error generating matches for {material_name}: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
         
-        # 2. Use GNN reasoning for graph-based matches
-        try:
-            self.logger.info(f"  🧠 Running GNN reasoning...")
-            gnn_matches = await self.services['gnn_reasoning'].find_gnn_matches(
-                source_material_name, source_material_type
-            )
-            if gnn_matches:
-                enhanced_gnn_matches = []
-                for match in gnn_matches:
-                    enhanced_match = self._enhance_match_with_comprehensive_details(
-                        match, source_material, 'gnn_reasoning'
-                    )
-                    if enhanced_match:
-                        enhanced_gnn_matches.append(enhanced_match)
-                matches.extend(enhanced_gnn_matches)
-                self.logger.info(f"  ✅ Generated {len(enhanced_gnn_matches)} GNN-based matches")
-        except Exception as e:
-            self.logger.warning(f"  ⚠️ GNN reasoning failed: {e}")
-        
-        # 3. Use multi-hop symbiosis for complex connections
-        try:
-            self.logger.info(f"  🔄 Running multi-hop symbiosis...")
-            symbiosis_matches = await self.services['multi_hop'].find_symbiosis_matches(
-                source_material_name, source_material_type, source_company_name
-            )
-            if symbiosis_matches:
-                enhanced_symbiosis_matches = []
-                for match in symbiosis_matches:
-                    enhanced_match = self._enhance_match_with_comprehensive_details(
-                        match, source_material, 'multi_hop_symbiosis'
-                    )
-                    if enhanced_match:
-                        enhanced_symbiosis_matches.append(enhanced_match)
-                matches.extend(enhanced_symbiosis_matches)
-                self.logger.info(f"  ✅ Multi-hop symbiosis found {len(enhanced_symbiosis_matches)} matches")
-        except Exception as e:
-            self.logger.warning(f"  ⚠️ Multi-hop symbiosis failed: {e}")
-        
-        # 4. Filter and validate matches
-        valid_matches = []
-        for match in matches:
-            if self._validate_match(match, source_company_id):
-                valid_matches.append(match)
-        
-        self.logger.info(f"✅ Generated {len(valid_matches)} world-class matches for {source_material_name}")
-        return valid_matches
+        return matches
     
     def _enhance_match_with_comprehensive_details(self, match: dict, source_material: dict, match_type: str) -> dict:
         """Enhance match with comprehensive world-class details and reasoning"""

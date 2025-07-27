@@ -20,6 +20,7 @@ tokenizers>=0.11.0
 sentence-transformers==2.2.2
 scipy>=1.11.1
 datasets>=1.18.3
+networkx>=3.0.0
 
 # Explainability
 shap>=0.42.1
@@ -27,19 +28,14 @@ lime>=0.2.0.1
 
 # Async and networking
 aiohttp>=3.8.0
-asyncio>=3.4.3
 
 # Database and caching
 redis>=4.5.0
 psycopg2-binary>=2.9.0
 supabase>=1.0.0
-sqlite3
 
 # Security and encryption
 cryptography>=3.4.0
-hmac>=3.2
-hashlib>=3.2
-secrets>=1.0.0
 
 # Utilities
 python-dateutil>=2.8.0
@@ -50,12 +46,9 @@ typing-extensions>=4.7.0
 dataclasses>=0.6
 setuptools>=65.0.0
 wheel>=0.38.0
-pickle5>=0.0.12
-concurrent.futures>=3.1.1
 
 # Logging and Monitoring
 structlog>=23.1.0
-logging>=0.4.9.6
 prometheus-client>=0.17.1
 
 # Scheduling
