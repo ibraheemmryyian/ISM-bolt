@@ -1,0 +1,12 @@
+{
+  "demo_mode": true,
+  "fast_ai_responses": true,
+  "skip_email_verification": true,
+  "auto_generate_portfolio": true,
+  "demo_data_prefill": {
+    "industry": "Manufacturing",
+    "products": "Industrial components and machinery parts for automotive and construction industries",
+    "production_volume": "500 tonnes per month",
+    "processes": "CNC machining, metal forming, assembly, quality control, surface treatment, packaging"
+  }
+}
