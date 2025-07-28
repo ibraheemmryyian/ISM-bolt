@@ -49,6 +49,8 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AIOnboardingProps)
     processes: ''
   });
   
+  const [demoConfig, setDemoConfig] = useState<any>(null);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -99,10 +101,35 @@ export function AdaptiveAIOnboarding({ onClose, onComplete }: AIOnboardingProps)
     };
   };
 
+  // Load demo configuration on mount
+  useEffect(() => {
+    loadDemoConfig();
+  }, []);
+
   // Update confidence when form data changes
   useEffect(() => {
     evaluateAccuracyConfidence();
   }, [formData]);
+
+  const loadDemoConfig = async () => {
+    try {
+      const response = await fetch('/src/config/demo-config.json');
+      if (response.ok) {
+        const config = await response.json();
+        setDemoConfig(config);
+        
+        // Auto-prefill form for demo if enabled
+        if (config.demo_mode && config.demo_data_prefill) {
+          setFormData(prev => ({
+            ...prev,
+            ...config.demo_data_prefill
+          }));
+        }
+      }
+    } catch (error) {
+      console.log('Demo config not available');
+    }
+  };
 
   const handleInputChange = (field: keyof AIOnboardingFormData, value: string) => {
     setFormData(prev => ({

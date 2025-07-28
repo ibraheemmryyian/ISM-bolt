@@ -130,6 +130,113 @@ const PersonalPortfolio: React.FC = () => {
     // Removed polling interval to prevent page reloading
   }, []);
 
+  const loadDemoData = async (): Promise<PortfolioData | null> => {
+    try {
+      // Try to load demo marketplace data
+      const response = await fetch('/src/data/demo-marketplace.json');
+      if (response.ok) {
+        const demoMarketplace = await response.json();
+        
+        // Find user's company in demo data
+        const userCompany = demoMarketplace.companies[0]; // Use first company for demo
+        if (userCompany) {
+          const userMaterials = demoMarketplace.materials.filter(
+            (m: any) => m.company_name === userCompany.name
+          );
+          const userMatches = demoMarketplace.matches.filter(
+            (m: any) => m.waste_company === userCompany.name || m.requirement_company === userCompany.name
+          );
+
+          return {
+            company: {
+              id: userCompany.id,
+              name: userCompany.name,
+              industry: userCompany.industry,
+              location: userCompany.location,
+              employee_count: userCompany.employee_count,
+              size_category: 'Medium Enterprise',
+              industry_position: 'Market Leader',
+              sustainability_rating: 'A+',
+              growth_potential: 'High',
+              joined_date: new Date().toISOString().split('T')[0],
+              onboarding_completed: true
+            },
+            achievements: {
+              total_savings: 125000,
+              carbon_reduced: 45.2,
+              partnerships_formed: 8,
+              waste_diverted: 850,
+              matches_completed: 12,
+              sustainability_score: userCompany.sustainability_score || 87,
+              efficiency_improvement: 23.5
+            },
+            recommendations: [
+              {
+                id: '1',
+                category: 'Cost Optimization',
+                title: 'Optimize Metal Scrap Processing',
+                description: 'AI identified potential for 15% cost reduction in metal waste processing',
+                potential_impact: { savings: 15000, carbon_reduction: 5.2, efficiency_gain: 12 },
+                implementation_difficulty: 'medium',
+                time_to_implement: '2-3 months',
+                priority: 'high',
+                ai_reasoning: 'Based on current waste volumes and market prices'
+              }
+            ],
+            recent_activity: [
+              {
+                id: '1',
+                date: new Date().toISOString().split('T')[0],
+                action: 'New material match found',
+                impact: '$8,500 potential savings',
+                category: 'match'
+              }
+            ],
+            next_milestones: [
+              'Complete 5 more material exchanges',
+              'Achieve 95% waste diversion rate',
+              'Establish 3 new partnerships'
+            ],
+            industry_comparison: {
+              rank: 3,
+              total_companies: 50,
+              average_savings: 89000,
+              your_savings: 125000
+            },
+            materialListings: userMaterials.map((m: any) => ({
+              id: m.id || `material_${Date.now()}_${Math.random()}`,
+              material_name: m.material_name,
+              type: m.type,
+              quantity: m.quantity,
+              unit: m.unit,
+              description: m.description,
+              category: m.category,
+              match_score: 85,
+              role: m.type === 'waste' ? 'seller' : 'buyer',
+              sustainability_score: m.sustainability_score || 80,
+              price_per_unit: m.price_per_unit || m.max_price_per_unit || 100,
+              total_value: (m.quantity || 1) * (m.price_per_unit || m.max_price_per_unit || 100)
+            })),
+            matches: userMatches.map((m: any) => ({
+              id: m.id || `match_${Date.now()}_${Math.random()}`,
+              material_id: m.waste_material_id,
+              partner_company: m.waste_company === userCompany.name ? m.requirement_company : m.waste_company,
+              partner_material: m.material_name,
+              match_score: m.match_score,
+              potential_savings: m.potential_savings,
+              carbon_reduction: m.carbon_reduction,
+              status: m.status,
+              created_at: m.created_at
+            }))
+          };
+        }
+      }
+    } catch (error) {
+      console.log('Demo data not available, using static data');
+    }
+    return null;
+  };
+
   const loadPortfolioData = async () => {
     try {
       setLoading(true);
@@ -142,6 +249,14 @@ const PersonalPortfolio: React.FC = () => {
         throw new Error('Authentication required');
       }
       setUser(user);
+
+      // Try to load demo data first
+      const demoData = await loadDemoData();
+      if (demoData) {
+        setPortfolioData(demoData);
+        setLoading(false);
+        return;
+      }
 
       // Create static portfolio structure - NO DATA FETCHING
       const staticPortfolio: PortfolioData = {

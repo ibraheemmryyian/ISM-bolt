@@ -87,6 +87,50 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
     filterCompanies();
   }, [companies, searchQuery]);
 
+  async function loadDemoMarketplaceData() {
+    try {
+      const response = await fetch('/src/data/demo-marketplace.json');
+      if (response.ok) {
+        const demoData = await response.json();
+        
+        const enhancedMaterials = demoData.materials.map((material: any, index: number) => ({
+          id: material.id || `demo_material_${index}`,
+          material_name: material.material_name,
+          quantity: material.quantity,
+          unit: material.unit,
+          description: material.description,
+          type: material.type,
+          created_at: material.created_at || new Date().toISOString(),
+          company_id: material.company_id,
+          company: {
+            name: material.company_name,
+            location: material.location || 'Gulf Region'
+          },
+          distance: `${Math.floor(Math.random() * 50) + 5}km`,
+          match_score: Math.floor(Math.random() * 25) + 75
+        }));
+
+        const enhancedCompanies = demoData.companies.map((company: any, index: number) => ({
+          id: company.id || `demo_company_${index}`,
+          name: company.name,
+          role: 'Partner Company',
+          location: company.location,
+          organization_type: company.industry,
+          materials_of_interest: `${company.industry} materials`,
+          sustainability_score: company.sustainability_score || Math.floor(Math.random() * 30) + 70
+        }));
+
+        return {
+          materials: enhancedMaterials,
+          companies: enhancedCompanies
+        };
+      }
+    } catch (error) {
+      console.log('Demo marketplace data not available');
+    }
+    return null;
+  }
+
   async function loadUserAndData() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -129,6 +173,14 @@ export function Marketplace({ onSignOut }: MarketplaceProps) {
 
   async function loadMarketplaceData() {
     try {
+      // Try to load demo data first
+      const demoData = await loadDemoMarketplaceData();
+      if (demoData) {
+        setMaterials(demoData.materials);
+        setCompanies(demoData.companies);
+        return;
+      }
+
       // Show ALL materials in the marketplace
       const { data: materialsData, error: materialsError } = await supabase
         .from('materials')
