@@ -50,6 +50,7 @@ COMPANY_SCHEMA = {
         "process_description": {"type": ["string", "null"]},
         "sustainability_goals": {"type": ["array", "string", "null"]},
         "current_waste_management": {"type": ["string", "null"]},
+        "waste_streams": {"type": ["array", "string", "null"]},
         "onboarding_completed": {"type": ["boolean", "null"]},
         "created_at": {"type": ["string", "null"]},
         "updated_at": {"type": ["string", "null"]}
@@ -68,6 +69,41 @@ class RealDataBulkImporter:
         self.file_path = file_path
         self.mode = mode
         self.validator = AdvancedDataValidator(schema=COMPANY_SCHEMA, logger=logger)
+
+    def _normalize_company_record(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalize incoming company record to align with internal schema.
+        - Map common aliases (e.g., number_of_employees → employee_count).
+        - Ensure waste_streams is always a list (if provided as comma-separated string).
+        - Strip whitespace and enforce basic typing without silently filling required data.
+        """
+        try:
+            normalized = dict(record)
+
+            # 1. Alias mapping for employee count
+            if "employee_count" not in normalized:
+                for alias in ["num_employees", "number_of_employees", "employees"]:
+                    if alias in normalized:
+                        normalized["employee_count"] = int(normalized.get(alias)) if str(normalized.get(alias)).isdigit() else 0
+                        break
+
+            # 2. Waste streams – ensure list[str]
+            if "waste_streams" in normalized and normalized["waste_streams"] is not None:
+                ws = normalized["waste_streams"]
+                if isinstance(ws, str):
+                    normalized["waste_streams"] = [w.strip() for w in ws.split(',') if w.strip()]
+                elif isinstance(ws, list):
+                    normalized["waste_streams"] = [str(w).strip() for w in ws if str(w).strip()]
+            else:
+                normalized["waste_streams"] = []
+
+            # 3. Sustainability score default
+            if "sustainability_score" not in normalized:
+                normalized["sustainability_score"] = 50  # Neutral baseline
+
+            return normalized
+        except Exception as e:
+            logger.error(f"Error normalizing company record {record.get('name', 'UNKNOWN')}: {e}")
+            return record  # Return original if normalization fails
 
     async def load_company_data(self):
         """Load company data from file with validation and deduplication"""
@@ -104,7 +140,8 @@ class RealDataBulkImporter:
             for c in companies:
                 key = (c.get('name', '').strip().lower(), c.get('location', '').strip().lower())
                 if key not in seen:
-                    deduped.append(c)
+                    normalized_c = self._normalize_company_record(c)
+                    deduped.append(normalized_c)
                     seen.add(key)
             logger.info(f"Loaded {len(deduped)} unique companies from data file: {data_file}")
             # Validate
@@ -170,19 +207,21 @@ class RealDataBulkImporter:
                 
                 # Generate AI listings via backend API
                 listing_request = {
-                    "company_id": company_id,
-                    "industry": company_data["industry"],
-                    "location": company_data["location"],
-                    "employee_count": company_data["employee_count"],
-                    "sustainability_score": company_data["sustainability_score"]
-                }
-                
-                async with aiohttp.ClientSession() as session:
-                    # Generate AI listings for the company
-                    async with session.post(
-                        f"{self.backend_url}/api/ai/generate-listings/{company_id}",
-                        timeout=30
-                    ) as response:
+                     "company_id": company_id,
+                     "industry": company_data.get("industry"),
+                     "location": company_data.get("location"),
+                     "employee_count": company_data.get("employee_count", 0),
+                     "sustainability_score": company_data.get("sustainability_score", 50),
+                     "waste_streams": company_data.get("waste_streams", [])
+                 }
+ 
+                 async with aiohttp.ClientSession() as session:
+                     # Generate AI listings for the company
+                     async with session.post(
+                         f"{self.backend_url}/api/ai/generate-listings/{company_id}",
+                         json=listing_request,
+                         timeout=30
+                     ) as response:
                         if response.status == 200:
                             result = await response.json()
                             if result.get('success') and result.get('data'):
