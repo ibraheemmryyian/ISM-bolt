@@ -2,8 +2,14 @@ import mlflow
 from typing import Any, Dict, Optional, List
 import logging
 from prometheus_client import Counter, Histogram
-from opentracing_instrumentation.request_context import get_current_span
-from opentracing import Tracer, global_tracer
+# from opentracing_instrumentation.request_context import get_current_span
+# from opentracing import Tracer, global_tracer
+
+# Temporary stubs for missing opentracing dependencies
+def get_current_span():
+    return None
+    
+global_tracer = lambda: None
 
 # Only create the Counter once at the module level
 global model_save_counter
