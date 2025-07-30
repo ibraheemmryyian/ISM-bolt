@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Material Listings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f9fc;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], 
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+        .success {
+            color: #10b981;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ecfdf5;
+            border-radius: 4px;
+            display: none;
+        }
+        .error {
+            color: #ef4444;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fef2f2;
+            border-radius: 4px;
+            display: none;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+        .material-list {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .material-item {
+            background-color: #f8fafc;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #2563eb;
+        }
+        .material-item h3 {
+            margin-top: 0;
+            color: #2563eb;
+        }
+        .waste {
+            border-left-color: #10b981;
+        }
+        .requirement {
+            border-left-color: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Add Material Listings to Your Account</h1>
+        
+        <div class="form-group">
+            <label for="userId">Your User ID:</label>
+            <input type="text" id="userId" placeholder="Enter your user ID">
+        </div>
+        
+        <div class="form-group">
+            <label for="supabaseUrl">Supabase URL:</label>
+            <input type="text" id="supabaseUrl" placeholder="https://your-project.supabase.co">
+        </div>
+        
+        <div class="form-group">
+            <label for="supabaseKey">Supabase Anon Key:</label>
+            <input type="password" id="supabaseKey" placeholder="your-anon-key">
+        </div>
+        
+        <button id="addMaterialsBtn">Add Material Listings</button>
+        
+        <div id="loading" class="loading">
+            Adding material listings... Please wait.
+        </div>
+        
+        <div id="success" class="success">
+            Material listings added successfully! Please refresh your dashboard to see them.
+        </div>
+        
+        <div id="error" class="error">
+            Error adding material listings. Please check your credentials and try again.
+        </div>
+        
+        <div class="material-list">
+            <h2>Materials That Will Be Added:</h2>
+            
+            <div class="material-item waste">
+                <h3>Chemical Waste</h3>
+                <p><strong>Type:</strong> Waste</p>
+                <p><strong>Description:</strong> High-quality chemical waste from your production processes. Can be recycled or repurposed for various applications.</p>
+                <p><strong>Quantity:</strong> 500 tons (monthly)</p>
+            </div>
+            
+            <div class="material-item waste">
+                <h3>Organic Waste</h3>
+                <p><strong>Type:</strong> Waste</p>
+                <p><strong>Description:</strong> Organic waste byproducts from your manufacturing. Suitable for composting or biogas production.</p>
+                <p><strong>Quantity:</strong> 300 tons (monthly)</p>
+            </div>
+            
+            <div class="material-item waste">
+                <h3>Aqueous Waste</h3>
+                <p><strong>Type:</strong> Waste</p>
+                <p><strong>Description:</strong> Aqueous waste streams from your processes. Contains recoverable minerals and compounds.</p>
+                <p><strong>Quantity:</strong> 1000 liters (weekly)</p>
+            </div>
+            
+            <div class="material-item requirement">
+                <h3>Raw Chemicals</h3>
+                <p><strong>Type:</strong> Requirement</p>
+                <p><strong>Description:</strong> Seeking high-quality raw chemicals for your production processes.</p>
+                <p><strong>Quantity:</strong> 1000 kg (monthly)</p>
+            </div>
+            
+            <div class="material-item requirement">
+                <h3>Catalysts</h3>
+                <p><strong>Type:</strong> Requirement</p>
+                <p><strong>Description:</strong> Looking for industrial catalysts for your chemical processes.</p>
+                <p><strong>Quantity:</strong> 200 kg (quarterly)</p>
+            </div>
+            
+            <div class="material-item requirement">
+                <h3>Solvents</h3>
+                <p><strong>Type:</strong> Requirement</p>
+                <p><strong>Description:</strong> Require industrial solvents for your manufacturing.</p>
+                <p><strong>Quantity:</strong> 2000 liters (monthly)</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('addMaterialsBtn').addEventListener('click', async function() {
+            const userId = document.getElementById('userId').value.trim();
+            const supabaseUrl = document.getElementById('supabaseUrl').value.trim();
+            const supabaseKey = document.getElementById('supabaseKey').value.trim();
+            
+            if (!userId || !supabaseUrl || !supabaseKey) {
+                document.getElementById('error').textContent = 'Please fill in all fields';
+                document.getElementById('error').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('success').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            
+            // Create material listings
+            const materialListings = [
+                {
+                    name: 'Chemical Waste',
+                    type: 'waste',
+                    description: "High-quality chemical waste from your production processes. Can be recycled or repurposed for various applications.",
+                    quantity: 500,
+                    unit: 'tons',
+                    frequency: 'monthly',
+                    specifications: 'pH 6-8, low heavy metal content',
+                    sustainability_impact: 'Reduces landfill waste by 30%',
+                    market_value: '$200-300 per ton',
+                    logistics_notes: 'Available for pickup at our facility',
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                {
+                    name: 'Organic Waste',
+                    type: 'waste',
+                    description: "Organic waste byproducts from your manufacturing. Suitable for composting or biogas production.",
+                    quantity: 300,
+                    unit: 'tons',
+                    frequency: 'monthly',
+                    specifications: 'High carbon content, biodegradable',
+                    sustainability_impact: 'Can be converted to renewable energy',
+                    market_value: '$150-200 per ton',
+                    logistics_notes: 'Available in bulk quantities',
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                {
+                    name: 'Aqueous Waste',
+                    type: 'waste',
+                    description: "Aqueous waste streams from your processes. Contains recoverable minerals and compounds.",
+                    quantity: 1000,
+                    unit: 'liters',
+                    frequency: 'weekly',
+                    specifications: 'Low toxicity, treatable',
+                    sustainability_impact: 'Reduces water pollution',
+                    market_value: '$0.50-1.00 per liter',
+                    logistics_notes: 'Available in IBC containers',
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                {
+                    name: 'Raw Chemicals',
+                    type: 'requirement',
+                    description: "Seeking high-quality raw chemicals for your production processes.",
+                    quantity: 1000,
+                    unit: 'kg',
+                    frequency: 'monthly',
+                    specifications: 'USP grade, 99% purity',
+                    sustainability_impact: 'Prefer suppliers with sustainable practices',
+                    market_value: '$5-10 per kg',
+                    logistics_notes: 'Need delivery to our facility',
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                {
+                    name: 'Catalysts',
+                    type: 'requirement',
+                    description: "Looking for industrial catalysts for your chemical processes.",
+                    quantity: 200,
+                    unit: 'kg',
+                    frequency: 'quarterly',
+                    specifications: 'High activity, low metal content',
+                    sustainability_impact: 'Reduces energy consumption in processes',
+                    market_value: '$20-30 per kg',
+                    logistics_notes: 'Need specialized handling',
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                },
+                {
+                    name: 'Solvents',
+                    type: 'requirement',
+                    description: "Require industrial solvents for your manufacturing.",
+                    quantity: 2000,
+                    unit: 'liters',
+                    frequency: 'monthly',
+                    specifications: 'High purity, low water content',
+                    sustainability_impact: 'Prefer recycled or bio-based options',
+                    market_value: '$2-5 per liter',
+                    logistics_notes: 'Bulk delivery preferred',
+                    user_id: userId,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }
+            ];
+            
+            try {
+                // Insert material listings
+                const response = await fetch(`${supabaseUrl}/rest/v1/materials`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(materialListings)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to insert material listings: ${response.status}`);
+                }
+                
+                // Update company profile
+                const updateResponse = await fetch(`${supabaseUrl}/rest/v1/companies?id=eq.${userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        onboarding_completed: true,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+                
+                if (!updateResponse.ok) {
+                    console.warn(`Failed to update company profile: ${updateResponse.status}`);
+                }
+                
+                document.getElementById('success').style.display = 'block';
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
