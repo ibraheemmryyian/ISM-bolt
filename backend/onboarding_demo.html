@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SymbioFlows Onboarding Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .question-container {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f5f9ff;
+        }
+        
+        .options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .option-btn {
+            padding: 10px 15px;
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .option-btn:hover {
+            background-color: #d0d0d0;
+        }
+        
+        .option-btn.selected {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .material-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .material-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        .material-meta {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        
+        .material-meta div {
+            margin-right: 15px;
+        }
+        
+        .material-meta strong {
+            color: #7f8c8d;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #2ecc71;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .certification-tag {
+            display: inline-block;
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .rating {
+            color: #f39c12;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            padding: 10px;
+            background-color: #fadbd8;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .success-message {
+            color: #27ae60;
+            padding: 10px;
+            background-color: #d5f5e3;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SymbioFlows Onboarding Demo</h1>
+        <p>Complete this short onboarding process to discover materials that match your needs.</p>
+        
+        <div id="error-container" class="error-message hidden"></div>
+        <div id="success-container" class="success-message hidden"></div>
+        
+        <div class="progress-container">
+            <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+        </div>
+        
+        <div id="onboarding-container">
+            <div id="start-container">
+                <h2>Welcome to SymbioFlows</h2>
+                <p>Let's get started with a few questions to understand your material needs.</p>
+                <button id="start-btn" class="btn">Start Onboarding</button>
+            </div>
+            
+            <div id="questions-container" class="hidden">
+                <div id="current-question" class="question-container"></div>
+                <button id="next-btn" class="btn" disabled>Next</button>
+            </div>
+            
+            <div id="completion-container" class="hidden">
+                <h2>Complete Your Onboarding</h2>
+                <p>You've answered all our questions. Click below to generate your personalized material recommendations.</p>
+                <button id="complete-btn" class="btn">Complete Onboarding</button>
+            </div>
+        </div>
+        
+        <div id="results-container" class="hidden">
+            <h2>Your Material Recommendations</h2>
+            <p>Based on your responses, we've identified the following materials that match your needs:</p>
+            <div id="materials-list"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Sample data (no server needed)
+        const SAMPLE_QUESTIONS = [
+            {
+                "id": "q1",
+                "question": "What type of materials are you primarily interested in?",
+                "type": "multiple_choice",
+                "category": "material_type",
+                "importance": "high",
+                "options": ["Metals", "Plastics", "Textiles", "Electronics", "Chemicals", "Other"],
+                "reasoning": "Understanding material type helps with initial categorization",
+                "compliance_related": false
+            },
+            {
+                "id": "q2",
+                "question": "What is your primary industry or sector?",
+                "type": "multiple_choice",
+                "category": "industry",
+                "importance": "high",
+                "options": ["Manufacturing", "Construction", "Automotive", "Aerospace", "Consumer Goods", "Healthcare", "Other"],
+                "reasoning": "Industry context helps tailor material recommendations",
+                "compliance_related": false
+            },
+            {
+                "id": "q3", 
+                "question": "What volume of materials do you typically handle monthly?",
+                "type": "multiple_choice",
+                "category": "volume",
+                "importance": "medium",
+                "options": ["Less than 100kg", "100kg-1000kg", "1-10 tons", "10-100 tons", "More than 100 tons"],
+                "reasoning": "Volume information helps with logistics planning",
+                "compliance_related": false
+            },
+            {
+                "id": "q4",
+                "question": "What sustainability certifications are important to you?",
+                "type": "multiple_select",
+                "category": "compliance",
+                "importance": "medium",
+                "options": ["ISO 14001", "Cradle to Cradle", "FSC", "GreenGuard", "Energy Star", "None"],
+                "reasoning": "Compliance requirements affect material selection",
+                "compliance_related": true
+            }
+        ];
+
+        const SAMPLE_MATERIALS = {
+            "Metals": [
+                {
+                    "id": "m2",
+                    "name": "Reclaimed Steel Sheets",
+                    "type": "Metals",
+                    "description": "Industrial-grade reclaimed steel sheets, perfect for construction and manufacturing.",
+                    "quantity_available": "20 tons",
+                    "price_range": "$450-$550 per ton",
+                    "sustainability_rating": 4.2,
+                    "certifications": ["ISO 14001"],
+                    "location": "Pittsburgh, PA"
+                },
+                {
+                    "id": "m6",
+                    "name": "Recycled Aluminum Ingots",
+                    "type": "Metals",
+                    "description": "High-purity recycled aluminum ingots suitable for various manufacturing applications.",
+                    "quantity_available": "15 tons",
+                    "price_range": "$1800-$2200 per ton",
+                    "sustainability_rating": 4.5,
+                    "certifications": ["ISO 14001", "ASI Certified"],
+                    "location": "Detroit, MI"
+                },
+                {
+                    "id": "m7",
+                    "name": "Copper Wire Scrap",
+                    "type": "Metals",
+                    "description": "Clean copper wire scrap, perfect for recycling and reuse in electrical applications.",
+                    "quantity_available": "2 tons",
+                    "price_range": "$5000-$6000 per ton",
+                    "sustainability_rating": 4.7,
+                    "certifications": ["ISRI Certified"],
+                    "location": "Phoenix, AZ"
+                }
+            ],
+            "Plastics": [
+                {
+                    "id": "m1",
+                    "name": "Recycled PET Plastic Granules",
+                    "type": "Plastics",
+                    "description": "High-quality recycled PET plastic granules suitable for manufacturing.",
+                    "quantity_available": "5000 kg",
+                    "price_range": "$0.80-$1.20 per kg",
+                    "sustainability_rating": 4.5,
+                    "certifications": ["ISO 14001", "GreenGuard"],
+                    "location": "Chicago, IL"
+                },
+                {
+                    "id": "m8",
+                    "name": "HDPE Recycled Pellets",
+                    "type": "Plastics",
+                    "description": "Post-consumer HDPE pellets, ideal for injection molding and extrusion applications.",
+                    "quantity_available": "8000 kg",
+                    "price_range": "$1.10-$1.50 per kg",
+                    "sustainability_rating": 4.3,
+                    "certifications": ["EuCertPlast", "ISO 14001"],
+                    "location": "Atlanta, GA"
+                },
+                {
+                    "id": "m9",
+                    "name": "Recycled PP Flakes",
+                    "type": "Plastics",
+                    "description": "Clean, sorted polypropylene flakes from post-industrial sources.",
+                    "quantity_available": "3500 kg",
+                    "price_range": "$0.90-$1.30 per kg",
+                    "sustainability_rating": 4.1,
+                    "certifications": ["FDA Approved"],
+                    "location": "Houston, TX"
+                }
+            ],
+            "Textiles": [
+                {
+                    "id": "m3",
+                    "name": "Organic Cotton Fabric",
+                    "type": "Textiles",
+                    "description": "Premium organic cotton fabric, ethically sourced and environmentally friendly.",
+                    "quantity_available": "10000 yards",
+                    "price_range": "$3.50-$4.50 per yard",
+                    "sustainability_rating": 5.0,
+                    "certifications": ["GOTS", "Fair Trade"],
+                    "location": "Portland, OR"
+                },
+                {
+                    "id": "m10",
+                    "name": "Recycled Polyester Fabric",
+                    "type": "Textiles",
+                    "description": "High-quality fabric made from post-consumer plastic bottles.",
+                    "quantity_available": "8000 yards",
+                    "price_range": "$2.80-$3.50 per yard",
+                    "sustainability_rating": 4.6,
+                    "certifications": ["GRS", "OEKO-TEX"],
+                    "location": "Los Angeles, CA"
+                },
+                {
+                    "id": "m11",
+                    "name": "Hemp Textile Rolls",
+                    "type": "Textiles",
+                    "description": "Durable, sustainable hemp textiles for various applications.",
+                    "quantity_available": "5000 yards",
+                    "price_range": "$4.20-$5.50 per yard",
+                    "sustainability_rating": 4.9,
+                    "certifications": ["GOTS", "USDA Organic"],
+                    "location": "Eugene, OR"
+                }
+            ],
+            "Electronics": [
+                {
+                    "id": "m4",
+                    "name": "Reclaimed Circuit Boards",
+                    "type": "Electronics",
+                    "description": "Cleaned and sorted circuit boards from decommissioned servers, suitable for precious metal recovery.",
+                    "quantity_available": "500 kg",
+                    "price_range": "$15-$20 per kg",
+                    "sustainability_rating": 4.8,
+                    "certifications": ["R2"],
+                    "location": "Austin, TX"
+                },
+                {
+                    "id": "m12",
+                    "name": "Refurbished LCD Panels",
+                    "type": "Electronics",
+                    "description": "Tested and certified LCD panels from corporate equipment upgrades.",
+                    "quantity_available": "200 units",
+                    "price_range": "$40-$80 per unit",
+                    "sustainability_rating": 4.4,
+                    "certifications": ["e-Stewards"],
+                    "location": "Raleigh, NC"
+                },
+                {
+                    "id": "m13",
+                    "name": "Recovered Rare Earth Magnets",
+                    "type": "Electronics",
+                    "description": "Neodymium magnets recovered from hard drives and other electronic devices.",
+                    "quantity_available": "100 kg",
+                    "price_range": "$50-$70 per kg",
+                    "sustainability_rating": 4.7,
+                    "certifications": ["R2", "ISO 14001"],
+                    "location": "Boulder, CO"
+                }
+            ],
+            "Chemicals": [
+                {
+                    "id": "m5",
+                    "name": "Bio-based Solvents",
+                    "type": "Chemicals",
+                    "description": "Environmentally friendly bio-based solvents derived from agricultural waste.",
+                    "quantity_available": "2000 liters",
+                    "price_range": "$8-$12 per liter",
+                    "sustainability_rating": 4.7,
+                    "certifications": ["USDA BioPreferred", "EPA Safer Choice"],
+                    "location": "Minneapolis, MN"
+                },
+                {
+                    "id": "m14",
+                    "name": "Recovered Industrial Alcohol",
+                    "type": "Chemicals",
+                    "description": "High-purity ethanol recovered from industrial processes.",
+                    "quantity_available": "5000 liters",
+                    "price_range": "$3-$5 per liter",
+                    "sustainability_rating": 4.2,
+                    "certifications": ["ISO 14001"],
+                    "location": "St. Louis, MO"
+                },
+                {
+                    "id": "m15",
+                    "name": "Reclaimed Glycerin",
+                    "type": "Chemicals",
+                    "description": "USP grade glycerin recovered from biodiesel production.",
+                    "quantity_available": "3000 liters",
+                    "price_range": "$2-$4 per liter",
+                    "sustainability_rating": 4.5,
+                    "certifications": ["USDA BioPreferred"],
+                    "location": "Iowa City, IA"
+                }
+            ],
+            "Other": [
+                {
+                    "id": "m16",
+                    "name": "Reclaimed Timber",
+                    "type": "Wood",
+                    "description": "High-quality reclaimed timber from deconstructed buildings.",
+                    "quantity_available": "5000 board feet",
+                    "price_range": "$8-$15 per board foot",
+                    "sustainability_rating": 4.9,
+                    "certifications": ["FSC Recycled"],
+                    "location": "Seattle, WA"
+                },
+                {
+                    "id": "m17",
+                    "name": "Crushed Glass Aggregate",
+                    "type": "Glass",
+                    "description": "Processed post-consumer glass for construction and landscaping applications.",
+                    "quantity_available": "50 tons",
+                    "price_range": "$40-$60 per ton",
+                    "sustainability_rating": 4.6,
+                    "certifications": ["LEED Compliant"],
+                    "location": "Denver, CO"
+                },
+                {
+                    "id": "m18",
+                    "name": "Recycled Rubber Crumb",
+                    "type": "Rubber",
+                    "description": "Fine rubber granules from recycled tires for various applications.",
+                    "quantity_available": "30 tons",
+                    "price_range": "$300-$400 per ton",
+                    "sustainability_rating": 4.4,
+                    "certifications": ["ASTM Certified"],
+                    "location": "Columbus, OH"
+                }
+            ]
+        };
+        
+        // DOM elements
+        const startContainer = document.getElementById('start-container');
+        const questionsContainer = document.getElementById('questions-container');
+        const currentQuestionContainer = document.getElementById('current-question');
+        const completionContainer = document.getElementById('completion-container');
+        const resultsContainer = document.getElementById('results-container');
+        const materialsList = document.getElementById('materials-list');
+        const progressBar = document.getElementById('progress-bar');
+        const nextBtn = document.getElementById('next-btn');
+        const startBtn = document.getElementById('start-btn');
+        const completeBtn = document.getElementById('complete-btn');
+        const errorContainer = document.getElementById('error-container');
+        const successContainer = document.getElementById('success-container');
+        
+        // State
+        let sessionId = null;
+        let questions = SAMPLE_QUESTIONS;
+        let currentQuestionIndex = 0;
+        let selectedAnswer = null;
+        let userResponses = [];
+        
+        // Event listeners
+        startBtn.addEventListener('click', startOnboarding);
+        nextBtn.addEventListener('click', handleNextQuestion);
+        completeBtn.addEventListener('click', completeOnboarding);
+        
+        // Functions
+        function showError(message) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            successContainer.textContent = message;
+            successContainer.classList.remove('hidden');
+            setTimeout(() => {
+                successContainer.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function startOnboarding() {
+            try {
+                // Generate a random session ID
+                sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+                
+                // Show first question
+                startContainer.classList.add('hidden');
+                questionsContainer.classList.remove('hidden');
+                showQuestion(0);
+                
+                showSuccess('Onboarding started successfully!');
+            } catch (error) {
+                showError('Error starting onboarding: ' + error.message);
+                console.error('Error starting onboarding:', error);
+            }
+        }
+        
+        function showQuestion(index) {
+            if (index >= questions.length) {
+                // All questions answered
+                questionsContainer.classList.add('hidden');
+                completionContainer.classList.remove('hidden');
+                updateProgress(1);
+                return;
+            }
+            
+            const question = questions[index];
+            currentQuestionIndex = index;
+            selectedAnswer = null;
+            
+            // Update progress
+            updateProgress((index + 1) / questions.length);
+            
+            // Create question HTML
+            currentQuestionContainer.innerHTML = `
+                <h3>${question.question}</h3>
+                <div class="options-container" id="options-container"></div>
+            `;
+            
+            const optionsContainer = document.getElementById('options-container');
+            
+            // Create option buttons
+            question.options.forEach(option => {
+                const optionBtn = document.createElement('button');
+                optionBtn.classList.add('option-btn');
+                optionBtn.textContent = option;
+                optionBtn.addEventListener('click', () => selectOption(option, optionBtn));
+                optionsContainer.appendChild(optionBtn);
+            });
+            
+            // Disable next button until an option is selected
+            nextBtn.disabled = true;
+        }
+        
+        function selectOption(option, button) {
+            // Remove selected class from all buttons
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            
+            // Add selected class to clicked button
+            button.classList.add('selected');
+            
+            // Store selected answer
+            selectedAnswer = option;
+            
+            // Enable next button
+            nextBtn.disabled = false;
+        }
+        
+        function handleNextQuestion() {
+            if (selectedAnswer === null) {
+                return;
+            }
+            
+            try {
+                const question = questions[currentQuestionIndex];
+                
+                // Store response
+                userResponses.push({
+                    question_id: question.id,
+                    answer: selectedAnswer
+                });
+                
+                // Show next question
+                showQuestion(currentQuestionIndex + 1);
+                
+            } catch (error) {
+                showError('Error processing response: ' + error.message);
+                console.error('Error processing response:', error);
+            }
+        }
+        
+        function completeOnboarding() {
+            try {
+                // Find material type from responses
+                let materialType = "Other";
+                for (const response of userResponses) {
+                    if (response.question_id === "q1") {
+                        materialType = response.answer;
+                        break;
+                    }
+                }
+                
+                // Get materials for the selected type
+                const materials = SAMPLE_MATERIALS[materialType] || SAMPLE_MATERIALS["Other"];
+                
+                // Hide completion container
+                completionContainer.classList.add('hidden');
+                
+                // Show results
+                resultsContainer.classList.remove('hidden');
+                
+                // Display materials
+                displayMaterials(materials);
+                
+                showSuccess('Onboarding completed successfully!');
+            } catch (error) {
+                showError('Error completing onboarding: ' + error.message);
+                console.error('Error completing onboarding:', error);
+            }
+        }
+        
+        function displayMaterials(materials) {
+            materialsList.innerHTML = '';
+            
+            if (materials.length === 0) {
+                materialsList.innerHTML = '<p>No materials found matching your criteria.</p>';
+                return;
+            }
+            
+            materials.forEach(material => {
+                const materialCard = document.createElement('div');
+                materialCard.classList.add('material-card');
+                
+                // Create certification tags HTML
+                const certificationsHTML = material.certifications.map(cert => 
+                    `<span class="certification-tag">${cert}</span>`
+                ).join('');
+                
+                // Create rating stars
+                const ratingStars = '★'.repeat(Math.floor(material.sustainability_rating)) + 
+                                   (material.sustainability_rating % 1 >= 0.5 ? '½' : '') +
+                                   '☆'.repeat(5 - Math.ceil(material.sustainability_rating));
+                
+                materialCard.innerHTML = `
+                    <h3>${material.name}</h3>
+                    <div class="material-meta">
+                        <div><strong>Type:</strong> ${material.type}</div>
+                        <div><strong>Quantity:</strong> ${material.quantity_available}</div>
+                        <div><strong>Price:</strong> ${material.price_range}</div>
+                        <div><strong>Location:</strong> ${material.location}</div>
+                    </div>
+                    <p>${material.description}</p>
+                    <div><strong>Sustainability Rating:</strong> <span class="rating">${ratingStars}</span> (${material.sustainability_rating}/5.0)</div>
+                    <div><strong>Certifications:</strong> ${certificationsHTML}</div>
+                `;
+                
+                materialsList.appendChild(materialCard);
+            });
+        }
+        
+        function updateProgress(percentage) {
+            progressBar.style.width = `${percentage * 100}%`;
+        }
+    </script>
+</body>
+</html>
