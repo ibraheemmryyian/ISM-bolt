@@ -1,0 +1,268 @@
+{
+  "company_name": "Demo Manufacturing Company",
+  "industry": "manufacturing",
+  "location": "Global",
+  "predicted_outputs": [
+    {
+      "name": "Steel",
+      "category": "specialty_material",
+      "quantity": 994.91,
+      "unit": "kg",
+      "quality_grade": "B+",
+      "potential_value": 9532216.49,
+      "description": "High-quality Steel from Demo Manufacturing Company's production process. Meets industry standards for manufacturing applications.",
+      "potential_uses": [
+        "Raw material processing",
+        "Secondary manufacturing",
+        "Product manufacturing",
+        "Manufacturing input"
+      ],
+      "symbiosis_opportunities": [
+        "Partnership with regional chemical companies",
+        "Circular economy integration with regional partners",
+        "Waste-to-resource conversion through innovative technologies"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's primary materials analysis"
+    },
+    {
+      "name": "Aluminum",
+      "category": "raw_material",
+      "quantity": 559.05,
+      "unit": "kg",
+      "quality_grade": "A",
+      "potential_value": 4923835.93,
+      "description": "Premium Aluminum produced by Demo Manufacturing Company. Suitable for various manufacturing applications requiring A-grade materials.",
+      "potential_uses": [
+        "Industrial tooling",
+        "Raw material processing",
+        "Assembly line input",
+        "Secondary manufacturing"
+      ],
+      "symbiosis_opportunities": [
+        "Resource optimization through innovative partnerships"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's primary materials analysis"
+    },
+    {
+      "name": "Plastic",
+      "category": "raw_material",
+      "quantity": 683.02,
+      "unit": "tons",
+      "quality_grade": "B",
+      "potential_value": 7079022.63,
+      "description": "High-quality Plastic from Demo Manufacturing Company's production process. Meets industry standards for manufacturing applications.",
+      "potential_uses": [
+        "Manufacturing input",
+        "Construction material",
+        "Assembly line input",
+        "Component fabrication"
+      ],
+      "symbiosis_opportunities": [
+        "Waste-to-resource conversion through innovative technologies",
+        "Circular economy integration with specialized partners"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's primary materials analysis"
+    },
+    {
+      "name": "Copper",
+      "category": "specialty_material",
+      "quantity": 1444.98,
+      "unit": "kg",
+      "quality_grade": "A",
+      "potential_value": 26094073.55,
+      "description": "Industrial-grade Copper with excellent properties for manufacturing use. Produced by Demo Manufacturing Company under strict quality control.",
+      "potential_uses": [
+        "Raw material processing",
+        "Assembly line input",
+        "Manufacturing input",
+        "Industrial tooling"
+      ],
+      "symbiosis_opportunities": [
+        "Circular economy integration with specialized partners",
+        "Partnership with local processing companies"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's primary materials analysis"
+    },
+    {
+      "name": "Metal Scrap",
+      "category": "byproduct",
+      "quantity": 591.39,
+      "unit": "kg",
+      "quality_grade": "B",
+      "potential_value": 3427835.67,
+      "description": "Industrial Metal Scrap waste from Demo Manufacturing Company. Can be processed for secondary use in compatible applications.",
+      "potential_uses": [
+        "Product manufacturing",
+        "Construction material",
+        "Industrial tooling"
+      ],
+      "symbiosis_opportunities": [
+        "Material exchange with complementary industries",
+        "Circular economy integration with specialized partners"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's waste materials analysis"
+    },
+    {
+      "name": "Plastic Waste",
+      "category": "byproduct",
+      "quantity": 212.59,
+      "unit": "kg",
+      "quality_grade": "C",
+      "potential_value": 807435.39,
+      "description": "Plastic Waste waste stream from Demo Manufacturing Company's operations. Has potential for recycling and reuse in compatible industries.",
+      "potential_uses": [
+        "Manufacturing input",
+        "Product manufacturing",
+        "Component fabrication"
+      ],
+      "symbiosis_opportunities": [
+        "Material exchange with adjacent industries"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's waste materials analysis"
+    },
+    {
+      "name": "Industrial Dust",
+      "category": "byproduct",
+      "quantity": 613.33,
+      "unit": "kg",
+      "quality_grade": "D",
+      "potential_value": 2418766.65,
+      "description": "Recyclable Industrial Dust from Demo Manufacturing Company's manufacturing process. Can be repurposed for various applications.",
+      "potential_uses": [
+        "Construction material",
+        "Secondary manufacturing",
+        "Manufacturing input",
+        "Industrial tooling"
+      ],
+      "symbiosis_opportunities": [
+        "Material exchange with adjacent industries",
+        "Circular economy integration with specialized partners",
+        "Waste-to-resource conversion through established technologies"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's waste materials analysis"
+    },
+    {
+      "name": "Excess Material",
+      "category": "byproduct",
+      "quantity": 100.67,
+      "unit": "kg",
+      "quality_grade": "C",
+      "potential_value": 780674.31,
+      "description": "Excess Material byproduct from Demo Manufacturing Company's manufacturing operations. Consistent quality and regular availability.",
+      "potential_uses": [
+        "Industrial tooling",
+        "Raw material processing"
+      ],
+      "symbiosis_opportunities": [
+        "Circular economy integration with local partners"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's byproduct materials analysis"
+    },
+    {
+      "name": "Industrial Dust",
+      "category": "byproduct",
+      "quantity": 311.15,
+      "unit": "tons",
+      "quality_grade": "C",
+      "potential_value": 913562.25,
+      "description": "Industrial Dust byproduct with C-grade quality. Generated consistently from Demo Manufacturing Company's manufacturing process.",
+      "potential_uses": [
+        "Secondary manufacturing",
+        "Raw material processing",
+        "Industrial component",
+        "Manufacturing input"
+      ],
+      "symbiosis_opportunities": [
+        "Resource optimization through innovative partnerships",
+        "Waste-to-resource conversion through emerging technologies",
+        "Material exchange with related industries"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's byproduct materials analysis"
+    },
+    {
+      "name": "Metal Shavings",
+      "category": "industrial_output",
+      "quantity": 255.68,
+      "unit": "tons",
+      "quality_grade": "B-",
+      "potential_value": 2099453.72,
+      "description": "Metal Shavings byproduct with B--grade quality. Generated consistently from Demo Manufacturing Company's manufacturing process.",
+      "potential_uses": [
+        "Construction material",
+        "Secondary manufacturing",
+        "Industrial tooling",
+        "Assembly line input"
+      ],
+      "symbiosis_opportunities": [
+        "Circular economy integration with regional partners",
+        "Material exchange with complementary industries"
+      ],
+      "notes": "Generated from Demo Manufacturing Company's byproduct materials analysis"
+    }
+  ],
+  "predicted_inputs": [
+    {
+      "name": "Raw Materials",
+      "description": "Essential raw materials needed for manufacturing operations",
+      "category": "essential_input",
+      "quantity_needed": 422,
+      "unit": "kg",
+      "current_cost": 19925,
+      "priority": "medium",
+      "potential_sources": [
+        "Local manufacturing suppliers",
+        "Industrial partners",
+        "Specialized vendors"
+      ],
+      "symbiosis_opportunities": [
+        "Material exchange programs",
+        "Collaborative procurement",
+        "Waste-to-resource partnerships"
+      ]
+    },
+    {
+      "name": "Industrial Supplies",
+      "description": "Essential industrial supplies needed for manufacturing operations",
+      "category": "essential_input",
+      "quantity_needed": 997,
+      "unit": "units",
+      "current_cost": 7911,
+      "priority": "medium",
+      "potential_sources": [
+        "Local manufacturing suppliers",
+        "Industrial partners",
+        "Specialized vendors"
+      ],
+      "symbiosis_opportunities": [
+        "Material exchange programs",
+        "Collaborative procurement",
+        "Waste-to-resource partnerships"
+      ]
+    },
+    {
+      "name": "Equipment Parts",
+      "description": "Essential equipment parts needed for manufacturing operations",
+      "category": "essential_input",
+      "quantity_needed": 231,
+      "unit": "tons",
+      "current_cost": 15840,
+      "priority": "low",
+      "potential_sources": [
+        "Local manufacturing suppliers",
+        "Industrial partners",
+        "Specialized vendors"
+      ],
+      "symbiosis_opportunities": [
+        "Material exchange programs",
+        "Collaborative procurement",
+        "Waste-to-resource partnerships"
+      ]
+    }
+  ],
+  "generation_metadata": {
+    "generated_at": "2025-07-30T23:12:01.772509",
+    "ai_confidence_score": 0.85,
+    "total_listings": 10,
+    "total_requirements": 3
+  }
+}
