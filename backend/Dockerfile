@@ -7,23 +7,14 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies with security audit
-RUN npm ci --only=production && \
-    npm audit fix --audit-level=moderate || true
-
-# Copy source code
-COPY . .
+# Install dependencies
+RUN npm ci --only=production
 
 # Production stage
 FROM node:18-alpine AS production
 
-# Install security updates and required packages
-RUN apk update && apk upgrade && \
-    apk add --no-cache \
-    curl \
-    python3 \
-    py3-pip \
-    && rm -rf /var/cache/apk/*
+# Install runtime dependencies
+RUN apk add --no-cache curl
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -32,11 +23,13 @@ RUN addgroup -g 1001 -S nodejs && \
 # Set working directory
 WORKDIR /app
 
-# Copy built application from builder stage
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app ./
+# Copy node_modules from builder
+COPY --from=builder /app/node_modules ./node_modules
 
-# Create necessary directories with proper permissions
+# Copy application code
+COPY --chown=nodejs:nodejs . .
+
+# Create necessary directories
 RUN mkdir -p /app/logs /app/uploads && \
     chown -R nodejs:nodejs /app
 
@@ -44,11 +37,11 @@ RUN mkdir -p /app/logs /app/uploads && \
 USER nodejs
 
 # Expose port
-EXPOSE 3001
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3001/api/health || exit 1
+    CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start the application
 CMD ["node", "app.js"] 

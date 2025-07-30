@@ -2744,15 +2744,6 @@ app.get('/api/adaptive-onboarding/questions/:session_id', async (req, res) => {
 // Export the app for testing
 module.exports = app;
 
-// Start the server only if not in test environment
-if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-        console.log(`📡 API available at http://localhost:${PORT}/api`);
-        console.log(`🏥 Health check at http://localhost:${PORT}/api/health`);
-    });
-}
-
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
@@ -5327,4 +5318,13 @@ function withMetrics(endpoint, handler) {
         end();
       });
   };
+}
+
+// Start the server only if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`📡 API available at http://localhost:${PORT}/api`);
+        console.log(`🏥 Health check at http://localhost:${PORT}/api/health`);
+    });
 }

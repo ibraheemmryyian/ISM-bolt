@@ -1,0 +1,193 @@
+{
+  "questions": {
+    "knowledge_assessment": {
+      "confidence_score": 0.7,
+      "existing_data": {
+        "company_name": true,
+        "industry": true,
+        "location": true,
+        "employee_count": true,
+        "products": true,
+        "main_materials": true,
+        "production_volume": true,
+        "process_description": false,
+        "waste_streams": false,
+        "sustainability_goals": false
+      },
+      "critical_gaps": [
+        "waste_management"
+      ],
+      "knowledge_areas": [
+        "chemical_processes",
+        "hazardous_materials",
+        "waste_streams",
+        "safety_compliance",
+        "production_volumes"
+      ],
+      "data_completeness": "7/10 fields completed"
+    },
+    "questions_data": {
+      "questions": [
+        {
+          "id": "q1",
+          "category": "production_processes",
+          "question": "What specific chemical manufacturing processes do you use?",
+          "importance": "high",
+          "expected_answer_type": "multiselect",
+          "options": [
+            "chemical_synthesis",
+            "distillation",
+            "purification",
+            "crystallization",
+            "filtration"
+          ],
+          "follow_up_question": "Which process generates the most waste?",
+          "reasoning": "Essential for identifying waste streams and resource needs"
+        },
+        {
+          "id": "q2",
+          "category": "waste_streams",
+          "question": "What types of waste do you generate from your chemical processes?",
+          "importance": "high",
+          "expected_answer_type": "multiselect",
+          "options": [
+            "chemical_waste",
+            "aqueous_waste",
+            "organic_waste",
+            "solid_waste",
+            "gaseous_waste"
+          ],
+          "follow_up_question": "What quantities of each waste type do you produce?",
+          "reasoning": "Critical for identifying symbiosis opportunities"
+        },
+        {
+          "id": "q3",
+          "category": "resource_requirements",
+          "question": "What raw materials and chemicals do you need for production?",
+          "importance": "high",
+          "expected_answer_type": "multiselect",
+          "options": [
+            "raw_chemicals",
+            "catalysts",
+            "solvents",
+            "acids",
+            "bases"
+          ],
+          "follow_up_question": "What are your current suppliers and costs?",
+          "reasoning": "Identifies potential supply chain opportunities"
+        },
+        {
+          "id": "q4",
+          "category": "operational_details",
+          "question": "What is your production capacity and schedule?",
+          "importance": "medium",
+          "expected_answer_type": "text",
+          "options": [],
+          "follow_up_question": "Are there seasonal variations in production?",
+          "reasoning": "Affects logistics and matching feasibility"
+        }
+      ],
+      "estimated_completion_time": "5-8 minutes",
+      "key_insights_expected": [
+        "Production capacity and waste generation potential",
+        "Primary resource requirements and waste streams",
+        "Current waste management practices and opportunities"
+      ],
+      "material_listings_focus": [
+        "waste_materials",
+        "required_materials",
+        "byproducts"
+      ]
+    },
+    "industry_category": "chemical_manufacturing",
+    "estimated_completion_time": "5-8 minutes",
+    "confidence_score": 0.7
+  },
+  "listings": {
+    "material_listings": [
+      {
+        "material_name": "Hazardous Waste",
+        "type": "waste",
+        "quantity": 500,
+        "unit": "tons",
+        "description": "High-quality hazardous waste from Test Company production processes",
+        "frequency": "monthly",
+        "quality_grade": "A",
+        "ai_generated": true,
+        "industry_specific": true
+      },
+      {
+        "material_name": "Organic Waste",
+        "type": "waste",
+        "quantity": 500,
+        "unit": "tons",
+        "description": "High-quality organic waste from Test Company production processes",
+        "frequency": "monthly",
+        "quality_grade": "A",
+        "ai_generated": true,
+        "industry_specific": true
+      },
+      {
+        "material_name": "Aqueous Waste",
+        "type": "waste",
+        "quantity": 500,
+        "unit": "tons",
+        "description": "High-quality aqueous waste from Test Company production processes",
+        "frequency": "monthly",
+        "quality_grade": "A",
+        "ai_generated": true,
+        "industry_specific": true
+      },
+      {
+        "material_name": "Raw Chemicals",
+        "type": "requirement",
+        "quantity": 1000,
+        "unit": "kg",
+        "description": "Seeking reliable supplier for raw chemicals for Test Company production",
+        "frequency": "monthly",
+        "quality_grade": "A",
+        "ai_generated": true,
+        "industry_specific": true
+      },
+      {
+        "material_name": "Solvents",
+        "type": "requirement",
+        "quantity": 1000,
+        "unit": "liters",
+        "description": "Seeking reliable supplier for solvents for Test Company production",
+        "frequency": "monthly",
+        "quality_grade": "A",
+        "ai_generated": true,
+        "industry_specific": true
+      },
+      {
+        "material_name": "Catalysts",
+        "type": "requirement",
+        "quantity": 1000,
+        "unit": "kg",
+        "description": "Seeking reliable supplier for catalysts for Test Company production",
+        "frequency": "monthly",
+        "quality_grade": "A",
+        "ai_generated": true,
+        "industry_specific": true
+      }
+    ],
+    "waste_requirements": [
+      {
+        "requirement_type": "hazardous_waste_disposal",
+        "description": "Safe disposal of hazardous chemical waste",
+        "priority": "high",
+        "compliance_required": true
+      },
+      {
+        "requirement_type": "waste_treatment",
+        "description": "On-site or off-site waste treatment facilities",
+        "priority": "medium",
+        "compliance_required": true
+      }
+    ],
+    "generated_at": "2025-07-31T01:23:12.477994",
+    "ai_model": "deepseek-r1",
+    "confidence_score": 0.75
+  }
+}

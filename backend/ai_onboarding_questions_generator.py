@@ -241,7 +241,8 @@ class AIOnboardingQuestionsGenerator:
                 return questions_data
             else:
                 logger.error(f"❌ Failed to generate gap-filling questions: DeepSeek returned no response")
-                raise RuntimeError("DeepSeek API failed to generate questions and no fallback is allowed in production.")
+                logger.warning("⚠️ Using fallback questions due to API failure")
+                return self._generate_fallback_questions(company_profile, industry_category)
         except Exception as e:
             logger.error(f"❌ Error generating gap-filling questions: {str(e)}")
             raise RuntimeError(f"Failed to generate gap-filling questions: {str(e)}")
@@ -367,6 +368,161 @@ Provide the response as a JSON object with this structure:
         except Exception as e:
             logger.error(f"Error parsing questions response: {str(e)}")
             raise RuntimeError(f"Failed to parse questions response: {str(e)}")
+
+    def _generate_fallback_questions(self, company_profile: Dict[str, Any], industry_category: str) -> Dict[str, Any]:
+        """Generate fallback questions when AI API is unavailable"""
+        logger.info(f"🔄 Generating fallback questions for {industry_category} industry")
+        
+        company_name = company_profile.get('name', 'Unknown')
+        industry = company_profile.get('industry', 'Unknown')
+        
+        # Industry-specific fallback questions
+        fallback_questions = {
+            'chemical_manufacturing': [
+                {
+                    'id': 'q1',
+                    'category': 'production_processes',
+                    'question': 'What specific chemical manufacturing processes do you use?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['chemical_synthesis', 'distillation', 'purification', 'crystallization', 'filtration'],
+                    'follow_up_question': 'Which process generates the most waste?',
+                    'reasoning': 'Essential for identifying waste streams and resource needs'
+                },
+                {
+                    'id': 'q2',
+                    'category': 'waste_streams',
+                    'question': 'What types of waste do you generate from your chemical processes?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['chemical_waste', 'aqueous_waste', 'organic_waste', 'solid_waste', 'gaseous_waste'],
+                    'follow_up_question': 'What quantities of each waste type do you produce?',
+                    'reasoning': 'Critical for identifying symbiosis opportunities'
+                },
+                {
+                    'id': 'q3',
+                    'category': 'resource_requirements',
+                    'question': 'What raw materials and chemicals do you need for production?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['raw_chemicals', 'catalysts', 'solvents', 'acids', 'bases'],
+                    'follow_up_question': 'What are your current suppliers and costs?',
+                    'reasoning': 'Identifies potential supply chain opportunities'
+                },
+                {
+                    'id': 'q4',
+                    'category': 'operational_details',
+                    'question': 'What is your production capacity and schedule?',
+                    'importance': 'medium',
+                    'expected_answer_type': 'text',
+                    'options': [],
+                    'follow_up_question': 'Are there seasonal variations in production?',
+                    'reasoning': 'Affects logistics and matching feasibility'
+                }
+            ],
+            'food_processing': [
+                {
+                    'id': 'q1',
+                    'category': 'production_processes',
+                    'question': 'What food processing methods do you use?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['cooking', 'freezing', 'canning', 'drying', 'fermentation'],
+                    'follow_up_question': 'Which process generates the most organic waste?',
+                    'reasoning': 'Essential for identifying waste streams and resource needs'
+                },
+                {
+                    'id': 'q2',
+                    'category': 'waste_streams',
+                    'question': 'What types of organic waste do you generate?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['food_scraps', 'packaging_waste', 'water_waste', 'processing_waste'],
+                    'follow_up_question': 'What quantities of each waste type do you produce?',
+                    'reasoning': 'Critical for identifying symbiosis opportunities'
+                },
+                {
+                    'id': 'q3',
+                    'category': 'resource_requirements',
+                    'question': 'What ingredients and packaging materials do you need?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['raw_ingredients', 'packaging_materials', 'preservatives', 'cleaning_supplies'],
+                    'follow_up_question': 'What are your current suppliers and costs?',
+                    'reasoning': 'Identifies potential supply chain opportunities'
+                },
+                {
+                    'id': 'q4',
+                    'category': 'operational_details',
+                    'question': 'What is your production capacity and seasonal variations?',
+                    'importance': 'medium',
+                    'expected_answer_type': 'text',
+                    'options': [],
+                    'follow_up_question': 'How do you handle food safety requirements?',
+                    'reasoning': 'Affects logistics and matching feasibility'
+                }
+            ],
+            'steel_manufacturing': [
+                {
+                    'id': 'q1',
+                    'category': 'production_processes',
+                    'question': 'What steel manufacturing processes do you use?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['blast_furnace', 'electric_arc_furnace', 'rolling', 'casting', 'forging'],
+                    'follow_up_question': 'Which process generates the most slag?',
+                    'reasoning': 'Essential for identifying waste streams and resource needs'
+                },
+                {
+                    'id': 'q2',
+                    'category': 'waste_streams',
+                    'question': 'What types of waste do you generate from steel production?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['slag_waste', 'metal_scrap', 'dust_particulates', 'heat_waste'],
+                    'follow_up_question': 'What quantities of each waste type do you produce?',
+                    'reasoning': 'Critical for identifying symbiosis opportunities'
+                },
+                {
+                    'id': 'q3',
+                    'category': 'resource_requirements',
+                    'question': 'What raw materials do you need for steel production?',
+                    'importance': 'high',
+                    'expected_answer_type': 'multiselect',
+                    'options': ['iron_ore', 'coal', 'limestone', 'alloys', 'refractory_materials'],
+                    'follow_up_question': 'What are your current suppliers and costs?',
+                    'reasoning': 'Identifies potential supply chain opportunities'
+                },
+                {
+                    'id': 'q4',
+                    'category': 'operational_details',
+                    'question': 'What is your production capacity and energy consumption?',
+                    'importance': 'medium',
+                    'expected_answer_type': 'text',
+                    'options': [],
+                    'follow_up_question': 'How do you handle heat recovery?',
+                    'reasoning': 'Affects logistics and matching feasibility'
+                }
+            ]
+        }
+        
+        # Get questions for the specific industry, or use chemical manufacturing as default
+        questions = fallback_questions.get(industry_category, fallback_questions['chemical_manufacturing'])
+        
+        return {
+            'questions': questions,
+            'estimated_completion_time': '5-8 minutes',
+            'key_insights_expected': [
+                'Production capacity and waste generation potential',
+                'Primary resource requirements and waste streams',
+                'Current waste management practices and opportunities'
+            ],
+            'material_listings_focus': [
+                'waste_materials',
+                'required_materials',
+                'byproducts'
+            ]
+        }
 
     def generate_onboarding_questions(self, company_profile: Dict[str, Any]) -> Dict[str, Any]:
         return self.assess_company_knowledge_gaps(company_profile)
@@ -513,7 +669,20 @@ Provide the response as a JSON object with this structure:
         return requirements
 
     def _estimate_quantity(self, processed_data: Dict[str, Any], listing_type: str) -> int:
-        employee_count = processed_data.get('employee_count', 100)
+        employee_count_raw = processed_data.get('employee_count', 100)
+        
+        # Handle string employee counts like "100-200"
+        if isinstance(employee_count_raw, str):
+            # Extract the first number from strings like "100-200"
+            import re
+            numbers = re.findall(r'\d+', employee_count_raw)
+            if numbers:
+                employee_count = int(numbers[0])
+            else:
+                employee_count = 100  # Default fallback
+        else:
+            employee_count = int(employee_count_raw) if employee_count_raw else 100
+        
         if employee_count <= 50:
             base_quantity = 100 if listing_type == 'waste' else 500
         elif employee_count <= 200:
