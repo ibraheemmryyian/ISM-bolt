@@ -74,6 +74,7 @@ app.use(cors({
     'https://symbioflows.com',
     'https://www.symbioflows.com',
     'http://localhost:5173',
+    'https://symbioflows.vercel.app',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true,
@@ -107,6 +108,7 @@ app.use((req, res, next) => {
     'https://symbioflows.com',
     'https://www.symbioflows.com',
     'http://localhost:5173',
+    'https://symbioflows.vercel.app',
     process.env.FRONTEND_URL
   ].filter(Boolean);
 
@@ -4857,7 +4859,7 @@ const swaggerOptions = {
       description: 'API documentation for the Industrial AI Marketplace backend.'
     },
     servers: [
-      { url: 'http://localhost:3000', description: 'Development server' }
+      { url: 'https://api.symbioflows.com', description: 'Production API server' }
     ]
   },
   apis: ['./app.js'], // You can add more files for endpoint annotations

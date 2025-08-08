@@ -13,17 +13,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true
   },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  },
   global: {
     headers: {
-      'X-Client-Info': 'ism-ai-frontend'
+      'X-Client-Info': 'symbioflows-web'
     }
   }
 });
+
+// API base URL for backend calls
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.symbioflows.com'
+export const AI_SERVICES_URL = import.meta.env.VITE_AI_SERVICES_URL || 'https://api.symbioflows.com/ai'
 
 // Test Supabase connection
 export async function testSupabaseConnection() {

@@ -1,366 +1,118 @@
 version: '3.8'
 
 services:
-  # Supabase Database (PostgreSQL)
-  supabase-db:
-    image: postgres:15
-    container_name: symbioflows-db
-    environment:
-      POSTGRES_DB: symbioflows
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${SUPABASE_DB_PASSWORD:-symbioflows123}
-    volumes:
-      - supabase_data:/var/lib/postgresql/data
-      - ./supabase/migrations:/docker-entrypoint-initdb.d
-    ports:
-      - "5432:5432"
-    networks:
-      - symbioflows-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Redis for caching and session management
-  redis:
-    image: redis:7-alpine
-    container_name: symbioflows-redis
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-    networks:
-      - symbioflows-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # Backend API Server
+  # Backend API Service
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: symbioflows-backend
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     ports:
       - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - FRONTEND_URL=https://symbioflows.com
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
     volumes:
       - ./backend:/app
       - /app/node_modules
-    depends_on:
-      supabase-db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     networks:
       - symbioflows-network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
 
   # AI Services Gateway
   ai-gateway:
     build:
       context: ./ai_service_flask
       dockerfile: Dockerfile
-    container_name: symbioflows-ai-gateway
-    environment:
-      FLASK_ENV: production
-      FLASK_APP: ai_gateway.py
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      REDIS_URL: redis://redis:6379
-      LOG_LEVEL: INFO
-      MAX_WORKERS: 4
-      REQUEST_TIMEOUT: 60
     ports:
       - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - PORT=5000
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=INFO
     volumes:
       - ./ai_service_flask:/app
       - ./models:/app/models
-      - ./model_storage:/app/model_storage
-      - ai_cache:/app/cache
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
       - symbioflows-network
+    depends_on:
+      - redis
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
-
-  # GNN Inference Service
-  gnn-inference:
-    build:
-      context: ./ai_service_flask
-      dockerfile: Dockerfile
-    container_name: symbioflows-gnn-inference
-    environment:
-      FLASK_ENV: production
-      FLASK_APP: gnn_inference_service.py
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      REDIS_URL: redis://redis:6379
-      LOG_LEVEL: INFO
-    ports:
-      - "5001:5001"
-    volumes:
-      - ./ai_service_flask:/app
-      - ./gnn_models:/app/gnn_models
-      - ai_cache:/app/cache
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - symbioflows-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-
-  # Federated Learning Service
-  federated-learning:
-    build:
-      context: ./ai_service_flask
-      dockerfile: Dockerfile
-    container_name: symbioflows-federated-learning
-    environment:
-      FLASK_ENV: production
-      FLASK_APP: federated_learning_service.py
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      REDIS_URL: redis://redis:6379
-      LOG_LEVEL: INFO
-    ports:
-      - "5002:5002"
-    volumes:
-      - ./ai_service_flask:/app
-      - ./federated_models:/app/federated_models
-      - ai_cache:/app/cache
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - symbioflows-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-
-  # Multi-Hop Symbiosis Service
-  multi-hop-symbiosis:
-    build:
-      context: ./ai_service_flask
-      dockerfile: Dockerfile
-    container_name: symbioflows-multi-hop-symbiosis
-    environment:
-      FLASK_ENV: production
-      FLASK_APP: multi_hop_symbiosis_service.py
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      REDIS_URL: redis://redis:6379
-      LOG_LEVEL: INFO
-    ports:
-      - "5003:5003"
-    volumes:
-      - ./ai_service_flask:/app
-      - ai_cache:/app/cache
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - symbioflows-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-
-  # Advanced Analytics Service
-  advanced-analytics:
-    build:
-      context: ./ai_service_flask
-      dockerfile: Dockerfile
-    container_name: symbioflows-advanced-analytics
-    environment:
-      FLASK_ENV: production
-      FLASK_APP: advanced_analytics_service.py
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      REDIS_URL: redis://redis:6379
-      LOG_LEVEL: INFO
-    ports:
-      - "5004:5004"
-    volumes:
-      - ./ai_service_flask:/app
-      - ai_cache:/app/cache
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - symbioflows-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5004/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-
-  # AI Pricing Service
-  ai-pricing:
-    build:
-      context: ./ai_service_flask
-      dockerfile: Dockerfile
-    container_name: symbioflows-ai-pricing
-    environment:
-      FLASK_ENV: production
-      FLASK_APP: ai_pricing_service_wrapper.py
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      REDIS_URL: redis://redis:6379
-      LOG_LEVEL: INFO
-    ports:
-      - "5005:5005"
-    volumes:
-      - ./ai_service_flask:/app
-      - ai_cache:/app/cache
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - symbioflows-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5005/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-
-  # Logistics Service
-  logistics-service:
-    build:
-      context: ./ai_service_flask
-      dockerfile: Dockerfile
-    container_name: symbioflows-logistics-service
-    environment:
-      FLASK_ENV: production
-      FLASK_APP: logistics_service_wrapper.py
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
-      SUPABASE_URL: ${SUPABASE_URL}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-      REDIS_URL: redis://redis:6379
-      LOG_LEVEL: INFO
-    ports:
-      - "5006:5006"
-    volumes:
-      - ./ai_service_flask:/app
-      - ai_cache:/app/cache
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - symbioflows-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5006/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
 
   # Frontend Application
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: symbioflows-frontend
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
-      VITE_AI_SERVICES_URL: ${VITE_AI_SERVICES_URL:-http://localhost:5000}
-      VITE_SUPABASE_URL: ${SUPABASE_URL}
-      VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
     ports:
       - "5173:5173"
+    environment:
+      - VITE_API_URL=https://api.symbioflows.com
+      - VITE_AI_SERVICES_URL=https://api.symbioflows.com/ai
+      - VITE_SUPABASE_URL=${SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    depends_on:
-      backend:
-        condition: service_healthy
     networks:
       - symbioflows-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5173"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    depends_on:
+      - backend
     restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - symbioflows-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
 
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
-    container_name: symbioflows-nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-    depends_on:
-      - frontend
-      - backend
-      - ai-gateway
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
     networks:
       - symbioflows-network
+    depends_on:
+      - backend
+      - ai-gateway
+      - frontend
     restart: unless-stopped
 
   # Prometheus Monitoring
   prometheus:
     image: prom/prometheus:latest
-    container_name: symbioflows-prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
     networks:
       - symbioflows-network
     restart: unless-stopped
@@ -368,36 +120,22 @@ services:
   # Grafana Dashboard
   grafana:
     image: grafana/grafana:latest
-    container_name: symbioflows-grafana
     ports:
       - "3001:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
-    depends_on:
-      - prometheus
+      - ./monitoring/grafana:/etc/grafana/provisioning
     networks:
       - symbioflows-network
     restart: unless-stopped
 
 volumes:
-  supabase_data:
-    driver: local
   redis_data:
-    driver: local
-  ai_cache:
-    driver: local
   prometheus_data:
-    driver: local
   grafana_data:
-    driver: local
 
 networks:
   symbioflows-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16 
+    driver: bridge 

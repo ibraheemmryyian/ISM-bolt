@@ -8,6 +8,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend')))
 import json
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import torch
 from transformers import AutoTokenizer
 from ml_core.models import ModelFactory
@@ -34,6 +35,15 @@ import shap
 from flask_restx import Api, Resource, fields
 
 app = Flask(__name__)
+
+# Configure CORS for production
+CORS(app, origins=[
+    'https://symbioflows.com',
+    'https://www.symbioflows.com',
+    'https://symbioflows.vercel.app',
+    'http://localhost:5173'
+], supports_credentials=True)
+
 api = Api(app, version='1.0', title='AI Gateway API', description='Revolutionary Modular ML Gateway', doc='/docs')
 
 # Initialize advanced utilities
@@ -191,4 +201,5 @@ class Health(Resource):
 
 if __name__ == '__main__':
     logger.info("Starting AI Gateway service...")
-    app.run(host='0.0.0.0', port=8000, debug=False) 
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False) 

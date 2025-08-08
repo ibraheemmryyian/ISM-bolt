@@ -395,10 +395,10 @@ class ProductionMonitoring {
    */
   async checkAIServicesHealth() {
     const aiServices = [
-      { name: 'gnn-reasoning', url: process.env.GNN_REASONING_URL || 'http://localhost:3000/api/ai/gnn/models' },
-      { name: 'revolutionary-matching', url: process.env.REVOLUTIONARY_MATCHING_URL || 'http://localhost:3000/api/ai/services/status' },
-      { name: 'knowledge-graph', url: process.env.KNOWLEDGE_GRAPH_URL || 'http://localhost:3000/api/ai/knowledge-graph/build' },
-      { name: 'adaptive-onboarding', url: process.env.ADAPTIVE_ONBOARDING_URL || 'http://localhost:3000/api/adaptive-onboarding/start' }
+        { name: 'gnn-reasoning', url: process.env.GNN_REASONING_URL || 'https://api.symbioflows.com/api/ai/gnn/models' },
+  { name: 'revolutionary-matching', url: process.env.REVOLUTIONARY_MATCHING_URL || 'https://api.symbioflows.com/api/ai/services/status' },
+  { name: 'knowledge-graph', url: process.env.KNOWLEDGE_GRAPH_URL || 'https://api.symbioflows.com/api/ai/knowledge-graph/build' },
+  { name: 'adaptive-onboarding', url: process.env.ADAPTIVE_ONBOARDING_URL || 'https://api.symbioflows.com/api/adaptive-onboarding/start' }
     ];
 
     const healthChecks = await Promise.allSettled(
@@ -410,7 +410,7 @@ class ProductionMonitoring {
           // For POST endpoints, try a health check instead
           if (service.url.includes('/start') || service.url.includes('/build')) {
             try {
-              const healthResponse = await axios.get(process.env.BACKEND_HEALTH_URL || 'http://localhost:3000/api/health', { timeout: 5000 });
+              const healthResponse = await axios.get(process.env.BACKEND_HEALTH_URL || 'https://api.symbioflows.com/api/health', { timeout: 5000 });
               return { name: service.name, status: healthResponse.status === 200 ? 'healthy' : 'unhealthy' };
             } catch (healthError) {
               return { name: service.name, status: 'unhealthy', error: healthError.message };
